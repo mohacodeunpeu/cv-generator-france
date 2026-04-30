@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generateur CV — Amine Ben Mansour</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(15,35,85,0.10);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 3px solid #c19a3c;
+      padding-bottom: 1rem;
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      background: #0f2355;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c19a3c;
+      font-size: 1.4rem;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      color: #0f2355;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    h1 span {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #0f2355;
+      margin-bottom: 0.3rem;
+    }
+
+    input[type="text"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1.5px solid #d0d5e0;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: #222;
+      background: #fafbfd;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #0f2355;
+      box-shadow: 0 0 0 3px rgba(15,35,85,0.08);
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+
+    .field {
+      margin-bottom: 1.2rem;
+    }
+
+    .field-hint {
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: 0.3rem;
+    }
+
+    .contrat-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .contrat-option {
+      flex: 1;
+    }
+
+    .contrat-option input[type="radio"] {
+      display: none;
+    }
+
+    .contrat-option label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.55rem 0.5rem;
+      border: 1.5px solid #d0d5e0;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #555;
+      background: #fafbfd;
+      transition: all 0.15s;
+      text-align: center;
+      margin-bottom: 0;
+    }
+
+    .contrat-option input[type="radio"]:checked + label {
+      border-color: #0f2355;
+      background: #0f2355;
+      color: #fff;
+    }
+
+    .contrat-option label:hover {
+      border-color: #0f2355;
+      color: #0f2355;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.8rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 0.75rem 1rem;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: #0f2355;
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: #1a3570; transform: translateY(-1px); }
+    .btn-primary:active { transform: none; }
+
+    .btn-gold {
+      background: #c19a3c;
+      color: #fff;
+    }
+
+    .btn-gold:hover { background: #d4aa44; transform: translateY(-1px); }
+    .btn-gold:active { transform: none; }
+
+    .btn-outline {
+      background: transparent;
+      color: #0f2355;
+      border: 1.5px solid #0f2355;
+    }
+
+    .btn-outline:hover { background: #f0f2f8; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.5rem 0 0.5rem;
+      color: #bbb;
+      font-size: 0.8rem;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e0e3ea;
+    }
+
+    .status {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 1rem;
+      min-height: 1.2em;
+    }
+
+    .status.loading { color: #0f2355; }
+    .status.success { color: #1a7a4a; }
+    .status.error   { color: #c0392b; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="header-icon">A</div>
+      <h1>
+        Generateur de candidature
+        <span>CV + Lettre de motivation personnalises</span>
+      </h1>
+    </div>
+
+    <form id="mainForm">
+      <div class="field">
+        <label for="poste">Intitule du poste *</label>
+        <input type="text" id="poste" name="poste" placeholder="ex: Business Developer, Financial Analyst..." required />
+      </div>
+
+      <div class="field">
+        <label for="entreprise">Entreprise *</label>
+        <input type="text" id="entreprise" name="entreprise" placeholder="ex: LVMH, BNP Paribas..." required />
+      </div>
+
+      <div class="field">
+        <label>Type de contrat *</label>
+        <div class="contrat-group">
+          <div class="contrat-option">
+            <input type="radio" name="contrat" id="cdi" value="cdi" checked />
+            <label for="cdi">CDI</label>
+          </div>
+          <div class="contrat-option">
+            <input type="radio" name="contrat" id="alternance" value="alternance" />
+            <label for="alternance">Alternance</label>
+          </div>
+          <div class="contrat-option">
+            <input type="radio" name="contrat" id="stage" value="stage" />
+            <label for="stage">Stage</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="description">Description du poste</label>
+        <textarea id="description" name="description"
+          placeholder="Colle ici la fiche de poste ou les missions principales..."></textarea>
+        <p class="field-hint">Plus la description est detaillee, plus le CV et la lettre seront personnalises.</p>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" onclick="submitForm('/generate', 'zip')">
+          Telecharger tout (ZIP)
+        </button>
+      </div>
+
+      <div class="divider">ou telecharger separement</div>
+
+      <div class="actions" style="margin-top: 0;">
+        <button type="button" class="btn btn-outline" onclick="submitForm('/cv', 'pdf', 'CV')">
+          CV seul (PDF)
+        </button>
+        <button type="button" class="btn btn-outline" onclick="submitForm('/lettre', 'pdf', 'Lettre')">
+          Lettre seule (PDF)
+        </button>
+      </div>
+
+      <p class="status" id="status"></p>
+    </form>
+  </div>
+
+  <script>
+    async function submitForm(action, fileType, label) {
+      const form = document.getElementById('mainForm');
+      const status = document.getElementById('status');
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      const formData = new FormData(form);
+      status.className = 'status loading';
+      status.innerHTML = '<span class="spinner"></span> Generation en cours...';
+
+      try {
+        const response = await fetch(action, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erreur serveur (${response.status})`);
+        }
+
+        const blob = await response.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+
+        const entreprise = formData.get('entreprise').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+        const poste      = formData.get('poste').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+        const ext        = fileType === 'zip' ? 'zip' : 'pdf';
+        const prefix     = fileType === 'zip' ? 'Candidature' : (label || 'Document');
+        a.download = `${prefix}_${entreprise}.${ext}`;
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        status.className = 'status success';
+        status.textContent = 'Telechargement lance !';
+        setTimeout(() => { status.textContent = ''; status.className = 'status'; }, 3000);
+
+      } catch (err) {
+        status.className = 'status error';
+        status.textContent = 'Erreur : ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
