@@ -3,13 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Generateur CV — Amine Ben Mansour</title>
+  <title>CV Generator — Amine Ben Mansour</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --navy:   #0d1f4e;
+      --navy2:  #162654;
+      --gold:   #c9a84c;
+      --gold2:  #e2bc6a;
+      --white:  #ffffff;
+      --bg:     #f4f6fb;
+      --surface:#ffffff;
+      --border: #dde2ef;
+      --text:   #1a1f36;
+      --muted:  #6b7280;
+      --green:  #16a34a;
+      --red:    #dc2626;
+      --radius: 14px;
+      --shadow: 0 8px 40px rgba(13,31,78,0.10);
+    }
+
+    html { scroll-behavior: smooth; }
+
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #f0f2f5;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -17,319 +38,530 @@
       padding: 2rem 1rem;
     }
 
+    /* ── CARD ─────────────────────────────────────────────── */
     .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(15,35,85,0.10);
-      padding: 2.5rem 2rem;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
       width: 100%;
-      max-width: 600px;
+      max-width: 580px;
+      overflow: hidden;
     }
 
+    /* ── HEADER ──────────────────────────────────────────── */
     .header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+      padding: 2rem 2rem 1.8rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: rgba(201,168,76,0.10);
+      pointer-events: none;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: 20px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      pointer-events: none;
+    }
+
+    .header-top {
       display: flex;
       align-items: center;
       gap: 1rem;
-      margin-bottom: 2rem;
-      border-bottom: 3px solid #c19a3c;
-      padding-bottom: 1rem;
+      margin-bottom: 1rem;
     }
 
-    .header-icon {
-      width: 48px;
-      height: 48px;
-      background: #0f2355;
-      border-radius: 8px;
+    .avatar {
+      width: 52px; height: 52px;
+      background: var(--gold);
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #c19a3c;
-      font-size: 1.4rem;
-      font-weight: 900;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--navy);
       flex-shrink: 0;
+      letter-spacing: -0.5px;
     }
 
-    h1 {
-      font-size: 1.3rem;
-      color: #0f2355;
+    .header-text h1 {
+      font-size: 1.15rem;
       font-weight: 700;
-      line-height: 1.2;
+      color: var(--white);
+      line-height: 1.3;
     }
 
-    h1 span {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 400;
-      color: #666;
+    .header-text p {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.55);
       margin-top: 2px;
+      font-weight: 400;
     }
 
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #0f2355;
-      margin-bottom: 0.3rem;
+    .gold-bar {
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), var(--gold2), transparent);
+      border-radius: 2px;
+      margin-top: 1.2rem;
     }
 
-    input[type="text"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 0.65rem 0.85rem;
-      border: 1.5px solid #d0d5e0;
-      border-radius: 7px;
-      font-size: 0.95rem;
-      font-family: inherit;
-      color: #222;
-      background: #fafbfd;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      outline: none;
+    /* ── BODY ────────────────────────────────────────────── */
+    .body {
+      padding: 1.8rem 2rem 2rem;
     }
 
-    input[type="text"]:focus,
-    select:focus,
-    textarea:focus {
-      border-color: #0f2355;
-      box-shadow: 0 0 0 3px rgba(15,35,85,0.08);
-      background: #fff;
-    }
-
-    textarea {
-      min-height: 160px;
-      resize: vertical;
-    }
-
+    /* ── FORM FIELDS ─────────────────────────────────────── */
     .field {
       margin-bottom: 1.2rem;
     }
 
-    .field-hint {
+    label {
+      display: block;
       font-size: 0.78rem;
-      color: #888;
-      margin-top: 0.3rem;
+      font-weight: 600;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
     }
 
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-size: 0.92rem;
+      font-family: inherit;
+      color: var(--text);
+      background: #fafbfd;
+      transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(13,31,78,0.08);
+      background: var(--white);
+    }
+
+    input[type="text"]::placeholder,
+    textarea::placeholder { color: #b0b8cc; font-style: italic; }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .hint {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+      line-height: 1.5;
+    }
+
+    /* ── CONTRAT PILLS ───────────────────────────────────── */
     .contrat-group {
       display: flex;
-      gap: 0.75rem;
+      gap: 0.55rem;
     }
 
-    .contrat-option {
-      flex: 1;
-    }
-
-    .contrat-option input[type="radio"] {
-      display: none;
-    }
+    .contrat-option input[type="radio"] { display: none; }
 
     .contrat-option label {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.55rem 0.5rem;
-      border: 1.5px solid #d0d5e0;
-      border-radius: 7px;
+      padding: 0.5rem 1.1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
       cursor: pointer;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 600;
-      color: #555;
+      color: var(--muted);
       background: #fafbfd;
       transition: all 0.15s;
-      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
       margin-bottom: 0;
+      white-space: nowrap;
     }
 
     .contrat-option input[type="radio"]:checked + label {
-      border-color: #0f2355;
-      background: #0f2355;
-      color: #fff;
+      border-color: var(--navy);
+      background: var(--navy);
+      color: var(--white);
     }
 
-    .contrat-option label:hover {
-      border-color: #0f2355;
-      color: #0f2355;
+    .contrat-option label:hover:not(.checked) {
+      border-color: var(--navy);
+      color: var(--navy);
     }
 
-    .actions {
-      display: flex;
-      gap: 0.75rem;
-      margin-top: 1.8rem;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      flex: 1;
-      min-width: 120px;
-      padding: 0.75rem 1rem;
-      border: none;
-      border-radius: 7px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s;
-    }
-
-    .btn-primary {
-      background: #0f2355;
-      color: #fff;
-    }
-
-    .btn-primary:hover { background: #1a3570; transform: translateY(-1px); }
-    .btn-primary:active { transform: none; }
-
-    .btn-gold {
-      background: #c19a3c;
-      color: #fff;
-    }
-
-    .btn-gold:hover { background: #d4aa44; transform: translateY(-1px); }
-    .btn-gold:active { transform: none; }
-
-    .btn-outline {
-      background: transparent;
-      color: #0f2355;
-      border: 1.5px solid #0f2355;
-    }
-
-    .btn-outline:hover { background: #f0f2f8; }
-
+    /* ── DIVIDER ─────────────────────────────────────────── */
     .divider {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      margin: 1.5rem 0 0.5rem;
-      color: #bbb;
-      font-size: 0.8rem;
+      margin: 1.4rem 0 1rem;
+      color: #c0c8da;
+      font-size: 0.72rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
-
     .divider::before, .divider::after {
       content: '';
       flex: 1;
       height: 1px;
-      background: #e0e3ea;
+      background: var(--border);
+    }
+
+    /* ── BUTTONS ─────────────────────────────────────────── */
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 0.65rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.82rem 1rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.15s;
+    }
+
+    .btn:hover::after { background: rgba(255,255,255,0.08); }
+    .btn:active { transform: translateY(1px); }
+
+    /* Best — gold gradient, flagship */
+    .btn-best {
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 0.92rem;
+      padding: 0.95rem 1rem;
+      box-shadow: 0 4px 16px rgba(201,168,76,0.35);
+    }
+
+    .btn-best:hover {
+      box-shadow: 0 6px 22px rgba(201,168,76,0.50);
+      transform: translateY(-1px);
+    }
+
+    /* Primary — navy */
+    .btn-primary {
+      background: var(--navy);
+      color: var(--white);
+      box-shadow: 0 3px 12px rgba(13,31,78,0.18);
+    }
+
+    .btn-primary:hover {
+      background: #1a3060;
+      box-shadow: 0 5px 18px rgba(13,31,78,0.28);
+      transform: translateY(-1px);
+    }
+
+    /* Outline */
+    .btn-outline {
+      background: transparent;
+      color: var(--navy);
+      border: 1.5px solid var(--border);
+      box-shadow: none;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--navy);
+      background: #f0f3fb;
+    }
+
+    /* ── BADGE ───────────────────────────────────────────── */
+    .badge {
+      font-size: 0.64rem;
+      font-weight: 700;
+      background: var(--navy);
+      color: var(--gold);
+      padding: 0.15rem 0.45rem;
+      border-radius: 50px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .btn-best .badge {
+      background: var(--navy);
+      color: var(--gold2);
+    }
+
+    /* ── STATUS ──────────────────────────────────────────── */
+    .status-wrap {
+      margin-top: 1.2rem;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .status {
-      text-align: center;
-      font-size: 0.85rem;
-      color: #666;
-      margin-top: 1rem;
-      min-height: 1.2em;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 500;
     }
 
-    .status.loading { color: #0f2355; }
-    .status.success { color: #1a7a4a; }
-    .status.error   { color: #c0392b; }
+    .status.loading {
+      display: flex;
+      background: #eef2ff;
+      color: var(--navy);
+    }
 
+    .status.success {
+      display: flex;
+      background: #f0fdf4;
+      color: var(--green);
+    }
+
+    .status.error {
+      display: flex;
+      background: #fef2f2;
+      color: var(--red);
+    }
+
+    /* ── SPINNER ─────────────────────────────────────────── */
     .spinner {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 14px; height: 14px;
       border: 2px solid currentColor;
       border-top-color: transparent;
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
+      flex-shrink: 0;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── FOOTER INFO ─────────────────────────────────────── */
+    .footer-info {
+      display: flex;
+      gap: 1.2rem;
+      margin-top: 1.6rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .info-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 500px) {
+      .body { padding: 1.4rem 1.2rem 1.6rem; }
+      .header { padding: 1.6rem 1.2rem 1.4rem; }
+      .btn-row { flex-direction: column; }
+    }
   </style>
 </head>
 <body>
   <div class="card">
+
+    <!-- HEADER -->
     <div class="header">
-      <div class="header-icon">A</div>
-      <h1>
-        Generateur de candidature
-        <span>CV + Lettre de motivation personnalises</span>
-      </h1>
-    </div>
-
-    <form id="mainForm">
-      <div class="field">
-        <label for="poste">Intitule du poste *</label>
-        <input type="text" id="poste" name="poste" placeholder="ex: Business Developer, Financial Analyst..." required />
-      </div>
-
-      <div class="field">
-        <label for="entreprise">Entreprise *</label>
-        <input type="text" id="entreprise" name="entreprise" placeholder="ex: LVMH, BNP Paribas..." required />
-      </div>
-
-      <div class="field">
-        <label>Type de contrat *</label>
-        <div class="contrat-group">
-          <div class="contrat-option">
-            <input type="radio" name="contrat" id="cdi" value="cdi" checked />
-            <label for="cdi">CDI</label>
-          </div>
-          <div class="contrat-option">
-            <input type="radio" name="contrat" id="alternance" value="alternance" />
-            <label for="alternance">Alternance</label>
-          </div>
-          <div class="contrat-option">
-            <input type="radio" name="contrat" id="stage" value="stage" />
-            <label for="stage">Stage</label>
-          </div>
+      <div class="header-top">
+        <div class="avatar">A</div>
+        <div class="header-text">
+          <h1>Generateur de candidature</h1>
+          <p>CV + Lettre de motivation personnalises par IA</p>
         </div>
       </div>
+      <div class="gold-bar"></div>
+    </div>
 
-      <div class="field">
-        <label for="description">Description du poste</label>
-        <textarea id="description" name="description"
-          placeholder="Colle ici la fiche de poste ou les missions principales..."></textarea>
-        <p class="field-hint">Plus la description est detaillee, plus le CV et la lettre seront personnalises.</p>
+    <!-- BODY -->
+    <div class="body">
+      <form id="mainForm" novalidate>
+
+        <!-- Poste -->
+        <div class="field">
+          <label for="poste">Intitule du poste</label>
+          <input type="text" id="poste" name="poste"
+            placeholder="ex : Business Developer, Financial Analyst…" required />
+        </div>
+
+        <!-- Entreprise -->
+        <div class="field">
+          <label for="entreprise">Entreprise</label>
+          <input type="text" id="entreprise" name="entreprise"
+            placeholder="ex : LVMH, BNP Paribas, startup SaaS…" required />
+        </div>
+
+        <!-- Contrat -->
+        <div class="field">
+          <label>Type de contrat</label>
+          <div class="contrat-group">
+            <div class="contrat-option">
+              <input type="radio" name="contrat" id="cdi" value="cdi" checked />
+              <label for="cdi">CDI</label>
+            </div>
+            <div class="contrat-option">
+              <input type="radio" name="contrat" id="alternance" value="alternance" />
+              <label for="alternance">Alternance</label>
+            </div>
+            <div class="contrat-option">
+              <input type="radio" name="contrat" id="stage" value="stage" />
+              <label for="stage">Stage</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="field">
+          <label for="description">Description du poste</label>
+          <textarea id="description" name="description"
+            placeholder="Colle ici la fiche de poste ou les missions principales…"></textarea>
+          <p class="hint">Plus la description est detaillee, plus le CV et la lettre seront personnalises et adaptes au secteur.</p>
+        </div>
+
+        <!-- BUTTONS -->
+        <div class="btn-group">
+
+          <!-- Best — flagship -->
+          <button type="button" class="btn btn-best"
+            onclick="submitForm('/best', 'zip')"
+            title="Hook percutant + plan 30 jours + ton adapte — version conversion maximale">
+            ✦ &nbsp;Meilleure candidature &nbsp;<span class="badge">ZIP</span>
+          </button>
+
+          <!-- Standard -->
+          <button type="button" class="btn btn-primary"
+            onclick="submitForm('/generate', 'zip')">
+            Candidature standard &nbsp;<span class="badge" style="background:rgba(255,255,255,0.15);color:#fff">ZIP</span>
+          </button>
+
+          <div class="divider">ou telecharger separement</div>
+
+          <div class="btn-row">
+            <button type="button" class="btn btn-outline"
+              onclick="submitForm('/cv', 'pdf', 'CV')">
+              CV seul &nbsp;(PDF)
+            </button>
+            <button type="button" class="btn btn-outline"
+              onclick="submitForm('/lettre', 'pdf', 'Lettre')">
+              Lettre seule &nbsp;(PDF)
+            </button>
+          </div>
+
+        </div>
+
+        <!-- STATUS -->
+        <div class="status-wrap">
+          <div class="status" id="status"></div>
+        </div>
+
+      </form>
+
+      <!-- FOOTER INFO -->
+      <div class="footer-info">
+        <div class="info-item"><span class="info-dot"></span>CV adapte au secteur</div>
+        <div class="info-item"><span class="info-dot"></span>Lettre avec plan 30j</div>
+        <div class="info-item"><span class="info-dot"></span>Mode urgence auto</div>
       </div>
+    </div>
 
-      <div class="actions">
-        <button type="button" class="btn btn-gold" onclick="submitForm('/best', 'zip', 'BestApplication')"
-          title="Hook le plus percutant + plan 30 jours + phrase humaine — version conversion max">
-          Meilleure candidature (ZIP)
-        </button>
-      </div>
-
-      <div class="actions" style="margin-top: 0.5rem;">
-        <button type="button" class="btn btn-primary" onclick="submitForm('/generate', 'zip')">
-          Candidature standard (ZIP)
-        </button>
-      </div>
-
-      <div class="divider">ou telecharger separement</div>
-
-      <div class="actions" style="margin-top: 0;">
-        <button type="button" class="btn btn-outline" onclick="submitForm('/cv', 'pdf', 'CV')">
-          CV seul (PDF)
-        </button>
-        <button type="button" class="btn btn-outline" onclick="submitForm('/lettre', 'pdf', 'Lettre')">
-          Lettre seule (PDF)
-        </button>
-      </div>
-
-      <p class="status" id="status"></p>
-    </form>
   </div>
 
   <script>
-    // URL de base : fonctionne en local ET en production
     const API_BASE = window.location.origin;
 
-    async function submitForm(action, fileType, label) {
-      const form   = document.getElementById('mainForm');
-      const status = document.getElementById('status');
+    // Disable all buttons while loading
+    function setLoading(on) {
+      document.querySelectorAll('.btn').forEach(b => {
+        b.disabled = on;
+        b.style.opacity = on ? '0.6' : '1';
+        b.style.cursor  = on ? 'not-allowed' : 'pointer';
+      });
+    }
 
-      if (!form.checkValidity()) {
-        form.reportValidity();
+    function showStatus(type, html) {
+      const el = document.getElementById('status');
+      el.className = 'status ' + type;
+      el.innerHTML = html;
+    }
+
+    function hideStatus() {
+      const el = document.getElementById('status');
+      el.className = 'status';
+      el.innerHTML = '';
+    }
+
+    async function submitForm(action, fileType, label) {
+      const form = document.getElementById('mainForm');
+
+      // Manual validation
+      const poste      = form.poste.value.trim();
+      const entreprise = form.entreprise.value.trim();
+      if (!poste || !entreprise) {
+        form.poste.reportValidity();
+        form.entreprise.reportValidity();
         return;
       }
 
-      const formData = new FormData(form);
-      status.className = 'status loading';
-      status.innerHTML = '<span class="spinner"></span> Generation en cours...';
+      setLoading(true);
+      showStatus('loading', '<span class="spinner"></span>&nbsp;Generation en cours…');
 
       try {
+        const formData = new FormData(form);
         const response = await fetch(`${API_BASE}${action}`, {
           method: 'POST',
           body: formData,
@@ -338,34 +570,33 @@
         if (!response.ok) {
           let detail = '';
           try { const j = await response.json(); detail = j.detail || ''; } catch (_) {}
-          throw new Error(`Erreur serveur (${response.status})${detail ? ' : ' + detail : ''}`);
+          throw new Error(`Erreur ${response.status}${detail ? ' : ' + detail : ''}`);
         }
 
         const blob = await response.blob();
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
 
-        const entreprise = (formData.get('entreprise') || 'entreprise').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-        const poste      = (formData.get('poste') || 'poste').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-        const ext        = fileType === 'zip' ? 'zip' : 'pdf';
-        const prefix     = action === '/best' ? 'BestApplication'
-                         : fileType === 'zip' ? 'Candidature'
-                         : (label || 'Document');
-        a.download = `${prefix}_${entreprise}.${ext}`;
+        const eSlug = (formData.get('entreprise') || 'entreprise').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+        const ext   = fileType === 'zip' ? 'zip' : 'pdf';
+        const prefix = action === '/best'      ? 'BestApplication'
+                     : fileType === 'zip'      ? 'Candidature'
+                     : (label || 'Document');
+        a.download = `${prefix}_${eSlug}.${ext}`;
         a.href = url;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        status.className = 'status success';
-        status.textContent = 'Telechargement lance !';
-        setTimeout(() => { status.textContent = ''; status.className = 'status'; }, 3000);
+        showStatus('success', '✓&nbsp; Telechargement lance !');
+        setTimeout(hideStatus, 3500);
 
       } catch (err) {
-        status.className = 'status error';
-        status.textContent = 'Erreur : ' + err.message;
+        showStatus('error', '✕&nbsp; ' + err.message);
         console.error('[CV Generator]', err);
+      } finally {
+        setLoading(false);
       }
     }
   </script>
