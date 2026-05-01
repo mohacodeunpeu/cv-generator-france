@@ -107,6 +107,45 @@ async def lettre_only(
     )
 
 
+@app.post("/best")
+async def best_application(
+    poste:       str = Form(...),
+    entreprise:  str = Form(...),
+    description: str = Form(default=""),
+    contrat:     str = Form(default="cdi"),
+):
+    """
+    Mode conversion maximale :
+    - CV avec suffixe sectoriel si detecte
+    - Lettre : hook le plus agressif + plan 30 jours + phrase humaine
+    """
+    offer = {
+        "titre":       poste,
+        "entreprise":  entreprise,
+        "description": description,
+    }
+
+    cv_bytes     = cv_gen_france.generate(offer, contrat)
+    letter_text  = cover_letter_france.generate_best(offer, contrat)
+    letter_bytes = cover_letter_france.to_pdf(letter_text, offer)
+
+    slug_e       = _slug(entreprise)
+    slug_p       = _slug(poste)
+    zip_filename = f"BestApplication_{slug_e}.zip"
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(f"CV_{slug_e}_{slug_p}.pdf", cv_bytes)
+        zf.writestr(f"Lettre_BEST_{slug_e}_{slug_p}.pdf", letter_bytes)
+    buf.seek(0)
+
+    return Response(
+        content=buf.read(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

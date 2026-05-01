@@ -55,6 +55,70 @@ def _build_tagline(role: str, contrat: str) -> str:
     return f"{base}  |  {dispo}"
 
 
+# ─── Detection type d'entreprise ──────────────────────────────────────────────
+
+_BIG_GROUPS = [
+    "lvmh", "loreal", "l'oreal", "sanofi", "bnp", "axa", "societe generale",
+    "total", "michelin", "renault", "danone", "hermes", "chanel", "kering",
+    "air france", "edf", "engie", "orange", "capgemini", "deloitte", "pwc",
+    "kpmg", "mckinsey", "bain", "bcg", "accenture", "hsbc", "natixis",
+    "carrefour", "decathlon",
+]
+
+_STARTUP_KW = ["startup", "scale-up", "scaleup", "series", "saas", "fintech",
+               "proptech", "agile", "growth", "product-led", "levee de fonds"]
+
+
+def detect_company_type(entreprise: str, description: str = "") -> str:
+    e = (entreprise or "").lower()
+    d = (description or "").lower()
+    if any(b in e for b in _BIG_GROUPS):
+        return "grand_groupe"
+    if any(s in f"{e} {d}" for s in _STARTUP_KW):
+        return "startup"
+    return "pme"
+
+
+# ─── Vocabulaire sectoriel pour le resume ────────────────────────────────────
+
+_SECTOR_VOCAB = {
+    "banque":    ["compliance", "risk", "P&L", "front office", "client institutionnel"],
+    "conseil":   ["deliverable", "business case", "engagement client", "recommandations"],
+    "luxe":      ["image de marque", "clientele premium", "exclusivite", "savoir-faire"],
+    "startup":   ["croissance rapide", "impact direct", "culture data", "autonomie"],
+    "finance":   ["analyse credit", "due diligence", "modelisation", "cash flow"],
+}
+
+
+def _detect_sector_from_desc(description: str) -> str:
+    d = (description or "").lower()
+    if any(k in d for k in ["banque", "bancaire", "bank", "credit", "pret"]):
+        return "banque"
+    if any(k in d for k in ["cabinet", "conseil", "consulting", "audit", "advisory"]):
+        return "conseil"
+    if any(k in d for k in ["luxe", "premium", "maison", "haute couture", "joaillerie"]):
+        return "luxe"
+    if any(k in d for k in ["startup", "scale", "saas", "fintech", "growth"]):
+        return "startup"
+    if any(k in d for k in ["finance", "financier", "investissement", "gestion d'actifs"]):
+        return "finance"
+    return ""
+
+
+def _sector_suffix(description: str) -> str:
+    """Phrase additionnelle adaptee au secteur detecte."""
+    sector = _detect_sector_from_desc(description)
+    if sector == "banque":
+        return " Sensibilise a la culture risk/compliance et a la rigueur propre aux environnements bancaires."
+    if sector == "conseil":
+        return " A l'aise avec la culture deliverable et la pression client propres au conseil."
+    if sector == "luxe":
+        return " Comprend les codes du premium : precision, coherence de marque, clientele exigeante (Printemps Haussmann)."
+    if sector == "startup":
+        return " Recherche un environnement ou l'impact est visible rapidement et ou l'autonomie est un atout."
+    return ""
+
+
 # ─── Resumes par role ─────────────────────────────────────────────────────────
 
 SUMMARY_BASE = {
@@ -631,8 +695,14 @@ def generate(offer: dict, contrat: str = "cdi") -> bytes:
             except Exception:
                 pass
 
+    # Resume adapte : base + suffixe sectoriel si detecte
+    summary = SUMMARY_BASE.get(role, SUMMARY_BASE["generic"])
+    sector_sfx = _sector_suffix(description)
+    if sector_sfx:
+        summary = summary.rstrip(".") + "." + sector_sfx
+
     pdf.section("Profil")
-    pdf.paragraph(SUMMARY_BASE.get(role, SUMMARY_BASE["generic"]), font_size=8.7)
+    pdf.paragraph(summary, font_size=8.7)
 
     pdf.section("Experience professionnelle")
     variant = BULLET_VARIANT.get(role, "default")

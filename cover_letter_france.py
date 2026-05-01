@@ -465,6 +465,116 @@ def _bridge(offer: dict, role: str) -> str:
     return ""
 
 
+# ─── Type d'entreprise ───────────────────────────────────────────────────────
+
+_BIG_GROUPS = [
+    "lvmh", "l'oreal", "loreal", "sanofi", "bnp paribas", "bnp", "axa",
+    "societe generale", "credit agricole", "total energies", "totalenergies",
+    "michelin", "renault", "stellantis", "danone", "hermes", "chanel", "kering",
+    "dior", "air france", "edf", "engie", "orange", "air liquide", "saint-gobain",
+    "schneider", "legrand", "thales", "safran", "airbus", "bouygues", "vinci",
+    "capgemini", "sopra", "deloitte", "pwc", "kpmg", "mckinsey", "bain", "bcg",
+    "roland berger", "accenture", "hsbc", "societe generale", "natixis",
+    "carrefour", "leclerc", "decathlon", "leroy merlin", "fnac",
+]
+
+_STARTUP_KEYWORDS = [
+    "startup", "scale-up", "scaleup", "series a", "series b", "seed",
+    "levee de fonds", "fintech", "proptech", "saas", "growth hacking",
+    "agile", "squad", "tribe", "product-led",
+]
+
+
+def detect_company_type(entreprise: str, description: str = "") -> str:
+    """Retourne 'grand_groupe' | 'startup' | 'pme'."""
+    e_low = (entreprise or "").lower()
+    d_low = (description or "").lower()
+    if any(b in e_low for b in _BIG_GROUPS):
+        return "grand_groupe"
+    combined = f"{e_low} {d_low}"
+    if any(s in combined for s in _STARTUP_KEYWORDS):
+        return "startup"
+    return "pme"
+
+
+# ─── Plan 30 jours ────────────────────────────────────────────────────────────
+
+def _thirty_day_plan(role: str, company_type: str) -> str:
+    """Ce que je vais concretement accomplir dans les 30 premiers jours."""
+    _plans = {
+        "business_dev": (
+            "Dans les 30 premiers jours, mon objectif est precis : "
+            "cartographier le marche cible, qualifier 20+ prospects dans le pipeline "
+            "et identifier les 3 profils de clients a plus fort potentiel. "
+            "Je n'attends pas qu'on me dise comment — je structure et j'execute."
+        ),
+        "key_account": (
+            "Dans les 30 premiers jours : audit complet du portefeuille existant, "
+            "identification des comptes a potentiel sous-exploite, et premier "
+            "business review avec les 5 comptes prioritaires."
+        ),
+        "financial_analyst": (
+            "Dans les 30 premiers jours : maitrise complete de vos outils et process, "
+            "production d'un premier reporting actionnable, et identification "
+            "d'au moins un ecart ou une optimisation dans les chiffres actuels."
+        ),
+        "product_marketing": (
+            "Dans les 30 premiers jours : immersion complete dans votre roadmap "
+            "produit, analyse de 3 segments clients et premier brief de campagne "
+            "teste avec les equipes terrain."
+        ),
+        "digital_marketing": (
+            "Dans les 30 premiers jours : audit de vos performances digitales "
+            "actuelles, identification des 2-3 leviers a fort ROI, et premier "
+            "A/B test lance sur le canal prioritaire."
+        ),
+        "data_analyst": (
+            "Dans les 30 premiers jours : comprehension complete de votre "
+            "architecture de donnees, production d'un premier dashboard actionnable "
+            "et identification d'un insight non-exploite dans vos datasets actuels."
+        ),
+        "purchasing": (
+            "Dans les 30 premiers jours : audit du panel fournisseurs existant, "
+            "identification des categories a potentiel de renegalisation, et "
+            "premier benchmark prix sur la categorie prioritaire."
+        ),
+    }
+    plan = _plans.get(role, (
+        "Dans les 30 premiers jours : integration complete, maitrise de vos outils "
+        "et premier deliverable concret. Je suis operationnel sans periode de chauffe."
+    ))
+
+    # Adapter le ton selon le type d'entreprise
+    if company_type == "startup":
+        plan = plan.replace(
+            "Dans les 30 premiers jours",
+            "Ce qui me motive dans un environnement comme le votre : l'impact "
+            "est mesurable rapidement. Dans les 30 premiers jours"
+        )
+    return plan
+
+
+# ─── Phrase humaine par type d'entreprise ─────────────────────────────────────
+
+def _human_phrase(company_type: str, role: str) -> str:
+    if company_type == "grand_groupe":
+        return (
+            "Ce qui m'attire dans votre structure, c'est precisement la combinaison "
+            "de ressources et d'exigence : les grands groupes forment des gens qui "
+            "savent executer a un niveau que peu d'environnements permettent d'atteindre."
+        )
+    if company_type == "startup":
+        return (
+            "J'ai une preference marquee pour les environnements ou les decisions "
+            "se prennent vite et ou l'impact est visible rapidement. C'est ce que "
+            "votre structure represente pour moi."
+        )
+    return (
+        "Ce qui m'attire dans votre structure, c'est la proximite avec les "
+        "decisions et la capacite de voir directement l'impact de son travail."
+    )
+
+
 # ─── Cloture par type de contrat ──────────────────────────────────────────────
 
 def _closing(contrat: str) -> str:
@@ -506,6 +616,108 @@ def generate(offer: dict, contrat: str = "cdi") -> str:
         paras.append(bridge)
     paras.append(pitch)
     paras.append(deliver)
+    paras.append(closing)
+    paras.append(
+        f"Cordialement,\n{PROFILE['name']}\n{PROFILE['phone']} | {PROFILE['email']}"
+    )
+
+    return "\n\n".join(paras)
+
+
+# ─── Mode best (conversion maximale) ────────────────────────────────────────
+
+def generate_best(offer: dict, contrat: str = "cdi") -> str:
+    """
+    Version maximale : hook agressif (idx=0 = le plus direct pour le role),
+    bridge specifique, pitch complet, plan 30 jours, phrase humaine, cloture forte.
+    """
+    titre       = offer.get("titre", "le poste propose")
+    entreprise  = offer.get("entreprise", "votre entreprise")
+    description = offer.get("description", "")
+    role        = detect_role(titre, description)
+    ctype       = detect_company_type(entreprise, description)
+
+    # Hook le plus direct : forcer idx=0 (premier variant = le plus percutant)
+    best_offer = dict(offer)
+    # Modifier le hash pour toujours tomber sur idx=0
+    best_offer["_best_mode"] = "force_idx_0"
+
+    class _ForceIdx0:
+        pass
+
+    # Bypass rotation — utiliser hook idx 0 directement
+    poste = titre.strip()
+    _C = {
+        "cdi": "rejoindre votre equipe en CDI",
+        "alternance": "rejoindre votre equipe en alternance",
+        "stage": "effectuer un stage au sein de votre equipe",
+    }.get(contrat, "rejoindre votre equipe")
+
+    # Hook agressif par role — version la plus percutante
+    _BEST_HOOKS = {
+        "business_dev": (
+            f"Actuellement Business Developer B2B chez Agence 113 / DEFI GROUPE, "
+            f"ou je pilote un portefeuille generant 360 KEUR/mois, et diplome en "
+            f"cours de MBA Manager de Business Unit a PSB Paris (soutenance juin "
+            f"2026), je souhaite mettre mon experience commerciale au service de "
+            f"votre equipe sur le poste de {poste} chez {entreprise}."
+        ),
+        "key_account": (
+            f"Deux ans a piloter 30+ comptes B2B en autonomie complete — c'est ce "
+            f"que j'apporte au poste de {poste} chez {entreprise}. Business "
+            f"Developer chez Agence 113 / DEFI GROUPE (360 KEUR/mois), certifie "
+            f"Negotiation Business School (2025), MBA Manager de Business Unit en "
+            f"cours (PSB Paris, juin 2026)."
+        ),
+        "financial_analyst": (
+            f"Deux ans a piloter une activite a forts enjeux chiffres m'ont appris "
+            f"a lire un business dans ses donnees, pas seulement dans ses resultats. "
+            f"C'est cette lecture que je veux developper en rejoignant {entreprise} "
+            f"sur le poste de {poste}. MBA Manager de Business Unit (PSB Paris, "
+            f"juin 2026), module controle de gestion."
+        ),
+        "product_marketing": (
+            f"Chaque projet digital que j'ai mene — de Lisbonne a Paris — a confirme "
+            f"une chose : je m'epanouis la ou marketing, produit et donnees se "
+            f"croisent. Le poste de {poste} chez {entreprise} est exactement cet "
+            f"environnement. MBA Manager de Business Unit (PSB Paris, juin 2026), "
+            f"disponible pour {_C}."
+        ),
+        "digital_marketing": (
+            f"Le marketing qui laisse des traces, c'est celui qui se mesure. "
+            f"C'est la culture que j'ai construite chez GROW 360 (Paris) et en "
+            f"projets clients depuis Lisbonne. Le poste de {poste} chez {entreprise} "
+            f"est le terrain ideal pour mettre cette discipline au service de votre equipe."
+        ),
+        "purchasing": (
+            f"Maitriser une negociation, c'est comprendre les contraintes de l'autre "
+            f"partie avant de defendre les siennes. C'est l'approche que j'ai "
+            f"construite en B2B (Negotiation Business School, 2025) et que je veux "
+            f"transposer aux achats en rejoignant {entreprise} sur le poste de {poste}."
+        ),
+    }
+    hook = _BEST_HOOKS.get(
+        role,
+        (
+            f"Sur le poste de {poste} chez {entreprise}, mon objectif est clair : "
+            f"etre operationnel des la premiere semaine et delivrer des resultats "
+            f"mesurables. Business Developer B2B (360 KEUR/mois) et MBA Manager "
+            f"de Business Unit en cours (PSB Paris, juin 2026)."
+        )
+    )
+
+    bridge   = _bridge(offer, role)
+    pitch    = _pitch(role)
+    plan     = _thirty_day_plan(role, ctype)
+    human    = _human_phrase(ctype, role)
+    closing  = _closing(contrat)
+
+    paras = ["Madame, Monsieur,", hook]
+    if bridge:
+        paras.append(bridge)
+    paras.append(pitch)
+    paras.append(plan)
+    paras.append(human)
     paras.append(closing)
     paras.append(
         f"Cordialement,\n{PROFILE['name']}\n{PROFILE['phone']} | {PROFILE['email']}"
