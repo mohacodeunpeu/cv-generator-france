@@ -55,6 +55,10 @@ EXPERIENCES = [
                 "Coordination POEI France Travail : 15 integrations geries en parallele.",
                 "Pilotage KPIs RH : taux de placement et reporting mensuel management.",
             ],
+            "urgent": [
+                "Coordination equipes et suivi operationnel au quotidien.",
+                "Relation client et gestion des imprevus avec reactivite.",
+            ],
         },
     },
     {
@@ -174,8 +178,18 @@ def _safe(text: str) -> str:
     if not text:
         return ""
     for src, dst in {
-        "—":"-","–":"-","'":"'","'":"'","'":"'",""":'"',""":'"',
-        "…":"...","•":"-","→":"->","€":"EUR","œ":"oe","Œ":"OE","æ":"ae",
+        "—":"-", "–":"-",           # em/en dash
+        "‘":"'", "’":"'", "'":"'",   # smart quotes
+        "“":'"', "”":'"',
+        "…":"...",                         # ellipsis
+        "•":"-", "▸":"-",            # bullets
+        "→":"->",                          # arrow
+        "·":" | ",                        # middle dot
+        "€":"EUR",
+        "œ":"oe", "Œ":"OE",
+        "æ":"ae", "Æ":"AE",
+        " ":" ",                          # non-breaking space
+        "​":"",                           # zero-width space
     }.items():
         text = text.replace(src, dst)
     return text
@@ -207,10 +221,11 @@ def _make_qr_png(url: str) -> str:
 # ─── PDF class ────────────────────────────────────────────────────────────────
 
 class _CVPdf(FPDF):
-    NAVY  = (15, 35, 85)
-    GOLD  = (193, 154, 60)
-    GREY  = (60, 60, 65)
+    NAVY   = (15, 35, 85)
+    GOLD   = (193, 154, 60)
+    GREY   = (60, 60, 65)
     DARK_X = (90, 90, 95)
+    BG_SEC = (238, 242, 250)
 
     tagline = ""
 
@@ -246,22 +261,24 @@ class _CVPdf(FPDF):
                   align="C")
 
     def section(self, title: str):
-        self.ln(0.8)
-        self.set_x(14)
-        self.set_font("Helvetica", "B", 10.5)
+        self.ln(2)
+        y = self.get_y()
+        self.set_fill_color(*self.BG_SEC)
+        self.rect(0, y, 210, 6.5, style="F")
+        self.set_xy(14, y)
+        self.set_font("Helvetica", "B", 10)
         self.set_text_color(*self.NAVY)
-        self.cell(0, 5.5, _safe(title.upper()), ln=1)
-        x, y = 14, self.get_y()
+        self.cell(0, 6.5, _safe(title.upper()), ln=1)
         self.set_fill_color(*self.GOLD)
-        self.rect(x, y - 0.4, 20, 0.6, style="F")
-        self.set_y(y + 0.4)
+        self.rect(0, self.get_y(), 210, 0.5, style="F")
+        self.ln(2.5)
 
     def paragraph(self, text: str, font_size: float = 8.8):
         self.set_x(14)
         self.set_font("Helvetica", "", font_size)
         self.set_text_color(*self.GREY)
-        self.multi_cell(182, 4.0, _safe(text))
-        self.ln(0.3)
+        self.multi_cell(182, 4.2, _safe(text))
+        self.ln(0.5)
 
     def experience_item(self, title: str, period: str, sub: str, bullets: list):
         self.set_x(14)
@@ -275,77 +292,92 @@ class _CVPdf(FPDF):
         self.set_font("Helvetica", "I", 8.5)
         self.set_text_color(*self.GREY)
         self.cell(0, 3.8, _safe(sub), ln=1)
+        self.ln(0.5)
         self.set_font("Helvetica", "", 8.7)
         self.set_text_color(*self.GREY)
         for b in bullets:
-            self.set_x(16)
-            self.cell(3, 3.8, "-")
-            self.multi_cell(178, 3.8, _safe(b))
-        self.ln(0.6)
+            cy = self.get_y()
+            self.set_fill_color(*self.GOLD)
+            self.rect(16.5, cy + 1.4, 1.8, 1.8, style="F")
+            self.set_xy(20, cy)
+            self.multi_cell(175, 4.0, _safe(b))
+        self.ln(1.5)
 
     def education_item(self, title: str, school: str, period: str, note: str):
         self.set_x(14)
         self.set_font("Helvetica", "B", 9)
         self.set_text_color(*self.NAVY)
-        self.cell(140, 4.0, _safe(title), ln=0)
+        self.cell(140, 4.2, _safe(title), ln=0)
         self.set_font("Helvetica", "", 8)
         self.set_text_color(*self.DARK_X)
-        self.cell(0, 4.0, _safe(period), align="R", ln=1)
+        self.cell(0, 4.2, _safe(period), align="R", ln=1)
         self.set_x(14)
         self.set_font("Helvetica", "", 8.5)
         self.set_text_color(*self.GREY)
-        self.cell(0, 3.7, _safe(school + (f"  -  {note}" if note else "")), ln=1)
+        self.cell(0, 3.8, _safe(school + (f"  -  {note}" if note else "")), ln=1)
+        self.ln(0.8)
 
     def two_columns(self, skills: list, languages: list):
-        start_y = self.get_y()
-        col_w   = 86
+        start_y = self.get_y() + 2
 
-        # Left: skills
-        self.set_xy(14, start_y)
-        self.set_font("Helvetica", "B", 10.5)
+        # Section header row: both column headers at same Y
+        y = start_y
+        self.set_fill_color(*self.BG_SEC)
+        self.rect(0, y, 103, 6.5, style="F")
+        self.set_xy(14, y)
+        self.set_font("Helvetica", "B", 10)
         self.set_text_color(*self.NAVY)
-        self.cell(col_w, 5.5, "COMPETENCES CLES", ln=2)
-        gy = self.get_y()
+        self.cell(89, 6.5, "COMPETENCES CLES", ln=0)
+
+        self.set_fill_color(*self.BG_SEC)
+        self.rect(107, y, 103, 6.5, style="F")
+        self.set_xy(108, y)
+        self.cell(94, 6.5, "LANGUES", ln=1)
+
         self.set_fill_color(*self.GOLD)
-        self.rect(14, gy - 0.4, 20, 0.6, style="F")
-        self.set_y(gy + 0.4)
+        self.rect(0, self.get_y(), 210, 0.5, style="F")
+        self.ln(2.5)
+
+        content_y = self.get_y()
+
+        # Left: skills with gold square bullets
+        self.set_y(content_y)
         self.set_font("Helvetica", "", 8.5)
         self.set_text_color(*self.GREY)
         for s in skills:
-            self.set_x(16)
-            self.cell(3, 3.8, "-")
-            self.multi_cell(col_w - 5, 3.8, _safe(s))
+            cy = self.get_y()
+            self.set_fill_color(*self.GOLD)
+            self.rect(16.5, cy + 1.4, 1.8, 1.8, style="F")
+            self.set_xy(20, cy)
+            self.multi_cell(80, 4.0, _safe(s))
         skills_end_y = self.get_y()
 
         # Right: languages
-        self.set_xy(108, start_y)
-        self.set_font("Helvetica", "B", 10.5)
-        self.set_text_color(*self.NAVY)
-        self.cell(col_w, 5.5, "LANGUES", ln=2)
-        ly = self.get_y()
-        self.set_fill_color(*self.GOLD)
-        self.rect(108, ly - 0.4, 20, 0.6, style="F")
-        self.set_y(ly + 0.4)
+        self.set_y(content_y)
         for lang, level in languages:
             self.set_x(108)
             self.set_font("Helvetica", "B", 8.5)
             self.set_text_color(*self.NAVY)
-            self.cell(28, 4.0, _safe(lang), ln=0)
+            self.cell(28, 4.2, _safe(lang), ln=0)
             self.set_font("Helvetica", "", 8.5)
             self.set_text_color(*self.GREY)
-            self.cell(0, 4.0, _safe(level), ln=1)
+            self.cell(0, 4.2, _safe(level), ln=1)
         langs_end_y = self.get_y()
-        self.set_y(max(skills_end_y, langs_end_y) + 1.5)
+
+        self.set_y(max(skills_end_y, langs_end_y) + 2)
 
     def tools_strip(self, contrat: str = "cdi", extra: list = None):
-        self.set_x(14)
-        self.set_font("Helvetica", "B", 10.5)
-        self.set_text_color(*self.NAVY)
-        self.cell(0, 5.5, "OUTILS & DISPONIBILITE", ln=1)
+        self.ln(1)
         y = self.get_y()
+        self.set_fill_color(*self.BG_SEC)
+        self.rect(0, y, 210, 6.5, style="F")
+        self.set_xy(14, y)
+        self.set_font("Helvetica", "B", 10)
+        self.set_text_color(*self.NAVY)
+        self.cell(0, 6.5, "OUTILS & DISPONIBILITE", ln=1)
         self.set_fill_color(*self.GOLD)
-        self.rect(14, y - 0.4, 20, 0.6, style="F")
-        self.set_y(y + 0.4)
+        self.rect(0, self.get_y(), 210, 0.5, style="F")
+        self.ln(2.5)
         base = (
             "CRM : HubSpot, Sales Navigator  |  Marketing : Canva, Notion, Wix  |  "
             "Bureautique : Excel avance, Google Suite  |  "
@@ -357,7 +389,7 @@ class _CVPdf(FPDF):
         self.set_x(14)
         self.set_font("Helvetica", "", 8.3)
         self.set_text_color(*self.GREY)
-        self.multi_cell(182, 3.8, _safe(base))
+        self.multi_cell(182, 4.0, _safe(base))
 
 
 # ─── Fonctions publiques (utilisees par cover_letter_france) ──────────────────
@@ -368,7 +400,7 @@ def detect_role(titre: str, description: str = "") -> str:
 
 
 def is_simple_job(titre: str) -> bool:
-    return any(kw in (titre or "").lower() for kw in _p.SIMPLE_JOB_KEYWORDS)
+    return detect_mode(titre) == "urgent"
 
 
 # ─── Point d'entree ───────────────────────────────────────────────────────────
@@ -438,7 +470,11 @@ def generate(offer: dict, contrat: str = "cdi") -> bytes:
         if not exp:
             continue
         n = bper[pos] if pos < len(bper) else 1
-        bullets_src = exp["bullets"].get(variant) or exp["bullets"]["default"]
+        # urgent mode: use "urgent" variant if available, else default
+        v = ("urgent" if simple else variant)
+        bullets_src = (exp["bullets"].get(v)
+                       or exp["bullets"].get(variant)
+                       or exp["bullets"]["default"])
         sub = f"{exp['company']}   |   {exp['city']}"
         pdf.experience_item(exp["title"], exp["period"], sub, bullets_src[:n])
 

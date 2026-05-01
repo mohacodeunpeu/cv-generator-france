@@ -44,36 +44,34 @@ _MODES = {
         },
         "letter": {
             "hooks": [
-                "{poste} chez {entreprise} correspond exactement au terrain sur lequel "
-                "je travaille depuis deux ans. Business Developer B2B chez Agence 113 / "
-                "DEFI GROUPE, je pilote un portefeuille a 360 KEUR/mois en autonomie "
-                "complete, de la prospection au closing. MBA Manager de Business Unit "
-                "(PSB Paris, juin 2026), disponible {dispo}.",
+                "Le poste de {poste} chez {entreprise} correspond directement "
+                "au terrain sur lequel je travaille depuis deux ans. Business Developer "
+                "B2B chez Agence 113 / DEFI GROUPE, je pilote un portefeuille a "
+                "360 KEUR/mois en autonomie complete, du sourcing au closing. "
+                "MBA Manager de Business Unit (PSB Paris, juin 2026), disponible {dispo}.",
 
-                "Deux ans a piloter 360 KEUR/mois en autonomie complete. "
-                "C'est ce que j'apporte au poste de {poste} chez {entreprise}. "
-                "Business Developer B2B chez Agence 113 / DEFI GROUPE, certifie "
-                "Negotiation Business School (2025), MBA Manager de Business Unit "
-                "en cours (PSB Paris, juin 2026).",
+                "360 KEUR/mois en autonomie complete — c'est le niveau que j'apporte "
+                "au poste de {poste} chez {entreprise}. Business Developer B2B depuis "
+                "deux ans chez Agence 113 / DEFI GROUPE, certifie Negotiation Business "
+                "School (2025), MBA Manager de Business Unit en cours (PSB Paris, juin 2026).",
 
-                "Sur le poste de {poste} chez {entreprise}, mon objectif est precis : "
-                "operationnel des la premiere semaine, premiers resultats dans le mois. "
-                "Business Developer a 360 KEUR/mois, 30+ leads qualifies/mois, "
-                "cycle complet maitrise. MBA en cours (PSB Paris, juin 2026).",
+                "Sur le poste de {poste} chez {entreprise}, mon objectif est simple : "
+                "operationnel des la premiere semaine, premiers resultats concrets dans "
+                "le mois. Cycle commercial complet maitrise (30+ leads/mois, 360 KEUR/mois "
+                "pilotes), MBA en cours (PSB Paris, juin 2026).",
             ],
             "pitch": (
-                "Mon experience couvre tout le cycle commercial : sourcing, "
-                "qualification, presentation, negociation et closing sur cibles B2B "
-                "exigeantes. Je maitrise HubSpot CRM au quotidien (120+ comptes actifs) "
-                "et LinkedIn Sales Navigator pour la prospection ciblee. "
-                "Certifie Negotiation Business School (2025), multilingue "
-                "(FR/AR natifs, EN courant), je delivre en autonomie sans encadrement."
+                "Je couvre tout le cycle commercial de bout en bout : sourcing et "
+                "qualification de leads, presentation, negociation et closing sur "
+                "cibles B2B. HubSpot CRM (120+ comptes actifs) et LinkedIn Sales "
+                "Navigator au quotidien. Certifie Negotiation Business School (2025), "
+                "multilingue (FR/AR natifs, EN courant) — je livre en autonomie, "
+                "sans avoir besoin d'etre encadre."
             ),
             "plan_30j": (
-                "Dans les 30 premiers jours : cartographier le marche cible, "
-                "qualifier 20+ prospects dans le pipeline et identifier les 3 profils "
-                "a fort potentiel. Je n'attends pas qu'on me guide — je structure "
-                "et j'execute."
+                "Dans les 30 premiers jours : cartographier les cibles prioritaires, "
+                "qualifier 20+ prospects et alimenter le pipeline en autonomie. "
+                "Je n'attends pas les instructions pour commencer — je structure et j'execute."
             ),
             "human": {
                 "grand_groupe": (
@@ -220,8 +218,9 @@ _MODES = {
 
                 "Je vous adresse ma candidature pour le poste de {poste} chez "
                 "{entreprise}. Recruitment Officer operationnel (300+ candidats / "
-                "session, coordination POEI) et Business Developer B2B, je combines "
-                "la rigueur process RH et le sens business — une combinaison rare.",
+                "session, coordination POEI) et Business Developer B2B, je combine "
+                "rigueur process RH et lecture business — une combinaison rare "
+                "dans les profils RH.",
             ],
             "pitch": (
                 "J'ai pilote de A a Z des sessions de recrutement massives : "
@@ -337,19 +336,19 @@ _MODES = {
 
     # ── 5. URGENT ────────────────────────────────────────────────────────────
     "urgent": {
-        "detect_kw": [],  # detecte via SIMPLE_JOB_KEYWORDS
+        "detect_kw": [],  # detecte via SIMPLE_JOB_KEYWORDS apres scoring
         "cv": {
             "tagline": "Profil operationnel & relation client  |  Disponible immediatement",
             "summary": None,  # genere dynamiquement dans cv_gen_france
-            "exp_order":   ["printemps", "defi", "grow", "wix"],
+            "exp_order":   ["printemps", "defi"],
             "exp_variant": "default",
-            "bullets_per": [2, 2, 1, 1],
+            "bullets_per": [2, 2],
             "skills": [
-                "Vente et conseil client (B2B et retail premium)",
-                "Relation client et fidelisation",
-                "Travail en equipe et autonomie terrain",
+                "Vente et relation client (Printemps Haussmann, retail premium)",
+                "A l'aise en equipe et autonomie terrain",
+                "Multilingue : FR / AR natifs, EN courant, ES intermediaire",
                 "Outils : Excel, Canva, Google Suite",
-                "Multilinguisme : FR / AR / EN / ES",
+                "Disponible immediatement — Paris et IDF — Permis B",
             ],
         },
         "letter": {
@@ -400,9 +399,7 @@ def detect_mode(titre: str, description: str = "") -> str:
     t    = (titre or "").lower()
     full = f"{t} {(description or '').lower()}"
 
-    if any(kw in t for kw in _p.SIMPLE_JOB_KEYWORDS):
-        return "urgent"
-
+    # Score all non-urgent modes first — a real match always wins over urgent
     scores: dict[str, int] = {m: 0 for m in _MODES if m != "urgent"}
     for mode_id, cfg in _MODES.items():
         if mode_id == "urgent":
@@ -414,7 +411,14 @@ def detect_mode(titre: str, description: str = "") -> str:
                 scores[mode_id] += 1
 
     best = max(scores, key=scores.get)
-    return best if scores[best] > 0 else "sales"
+    if scores[best] > 0:
+        return best
+
+    # No mode matched → urgent only if genuine simple-job keyword in title
+    if any(kw in t for kw in _p.SIMPLE_JOB_KEYWORDS):
+        return "urgent"
+
+    return "sales"
 
 
 def get_mode_cv(titre: str, description: str = "") -> dict:
@@ -518,4 +522,4 @@ def ats_inject(summary: str, mode_id: str, description: str) -> str:
     found = [label for kw, label in pool.items() if kw in desc][:3]
     if not found:
         return summary
-    return summary.rstrip(".") + ". Competences matchees : " + " · ".join(found) + "."
+    return summary.rstrip(".") + ". Mots-cles detectes : " + " | ".join(found) + "."

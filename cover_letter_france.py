@@ -70,20 +70,20 @@ def _generate_urgent(titre: str, entreprise: str, contrat: str) -> str:
     else:
         hook = (
             f"Je vous adresse ma candidature pour le poste de {titre} chez {entreprise}. "
-            f"Avec une experience en vente conseil (Printemps Haussmann) et relation "
-            f"client, je suis operationnel immediatement et motive pour integrer "
-            f"votre equipe."
+            f"Experience en vente conseil et relation client (Printemps Haussmann), "
+            f"je suis disponible immediatement et motive pour rejoindre votre equipe."
         )
         corps = (
-            "Ponctuel, serieux, a l'aise dans les environnements dynamiques. "
-            "Je m'adapte vite et livre ce qu'on attend de moi."
+            "Je suis ponctuel, serieux, et je m'adapte vite a un nouvel environnement. "
+            "Le rythme dynamique ne me fait pas peur — c'est justement le contexte "
+            "dans lequel je donne le meilleur de moi-meme."
         )
 
     closing_map = {
-        "stage":      "Ce stage est une opportunite de contribuer concretement. Disponible des que possible.",
-        "alternance": "Cette alternance m'interesse pour progresser tout en contribuant.",
+        "stage":      "Ce stage serait pour moi l'occasion de contribuer concretement et d'apprendre sur le terrain. Disponible des que possible.",
+        "alternance": "Cette alternance m'interesse autant pour progresser que pour apporter quelque chose de concret des le premier jour.",
     }
-    closing = closing_map.get(contrat, "Disponible immediatement, serais ravi d'echanger avec vous.")
+    closing = closing_map.get(contrat, "Je suis disponible immediatement et serais heureux d'echanger avec vous a votre convenance.")
 
     return "\n\n".join([
         "Madame, Monsieur,",
@@ -102,26 +102,26 @@ def _bridge(mode_id: str, description: str) -> str:
 
     _BRIDGES = {
         "sales": {
-            "pipeline":    "La dimension pipeline que vous portez correspond directement a ce que je maitrise chez Agence 113 / DEFI GROUPE : structurer, qualifier, closer en autonomie.",
-            "negociation": "La dimension negociation au coeur de ce poste correspond a l'approche que j'applique au quotidien sur des cycles B2B a forts enjeux.",
-            "hunting":     "Le profil hunter que vous decrivez, c'est exactement ma posture quotidienne : identifier, qualifier et closer en autonomie sur 360 KEUR/mois.",
-            "partenariat": "Le developpement de partenariats strategiques que vous portez correspond directement aux 3 partenariats long terme que je conclus en moyenne par trimestre.",
+            "pipeline":    "Vous cherchez quelqu'un qui structure et fait tourner un pipeline en autonomie. C'est precisement ce que je fais chez Agence 113 / DEFI GROUPE : 30+ opportunites qualifiees suivies en temps reel, 360 KEUR/mois de portefeuille gere seul.",
+            "negociation": "La negociation est au coeur de mon quotidien : cycles B2B avec decideurs, traitement des objections, closing. C'est une competence que j'ai aussi formalisee via la Negotiation Business School (certifie 2025).",
+            "hunting":     "Profil hunter — c'est exactement comme ca que je me definis. Identifier, qualifier, pitcher et closer en autonomie sur 360 KEUR/mois sans avoir besoin qu'on me pousse.",
+            "partenariat": "Je construis en moyenne 3 partenariats long terme par trimestre chez DEFI GROUPE. Developper des relations durables avec des decideurs, c'est quelque chose que je fais naturellement.",
         },
         "corporate": {
-            "reporting":   "La dimension reporting que vous portez correspond a ce que je pratique : suivi 360 KEUR/mois, dashboards Excel, analyse hebdomadaire direction.",
-            "digital":     "Les projets digitaux que vous decrivez correspondent directement a mon experience : 5+ sites clients livres en autonomie depuis Lisbonne.",
-            "contenu":     "La strategie de contenu que vous portez correspond a ce que j'ai mis en place chez GROW 360 : +35% d'engagement en 6 mois.",
-            "budget":      "Le suivi budgetaire que vous mentionnez correspond exactement a mon quotidien : 360 KEUR/mois analyses hebdomadairement.",
+            "reporting":   "Le reporting, je le pratique au quotidien : suivi de 360 KEUR/mois d'activite, dashboards Excel (TCD, formules avancees), synthese hebdomadaire pour la direction.",
+            "digital":     "J'ai pilote 5+ projets digitaux de A a Z en autonomie depuis Lisbonne — brief client, design, optimisation UX et mise en ligne. La gestion de projet digital n'est pas theorique pour moi.",
+            "contenu":     "J'ai mis en place une strategie de contenu chez GROW 360 qui a genere +35% d'engagement en 6 mois. Planification, production, analyse — j'ai gere les trois en parallele.",
+            "budget":      "Le suivi budgetaire est mon quotidien chez DEFI GROUPE : 360 KEUR/mois analyses, ecarts identifies, synthese direction produite chaque semaine.",
         },
         "people": {
-            "sourcing":    "Le sourcing actif que vous decrivez correspond a ce que je pratique : LinkedIn, Indeed, France Travail, 300+ candidats qualifies par session.",
-            "onboarding":  "L'onboarding que vous mentionnez correspond a mon experience de coordination POEI : 15 integrations geries en parallele par cycle.",
-            "entretien":   "La conduite d'entretiens que vous portez correspond directement a ce que je pratique en sessions de recrutement massives.",
+            "sourcing":    "Le sourcing actif, je le pratique sur LinkedIn, Indeed et France Travail en parallele. Resultat : 300+ candidats qualifies accueillis par session de recrutement.",
+            "onboarding":  "J'ai coordonne des integrations POEI avec France Travail — 15 personnes gerees en parallele sur chaque cycle, du brief administratif au suivi terrain.",
+            "entretien":   "Je conduis des entretiens de qualification dans des conditions de volume important. Aller vite tout en evaluant bien — c'est quelque chose que j'ai appris en conditions reelles.",
         },
         "luxe": {
-            "premium":     "L'environnement premium que vous decrivez correspond exactement a ce que j'ai vecu au Printemps Haussmann : clientele internationale haut de gamme, depassement d'objectifs (+10%).",
-            "service":     "L'excellence du service que vous portez correspond aux codes que j'ai integres au Printemps Haussmann aupres d'une clientele internationale exigeante.",
-            "fidelisation":"La fidelisation clientele que vous mentionnez correspond a ce que j'ai pratique au quotidien en retail premium.",
+            "premium":     "J'ai travaille aupres d'une clientele internationale haut de gamme au Printemps Haussmann — Europeens, Asiatiques, Moyen-Orient. Le service premium n'est pas une posture, c'est un reflexe.",
+            "service":     "L'excellence du service, je l'ai vecue de l'interieur au Printemps Haussmann : chaque detail compte, chaque interaction reflete l'image de la maison. +10% vs objectif mensuel en maintenant ces standards.",
+            "fidelisation":"La fidelisation clientele, c'est ce qui separait les bons mois des excellents au Printemps Haussmann. Retravailler un client deja satisfait est la vente la plus efficace.",
         },
     }
 
