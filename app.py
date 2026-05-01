@@ -7,27 +7,39 @@ GET  /         -> formulaire HTML
 import io
 import zipfile
 import re
-from datetime import datetime
 
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, Response, StreamingResponse
+from fastapi import FastAPI, Form, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 
 import cv_gen_france
 import cover_letter_france
 
 app = FastAPI(title="Generateur CV France")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 templates = Jinja2Templates(directory="templates")
 
 
 def _slug(text: str) -> str:
-    """Transforme un texte en slug safe pour nom de fichier."""
     return re.sub(r"[^a-zA-Z0-9_-]", "_", text)[:30]
+
+
+def _build_offer(poste: str, entreprise: str, description: str) -> dict:
+    return {"titre": poste, "entreprise": entreprise, "description": description}
 
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 @app.post("/generate")
@@ -37,38 +49,25 @@ async def generate(
     description: str = Form(default=""),
     contrat:     str = Form(default="cdi"),
 ):
-    offer = {
-        "titre":       poste,
-        "entreprise":  entreprise,
-        "description": description,
-    }
+    offer = _build_offer(poste, entreprise, description)
+    try:
+        cv_bytes     = cv_gen_france.generate(offer, contrat)
+        letter_text  = cover_letter_france.generate(offer, contrat)
+        letter_bytes = cover_letter_france.to_pdf(letter_text, offer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Generation CV
-    cv_bytes = cv_gen_france.generate(offer, contrat)
-
-    # Generation lettre
-    letter_text = cover_letter_france.generate(offer, contrat)
-    letter_bytes = cover_letter_france.to_pdf(letter_text, offer)
-
-    # ZIP
     slug_e = _slug(entreprise)
     slug_p = _slug(poste)
-    cv_filename     = f"CV_{slug_e}_{slug_p}.pdf"
-    letter_filename = f"Lettre_{slug_e}_{slug_p}.pdf"
-    zip_filename    = f"Candidature_{slug_e}.zip"
-
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(cv_filename, cv_bytes)
-        zf.writestr(letter_filename, letter_bytes)
+        zf.writestr(f"CV_{slug_e}_{slug_p}.pdf", cv_bytes)
+        zf.writestr(f"Lettre_{slug_e}_{slug_p}.pdf", letter_bytes)
     buf.seek(0)
-
     return Response(
         content=buf.read(),
         media_type="application/zip",
-        headers={
-            "Content-Disposition": f'attachment; filename="{zip_filename}"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="Candidature_{slug_e}.zip"'},
     )
 
 
@@ -79,8 +78,11 @@ async def cv_only(
     description: str = Form(default=""),
     contrat:     str = Form(default="cdi"),
 ):
-    offer = {"titre": poste, "entreprise": entreprise, "description": description}
-    cv_bytes = cv_gen_france.generate(offer, contrat)
+    offer = _build_offer(poste, entreprise, description)
+    try:
+        cv_bytes = cv_gen_france.generate(offer, contrat)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     slug = _slug(entreprise)
     return Response(
         content=cv_bytes,
@@ -96,9 +98,12 @@ async def lettre_only(
     description: str = Form(default=""),
     contrat:     str = Form(default="cdi"),
 ):
-    offer = {"titre": poste, "entreprise": entreprise, "description": description}
-    letter_text  = cover_letter_france.generate(offer, contrat)
-    letter_bytes = cover_letter_france.to_pdf(letter_text, offer)
+    offer = _build_offer(poste, entreprise, description)
+    try:
+        letter_text  = cover_letter_france.generate(offer, contrat)
+        letter_bytes = cover_letter_france.to_pdf(letter_text, offer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     slug = _slug(entreprise)
     return Response(
         content=letter_bytes,
@@ -114,35 +119,26 @@ async def best_application(
     description: str = Form(default=""),
     contrat:     str = Form(default="cdi"),
 ):
-    """
-    Mode conversion maximale :
-    - CV avec suffixe sectoriel si detecte
-    - Lettre : hook le plus agressif + plan 30 jours + phrase humaine
-    """
-    offer = {
-        "titre":       poste,
-        "entreprise":  entreprise,
-        "description": description,
-    }
+    """Hook agressif + plan 30j + phrase humaine + secteur adapte."""
+    offer = _build_offer(poste, entreprise, description)
+    try:
+        cv_bytes     = cv_gen_france.generate(offer, contrat)
+        letter_text  = cover_letter_france.generate_best(offer, contrat)
+        letter_bytes = cover_letter_france.to_pdf(letter_text, offer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    cv_bytes     = cv_gen_france.generate(offer, contrat)
-    letter_text  = cover_letter_france.generate_best(offer, contrat)
-    letter_bytes = cover_letter_france.to_pdf(letter_text, offer)
-
-    slug_e       = _slug(entreprise)
-    slug_p       = _slug(poste)
-    zip_filename = f"BestApplication_{slug_e}.zip"
-
+    slug_e = _slug(entreprise)
+    slug_p = _slug(poste)
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(f"CV_{slug_e}_{slug_p}.pdf", cv_bytes)
         zf.writestr(f"Lettre_BEST_{slug_e}_{slug_p}.pdf", letter_bytes)
     buf.seek(0)
-
     return Response(
         content=buf.read(),
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
+        headers={"Content-Disposition": f'attachment; filename="BestApplication_{slug_e}.zip"'},
     )
 
 

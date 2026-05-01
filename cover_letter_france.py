@@ -11,7 +11,8 @@ import tempfile
 
 from fpdf import FPDF
 
-from cv_gen_france import detect_role, PROFILE, _safe
+from cv_gen_france import detect_role, is_simple_job, PROFILE, _safe
+import amine_profile as _p
 
 # ─── Rotation deterministe des hooks ─────────────────────────────────────────
 
@@ -597,25 +598,94 @@ def _closing(contrat: str) -> str:
     )
 
 
+# ─── Lettre mode urgence (jobs simples terrain) ──────────────────────────────
+
+def _generate_simple(titre: str, entreprise: str, contrat: str) -> str:
+    """Lettre courte et directe pour jobs terrain / alimentaires."""
+    t = titre.lower()
+    is_luxe = any(k in t for k in _p.LUXE_KEYWORDS)
+    is_recr = any(k in t for k in _p.RECRUTEMENT_KEYWORDS)
+
+    if is_luxe:
+        hook = (
+            f"Je vous adresse ma candidature pour le poste de {titre} chez {entreprise}. "
+            f"Ayant travaille comme Sales Advisor au Printemps Haussmann ou j'ai "
+            f"depasse mes objectifs de vente de 10% et accompagne une clientele "
+            f"internationale premium, je suis a l'aise dans les environnements "
+            f"exigeants et orientes excellence."
+        )
+        corps = (
+            "Je suis presente, attentif au detail et capable de conseiller avec "
+            "naturel une clientele diverse. La culture du service de votre enseigne "
+            "correspond exactement a ce que j'aime dans ce metier."
+        )
+    elif is_recr:
+        hook = (
+            f"Je vous adresse ma candidature pour le poste de {titre} chez {entreprise}. "
+            f"Recruitment Officer chez Agence 113 / DEFI GROUPE ou j'ai gere des "
+            f"evenements reunissant 300+ candidats, je suis a l'aise dans la "
+            f"selection, l'accueil et la coordination."
+        )
+        corps = (
+            "Je sais travailler vite, garder les priorites en tete et maintenir "
+            "un bon contact humain meme sous pression. Serieux et reactif."
+        )
+    else:
+        hook = (
+            f"Je vous adresse ma candidature pour le poste de {titre} chez {entreprise}. "
+            f"Avec une experience en vente conseil (Printemps Haussmann) et en "
+            f"relation client, je suis operationnel immediatement et motive pour "
+            f"integrer votre equipe."
+        )
+        corps = (
+            "Je suis ponctuel, serieux et a l'aise dans les environnements "
+            "dynamiques. Je m'adapte vite et livre ce qu'on attend de moi."
+        )
+
+    closing_map = {
+        "stage":      "Ce stage est une opportunite de contribuer concretement. Disponible des que possible.",
+        "alternance": "Cette alternance m'interesse pour progresser en pratique tout en continuant ma formation.",
+    }
+    closing = closing_map.get(contrat,
+        "Je suis disponible immediatement et serais ravi d'echanger avec vous.")
+
+    return "\n\n".join([
+        "Madame, Monsieur,",
+        hook,
+        corps,
+        closing,
+        f"Cordialement,\n{PROFILE['name']}\n{PROFILE['phone']} | {PROFILE['email']}"
+    ])
+
+
 # ─── Generation de la lettre ─────────────────────────────────────────────────
 
 def generate(offer: dict, contrat: str = "cdi") -> str:
-    titre      = offer.get("titre", "le poste propose")
-    entreprise = offer.get("entreprise", "votre entreprise")
+    titre       = offer.get("titre", "le poste propose")
+    entreprise  = offer.get("entreprise", "votre entreprise")
     description = offer.get("description", "")
-    role       = detect_role(titre, description)
+    role        = detect_role(titre, description)
 
-    hook     = _hook(role, titre, entreprise, contrat, offer)
-    bridge   = _bridge(offer, role)
-    pitch    = _pitch(role)
-    deliver  = _deliverables(role)
-    closing  = _closing(contrat)
+    # Mode urgence : lettre courte directe
+    if is_simple_job(titre):
+        return _generate_simple(titre, entreprise, contrat)
+
+    ctype   = detect_company_type(entreprise, description)
+    hook    = _hook(role, titre, entreprise, contrat, offer)
+    bridge  = _bridge(offer, role)
+    pitch   = _pitch(role)
+    deliver = _deliverables(role)
+    plan    = _thirty_day_plan(role, ctype)
+    human   = _human_phrase(ctype, role)
+    closing = _closing(contrat)
 
     paras = ["Madame, Monsieur,", hook]
     if bridge:
         paras.append(bridge)
     paras.append(pitch)
     paras.append(deliver)
+    paras.append(plan)
+    paras.append(human)
     paras.append(closing)
     paras.append(
         f"Cordialement,\n{PROFILE['name']}\n{PROFILE['phone']} | {PROFILE['email']}"

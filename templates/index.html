@@ -313,8 +313,11 @@
   </div>
 
   <script>
+    // URL de base : fonctionne en local ET en production
+    const API_BASE = window.location.origin;
+
     async function submitForm(action, fileType, label) {
-      const form = document.getElementById('mainForm');
+      const form   = document.getElementById('mainForm');
       const status = document.getElementById('status');
 
       if (!form.checkValidity()) {
@@ -327,23 +330,27 @@
       status.innerHTML = '<span class="spinner"></span> Generation en cours...';
 
       try {
-        const response = await fetch(action, {
+        const response = await fetch(`${API_BASE}${action}`, {
           method: 'POST',
           body: formData,
         });
 
         if (!response.ok) {
-          throw new Error(`Erreur serveur (${response.status})`);
+          let detail = '';
+          try { const j = await response.json(); detail = j.detail || ''; } catch (_) {}
+          throw new Error(`Erreur serveur (${response.status})${detail ? ' : ' + detail : ''}`);
         }
 
         const blob = await response.blob();
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
 
-        const entreprise = formData.get('entreprise').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-        const poste      = formData.get('poste').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+        const entreprise = (formData.get('entreprise') || 'entreprise').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+        const poste      = (formData.get('poste') || 'poste').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
         const ext        = fileType === 'zip' ? 'zip' : 'pdf';
-        const prefix     = fileType === 'zip' ? 'Candidature' : (label || 'Document');
+        const prefix     = action === '/best' ? 'BestApplication'
+                         : fileType === 'zip' ? 'Candidature'
+                         : (label || 'Document');
         a.download = `${prefix}_${entreprise}.${ext}`;
         a.href = url;
         document.body.appendChild(a);
@@ -358,6 +365,7 @@
       } catch (err) {
         status.className = 'status error';
         status.textContent = 'Erreur : ' + err.message;
+        console.error('[CV Generator]', err);
       }
     }
   </script>

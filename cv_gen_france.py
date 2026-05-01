@@ -13,16 +13,17 @@ import re
 import tempfile
 
 from fpdf import FPDF
+import amine_profile as _p
 
 
-# ─── Profil ───────────────────────────────────────────────────────────────────
+# ─── Profil (source : profile.py) ────────────────────────────────────────────
 
 PROFILE = {
-    "name":        "AMINE BEN MANSOUR",
-    "phone":       "+33 6 60 64 57 83",
-    "email":       "mohamedbenpro47@gmail.com",
-    "city":        "Paris, France",
-    "qr_url":      "https://www.linkedin.com/in/amine-ben-mansour-b50a06246/",
+    "name":        _p.FULL_NAME,
+    "phone":       _p.PHONE,
+    "email":       _p.EMAIL,
+    "city":        _p.CITY,
+    "qr_url":      _p.LINKEDIN_URL,
     "video_cv_url": "",
 }
 
@@ -440,6 +441,48 @@ def detect_role(titre: str, description: str = "") -> str:
     return "generic"
 
 
+def is_simple_job(titre: str) -> bool:
+    """Detecte les jobs terrain/operationnels sans besoin de MBA pitch."""
+    return any(kw in (titre or "").lower() for kw in _p.SIMPLE_JOB_KEYWORDS)
+
+
+# ─── Summaries mode urgence (jobs simples) ───────────────────────────────────
+
+_SUMMARY_SIMPLE = {
+    "luxe": (
+        "Conseiller de vente avec experience en environnement premium (Printemps Haussmann). "
+        "A l'aise avec une clientele internationale exigeante. "
+        "Disponible immediatement, serieux et presente."
+    ),
+    "commercial": (
+        "Profil commercial terrain avec experience de vente B2B et retail. "
+        "Habitue aux objectifs, disponible immediatement. "
+        "Multilingue, a l'aise avec toutes clienteles."
+    ),
+    "recrutement": (
+        "Experience en recrutement operationnel (300+ candidats geres). "
+        "A l'aise dans la relation humaine et la selection. "
+        "Disponible immediatement, reactif et organise."
+    ),
+    "default": (
+        "Profil operationnel avec experience en vente, relation client et gestion. "
+        "Disponible immediatement. Serieux, ponctuel, oriente terrain. "
+        "Multilingue (FR/AR/EN), s'adapte rapidement."
+    ),
+}
+
+
+def _simple_summary(titre: str) -> str:
+    t = titre.lower()
+    if any(k in t for k in _p.LUXE_KEYWORDS):
+        return _SUMMARY_SIMPLE["luxe"]
+    if any(k in t for k in _p.COMMERCIAL_KEYWORDS):
+        return _SUMMARY_SIMPLE["commercial"]
+    if any(k in t for k in _p.RECRUTEMENT_KEYWORDS):
+        return _SUMMARY_SIMPLE["recrutement"]
+    return _SUMMARY_SIMPLE["default"]
+
+
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def _safe(text: str) -> str:
@@ -669,7 +712,13 @@ def generate(offer: dict, contrat: str = "cdi") -> bytes:
     description = offer.get("description", "")
     role        = detect_role(titre, description)
     extra_tools = _extract_tools(description)
-    tagline     = _build_tagline(role, contrat)
+    simple      = is_simple_job(titre)
+
+    # Mode urgence : tagline direct sans jargon MBA
+    if simple:
+        tagline = f"Profil operationnel & relation client  |  Disponible immediatement"
+    else:
+        tagline = _build_tagline(role, contrat)
 
     pdf = _CVPdf(format="A4")
     pdf.set_auto_page_break(auto=False)
@@ -695,38 +744,69 @@ def generate(offer: dict, contrat: str = "cdi") -> bytes:
             except Exception:
                 pass
 
-    # Resume adapte : base + suffixe sectoriel si detecte
-    summary = SUMMARY_BASE.get(role, SUMMARY_BASE["generic"])
-    sector_sfx = _sector_suffix(description)
-    if sector_sfx:
-        summary = summary.rstrip(".") + "." + sector_sfx
+    # Resume : mode urgence = phrase courte et directe
+    if simple:
+        summary = _simple_summary(titre)
+    else:
+        summary = SUMMARY_BASE.get(role, SUMMARY_BASE["generic"])
+        sector_sfx = _sector_suffix(description)
+        if sector_sfx:
+            summary = summary.rstrip(".") + "." + sector_sfx
 
     pdf.section("Profil")
     pdf.paragraph(summary, font_size=8.7)
 
     pdf.section("Experience professionnelle")
-    variant = BULLET_VARIANT.get(role, "default")
-    order   = ROLE_PRIORITY.get(role, ROLE_PRIORITY["generic"])
-    by_id   = {e["id"]: e for e in EXPERIENCES}
+    # Mode urgence : priorite Printemps (vente terrain) + DEFI, bullets courts
+    if simple:
+        order   = ["printemps", "defi", "grow", "wix"]
+        variant = "default"
+        bullets_per = [2, 2, 1, 1]
+    else:
+        variant      = BULLET_VARIANT.get(role, "default")
+        order        = ROLE_PRIORITY.get(role, ROLE_PRIORITY["generic"])
+        bullets_per  = BULLETS_PER_POSITION
+
+    by_id = {e["id"]: e for e in EXPERIENCES}
     for pos, exp_id in enumerate(order):
         exp = by_id.get(exp_id)
         if not exp:
             continue
-        n_bullets   = BULLETS_PER_POSITION[pos] if pos < len(BULLETS_PER_POSITION) else 2
+        n_bullets   = bullets_per[pos] if pos < len(bullets_per) else 1
         all_bullets = exp["bullets"].get(variant) or exp["bullets"]["default"]
         bullets     = all_bullets[:n_bullets]
         sub         = f"{exp['company']}   |   {exp['city']}"
         pdf.experience_item(exp["title"], exp["period"], sub, bullets)
 
     pdf.section("Formation")
-    for title, school, period, note in EDUCATION:
+    # Mode urgence : ne montrer que les 2 plus recents (pas SST)
+    edu_list = EDUCATION[:2] if simple else EDUCATION
+    for title, school, period, note in edu_list:
         pdf.education_item(title, school, period, note)
 
     pdf.ln(0.8)
-    skills = SKILLS_BY_ROLE.get(role, SKILLS_BY_ROLE["generic"])
+    # Competences mode urgence : simples, terrain
+    if simple:
+        skills = [
+            "Vente et conseil client (B2B et retail premium)",
+            "Relation client et fidelisation",
+            "Travail en equipe et autonomie",
+            "Outils : Excel, Canva, Google Suite",
+            "Multilinguisme : FR / AR / EN / ES",
+        ]
+    else:
+        skills = SKILLS_BY_ROLE.get(role, SKILLS_BY_ROLE["generic"])
     pdf.two_columns_skills_languages(skills, LANGUAGES)
 
-    pdf.tools_strip(contrat, extra_tools)
+    # Disponibilite mode urgence : toujours immediate
+    if simple:
+        dispo = "Disponibilite : Immediatement  |  Mobilite : Paris et IDF  |  Permis B"
+        pdf.set_x(14)
+        pdf.set_font("Helvetica", "", 8.3)
+        pdf.set_text_color(*pdf.GREY)
+        pdf.multi_cell(182, 3.8, _safe(f"DISPONIBILITE  |  {dispo}"))
+    else:
+        pdf.tools_strip(contrat, extra_tools)
 
     out = pdf.output(dest="S")
     if isinstance(out, str):
