@@ -4,371 +4,499 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CV Generator — Amine Ben Mansour</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --navy:   #0d1f4e;
-      --navy2:  #162654;
-      --gold:   #c9a84c;
-      --gold2:  #e2bc6a;
-      --white:  #ffffff;
-      --bg:     #f4f6fb;
-      --surface:#ffffff;
-      --border: #dde2ef;
-      --text:   #1a1f36;
-      --muted:  #6b7280;
-      --green:  #16a34a;
-      --red:    #dc2626;
-      --radius: 14px;
-      --shadow: 0 8px 40px rgba(13,31,78,0.10);
+      --navy:      #0b1d4a;
+      --navy-mid:  #142258;
+      --navy-soft: #1c2e6e;
+      --gold:      #c9a042;
+      --gold-lt:   #e8c76a;
+      --gold-pale: #fdf6e3;
+      --white:     #ffffff;
+      --bg:        #eef1f8;
+      --surface:   #ffffff;
+      --border:    #dde3f0;
+      --border-hov:#b8c4e0;
+      --text:      #0f172a;
+      --muted:     #64748b;
+      --muted-lt:  #94a3b8;
+      --green:     #15803d;
+      --green-bg:  #f0fdf4;
+      --red:       #b91c1c;
+      --red-bg:    #fef2f2;
+      --blue:      #1d4ed8;
+      --blue-bg:   #eff6ff;
+      --teal:      #0f766e;
+      --teal-bg:   #f0fdfa;
+      --amber:     #b45309;
+      --amber-bg:  #fffbeb;
+      --radius-sm: 8px;
+      --radius:    14px;
+      --radius-lg: 20px;
+      --shadow:    0 12px 48px rgba(11,29,74,0.12);
+      --shadow-sm: 0 2px 12px rgba(11,29,74,0.08);
     }
 
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg);
       min-height: 100vh;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      padding: 2rem 1rem;
+      padding: 2.5rem 1rem 3rem;
     }
 
-    /* ── CARD ─────────────────────────────────────────────── */
+    /* ─── CARD ────────────────────────────────────────────────── */
     .card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
       width: 100%;
-      max-width: 580px;
+      max-width: 600px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
       overflow: hidden;
     }
 
-    /* ── HEADER ──────────────────────────────────────────── */
-    .header {
-      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
-      padding: 2rem 2rem 1.8rem;
+    /* ─── HEADER ──────────────────────────────────────────────── */
+    .hd {
+      background: linear-gradient(150deg, var(--navy) 0%, var(--navy-mid) 60%, #0f2560 100%);
+      padding: 1.8rem 1.8rem 0;
       position: relative;
       overflow: hidden;
     }
 
-    .header::before {
+    /* Decorative circles */
+    .hd::before {
       content: '';
       position: absolute;
-      top: -40px; right: -40px;
-      width: 180px; height: 180px;
+      top: -50px; right: -50px;
+      width: 200px; height: 200px;
       border-radius: 50%;
-      background: rgba(201,168,76,0.10);
+      background: radial-gradient(circle, rgba(201,160,66,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hd::after {
+      content: '';
+      position: absolute;
+      bottom: 10px; left: -30px;
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%);
       pointer-events: none;
     }
 
-    .header::after {
-      content: '';
-      position: absolute;
-      bottom: -60px; left: 20px;
-      width: 120px; height: 120px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.04);
-      pointer-events: none;
-    }
-
-    .header-top {
+    .hd-top {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 1rem;
-      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1;
     }
 
     .avatar {
-      width: 52px; height: 52px;
-      background: var(--gold);
-      border-radius: 12px;
+      width: 54px; height: 54px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-lt) 100%);
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.55rem;
       font-weight: 800;
       color: var(--navy);
       flex-shrink: 0;
-      letter-spacing: -0.5px;
+      letter-spacing: -1px;
+      box-shadow: 0 4px 14px rgba(201,160,66,0.4);
     }
 
-    .header-text h1 {
-      font-size: 1.15rem;
-      font-weight: 700;
+    .hd-info { flex: 1; }
+
+    .hd-name {
+      font-size: 1.18rem;
+      font-weight: 800;
       color: var(--white);
-      line-height: 1.3;
+      letter-spacing: -0.3px;
+      line-height: 1.2;
     }
 
-    .header-text p {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.55);
-      margin-top: 2px;
+    .hd-sub {
+      font-size: 0.76rem;
+      color: rgba(255,255,255,0.50);
+      margin-top: 3px;
       font-weight: 400;
     }
 
-    .gold-bar {
-      height: 3px;
-      background: linear-gradient(90deg, var(--gold), var(--gold2), transparent);
-      border-radius: 2px;
-      margin-top: 1.2rem;
-    }
-
-    /* ── BODY ────────────────────────────────────────────── */
-    .body {
-      padding: 1.8rem 2rem 2rem;
-    }
-
-    /* ── FORM FIELDS ─────────────────────────────────────── */
-    .field {
-      margin-bottom: 1.2rem;
-    }
-
-    label {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--navy);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.4rem;
-    }
-
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 0.7rem 0.9rem;
-      border: 1.5px solid var(--border);
-      border-radius: 9px;
-      font-size: 0.92rem;
-      font-family: inherit;
-      color: var(--text);
-      background: #fafbfd;
-      transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
-      outline: none;
-    }
-
-    input[type="text"]:focus,
-    textarea:focus {
-      border-color: var(--navy);
-      box-shadow: 0 0 0 3px rgba(13,31,78,0.08);
-      background: var(--white);
-    }
-
-    input[type="text"]::placeholder,
-    textarea::placeholder { color: #b0b8cc; font-style: italic; }
-
-    textarea {
-      min-height: 130px;
-      resize: vertical;
-      line-height: 1.6;
-    }
-
-    .hint {
-      font-size: 0.74rem;
-      color: var(--muted);
-      margin-top: 0.35rem;
-      line-height: 1.5;
-    }
-
-    /* ── CONTRAT PILLS ───────────────────────────────────── */
-    .contrat-group {
+    /* Stats strip */
+    .stats {
       display: flex;
-      gap: 0.55rem;
+      gap: 0.45rem;
+      margin-top: 1.2rem;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
     }
 
-    .contrat-option input[type="radio"] { display: none; }
-
-    .contrat-option label {
+    .stat {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 0.5rem 1.1rem;
-      border: 1.5px solid var(--border);
+      gap: 0.28rem;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
       border-radius: 50px;
-      cursor: pointer;
-      font-size: 0.8rem;
+      padding: 0.28rem 0.7rem;
+      font-size: 0.7rem;
       font-weight: 600;
-      color: var(--muted);
-      background: #fafbfd;
-      transition: all 0.15s;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 0;
+      color: rgba(255,255,255,0.80);
       white-space: nowrap;
     }
 
-    .contrat-option input[type="radio"]:checked + label {
+    .stat-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+    }
+
+    /* Gold bar */
+    .gold-bar {
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold) 0%, var(--gold-lt) 50%, transparent 100%);
+      margin-top: 1.4rem;
+    }
+
+    /* ─── BODY ────────────────────────────────────────────────── */
+    .bd { padding: 1.6rem 1.8rem 2rem; }
+
+    /* ─── ROLE CHIPS ──────────────────────────────────────────── */
+    .chips-section { margin-bottom: 1.4rem; }
+
+    .chips-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 0.55rem;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .chip {
+      padding: 0.35rem 0.8rem;
+      border-radius: 50px;
+      border: 1.5px solid var(--border);
+      background: #f8faff;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .chip:hover {
+      border-color: var(--navy);
+      color: var(--navy);
+      background: #f0f3fb;
+    }
+
+    .chip.active, .chip.on {
       border-color: var(--navy);
       background: var(--navy);
       color: var(--white);
     }
 
-    .contrat-option label:hover:not(.checked) {
-      border-color: var(--navy);
+    .chip-star {
+      font-size: 0.65rem;
+      opacity: 0.75;
+    }
+
+    /* ─── FORM ────────────────────────────────────────────────── */
+    .field { margin-bottom: 1.15rem; }
+
+    .field-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.38rem;
+      gap: 0.5rem;
+    }
+
+    label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       color: var(--navy);
     }
 
-    /* ── DIVIDER ─────────────────────────────────────────── */
-    .divider {
+    .role-badge {
+      display: none;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.18rem 0.6rem;
+      border-radius: 50px;
+      border: 1px solid currentColor;
+      font-size: 0.68rem;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .role-badge.show { display: flex; }
+
+    .company-badge {
+      display: none;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.18rem 0.6rem;
+      border-radius: 50px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .company-badge.show { display: flex; }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 0.68rem 0.9rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-family: inherit;
+      color: var(--text);
+      background: #fafbfe;
+      transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="text"]:hover,
+    textarea:hover { border-color: var(--border-hov); }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(11,29,74,0.07);
+      background: var(--white);
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: var(--muted-lt);
+      font-style: italic;
+      font-size: 0.86rem;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    .hint {
+      font-size: 0.72rem;
+      color: var(--muted-lt);
+      margin-top: 0.35rem;
+      line-height: 1.5;
+    }
+
+    /* ─── CONTRAT PILLS ───────────────────────────────────────── */
+    .pills {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .pill-opt input[type="radio"] { display: none; }
+
+    .pill-opt label {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      margin: 1.4rem 0 1rem;
-      color: #c0c8da;
-      font-size: 0.72rem;
-      font-weight: 500;
+      justify-content: center;
+      padding: 0.48rem 1.2rem;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: #fafbfe;
+      transition: all 0.15s;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
+      margin-bottom: 0;
+      white-space: nowrap;
+      -webkit-user-select: none;
+      user-select: none;
     }
-    .divider::before, .divider::after {
+
+    .pill-opt input[type="radio"]:checked + label {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: var(--white);
+    }
+
+    .pill-opt label:hover { border-color: var(--navy); color: var(--navy); }
+
+    /* ─── DIVIDER ─────────────────────────────────────────────── */
+    .sep {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted-lt);
+      margin: 1.2rem 0 0.9rem;
+    }
+    .sep::before, .sep::after {
       content: '';
       flex: 1;
       height: 1px;
       background: var(--border);
     }
 
-    /* ── BUTTONS ─────────────────────────────────────────── */
-    .btn-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.65rem;
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 0.65rem;
-    }
+    /* ─── BUTTONS ─────────────────────────────────────────────── */
+    .btn-stack { display: flex; flex-direction: column; gap: 0.6rem; }
+    .btn-pair  { display: flex; gap: 0.6rem; }
 
     .btn {
       flex: 1;
-      padding: 0.82rem 1rem;
+      padding: 0.88rem 1.1rem;
       border: none;
-      border-radius: 10px;
-      font-size: 0.88rem;
-      font-weight: 600;
+      border-radius: var(--radius-sm);
+      font-size: 0.87rem;
+      font-weight: 700;
       cursor: pointer;
       font-family: inherit;
       transition: all 0.18s;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.45rem;
-      position: relative;
-      overflow: hidden;
+      gap: 0.5rem;
+      letter-spacing: -0.1px;
     }
 
-    .btn::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(255,255,255,0);
-      transition: background 0.15s;
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
     }
 
-    .btn:hover::after { background: rgba(255,255,255,0.08); }
-    .btn:active { transform: translateY(1px); }
-
-    /* Best — gold gradient, flagship */
+    /* BEST */
     .btn-best {
-      background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-lt) 100%);
       color: var(--navy);
-      font-weight: 700;
-      font-size: 0.92rem;
-      padding: 0.95rem 1rem;
-      box-shadow: 0 4px 16px rgba(201,168,76,0.35);
+      box-shadow: 0 4px 18px rgba(201,160,66,0.38);
+      font-size: 0.95rem;
+      padding: 1rem 1.1rem;
     }
-
-    .btn-best:hover {
-      box-shadow: 0 6px 22px rgba(201,168,76,0.50);
-      transform: translateY(-1px);
+    .btn-best:not(:disabled):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 26px rgba(201,160,66,0.50);
     }
+    .btn-best:not(:disabled):active { transform: translateY(0); }
 
-    /* Primary — navy */
+    /* PRIMARY */
     .btn-primary {
       background: var(--navy);
       color: var(--white);
-      box-shadow: 0 3px 12px rgba(13,31,78,0.18);
+      box-shadow: 0 3px 14px rgba(11,29,74,0.20);
     }
-
-    .btn-primary:hover {
-      background: #1a3060;
-      box-shadow: 0 5px 18px rgba(13,31,78,0.28);
+    .btn-primary:not(:disabled):hover {
+      background: var(--navy-soft);
       transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(11,29,74,0.28);
     }
+    .btn-primary:not(:disabled):active { transform: translateY(0); }
 
-    /* Outline */
+    /* OUTLINE */
     .btn-outline {
       background: transparent;
       color: var(--navy);
       border: 1.5px solid var(--border);
       box-shadow: none;
+      font-size: 0.82rem;
     }
-
-    .btn-outline:hover {
+    .btn-outline:not(:disabled):hover {
       border-color: var(--navy);
       background: #f0f3fb;
     }
 
-    /* ── BADGE ───────────────────────────────────────────── */
-    .badge {
-      font-size: 0.64rem;
-      font-weight: 700;
-      background: var(--navy);
-      color: var(--gold);
+    /* Badge inside button */
+    .btn-badge {
+      font-size: 0.62rem;
+      font-weight: 800;
       padding: 0.15rem 0.45rem;
-      border-radius: 50px;
+      border-radius: 4px;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.04em;
     }
 
-    .btn-best .badge {
-      background: var(--navy);
-      color: var(--gold2);
-    }
+    .btn-best    .btn-badge { background: rgba(11,29,74,0.18); color: var(--navy); }
+    .btn-primary .btn-badge { background: rgba(255,255,255,0.15); color: var(--white); }
+    .btn-outline .btn-badge { background: var(--border); color: var(--muted); }
 
-    /* ── STATUS ──────────────────────────────────────────── */
-    .status-wrap {
+    .star-icon { font-size: 0.9rem; }
+
+    /* ─── PROGRESS BAR ────────────────────────────────────────── */
+    .progress-wrap {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
       margin-top: 1.2rem;
-      min-height: 36px;
+      display: none;
+    }
+    .progress-wrap.show { display: block; }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--navy), var(--gold));
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    /* ─── STATUS ──────────────────────────────────────────────── */
+    .status-wrap {
+      min-height: 42px;
       display: flex;
       align-items: center;
       justify-content: center;
+      margin-top: 0.8rem;
     }
 
     .status {
       display: none;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.55rem 1rem;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      font-weight: 500;
+      padding: 0.6rem 1.1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      width: 100%;
+      justify-content: center;
     }
+    .status.loading { display: flex; background: #f0f4ff; color: var(--navy); }
+    .status.success { display: flex; background: var(--green-bg); color: var(--green); }
+    .status.error   { display: flex; background: var(--red-bg);   color: var(--red); }
 
-    .status.loading {
-      display: flex;
-      background: #eef2ff;
-      color: var(--navy);
-    }
-
-    .status.success {
-      display: flex;
-      background: #f0fdf4;
-      color: var(--green);
-    }
-
-    .status.error {
-      display: flex;
-      background: #fef2f2;
-      color: var(--red);
-    }
-
-    /* ── SPINNER ─────────────────────────────────────────── */
     .spinner {
       width: 14px; height: 14px;
       border: 2px solid currentColor;
@@ -377,228 +505,470 @@
       animation: spin 0.7s linear infinite;
       flex-shrink: 0;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── FOOTER INFO ─────────────────────────────────────── */
-    .footer-info {
+    /* ─── FEATURES ────────────────────────────────────────────── */
+    .features {
       display: flex;
-      gap: 1.2rem;
+      gap: 1rem;
+      flex-wrap: wrap;
       margin-top: 1.6rem;
-      padding-top: 1.2rem;
+      padding-top: 1.3rem;
       border-top: 1px solid var(--border);
     }
 
-    .info-item {
+    .feat {
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
+      font-weight: 600;
       color: var(--muted);
-      font-weight: 500;
     }
 
-    .info-dot {
-      width: 6px; height: 6px;
+    .feat-icon {
+      width: 18px; height: 18px;
       border-radius: 50%;
-      background: var(--gold);
+      background: var(--gold-pale);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
       flex-shrink: 0;
     }
 
-    /* ── RESPONSIVE ──────────────────────────────────────── */
-    @media (max-width: 500px) {
-      .body { padding: 1.4rem 1.2rem 1.6rem; }
-      .header { padding: 1.6rem 1.2rem 1.4rem; }
-      .btn-row { flex-direction: column; }
+    /* ─── RESPONSIVE ──────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      body { padding: 1rem 0.6rem 2rem; }
+      .hd  { padding: 1.4rem 1.2rem 0; }
+      .bd  { padding: 1.2rem 1.2rem 1.6rem; }
+      .btn-pair { flex-direction: column; }
+      .stats { gap: 0.35rem; }
     }
   </style>
 </head>
 <body>
-  <div class="card">
+<div class="card">
 
-    <!-- HEADER -->
-    <div class="header">
-      <div class="header-top">
-        <div class="avatar">A</div>
-        <div class="header-text">
-          <h1>Generateur de candidature</h1>
-          <p>CV + Lettre de motivation personnalises par IA</p>
-        </div>
+  <!-- ─── HEADER ──────────────────────────────────── -->
+  <div class="hd">
+    <div class="hd-top">
+      <div class="avatar">A</div>
+      <div class="hd-info">
+        <div class="hd-name">Amine Ben Mansour</div>
+        <div class="hd-sub">Generateur de CV &amp; Lettre de motivation personnalises</div>
       </div>
-      <div class="gold-bar"></div>
     </div>
 
-    <!-- BODY -->
-    <div class="body">
-      <form id="mainForm" novalidate>
+    <div class="stats">
+      <span class="stat"><span class="stat-dot"></span>360K€/mois B2B</span>
+      <span class="stat"><span class="stat-dot"></span>MBA PSB Paris 2026</span>
+      <span class="stat"><span class="stat-dot"></span>5 langues</span>
+      <span class="stat"><span class="stat-dot"></span>Paris · Intl OK</span>
+    </div>
 
-        <!-- Poste -->
-        <div class="field">
-          <label for="poste">Intitule du poste</label>
-          <input type="text" id="poste" name="poste"
-            placeholder="ex : Business Developer, Financial Analyst…" required />
-        </div>
+    <div class="gold-bar"></div>
+  </div>
 
-        <!-- Entreprise -->
-        <div class="field">
-          <label for="entreprise">Entreprise</label>
-          <input type="text" id="entreprise" name="entreprise"
-            placeholder="ex : LVMH, BNP Paribas, startup SaaS…" required />
-        </div>
+  <!-- ─── BODY ─────────────────────────────────────── -->
+  <div class="bd">
 
-        <!-- Contrat -->
-        <div class="field">
-          <label>Type de contrat</label>
-          <div class="contrat-group">
-            <div class="contrat-option">
-              <input type="radio" name="contrat" id="cdi" value="cdi" checked />
-              <label for="cdi">CDI</label>
-            </div>
-            <div class="contrat-option">
-              <input type="radio" name="contrat" id="alternance" value="alternance" />
-              <label for="alternance">Alternance</label>
-            </div>
-            <div class="contrat-option">
-              <input type="radio" name="contrat" id="stage" value="stage" />
-              <label for="stage">Stage</label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Description -->
-        <div class="field">
-          <label for="description">Description du poste</label>
-          <textarea id="description" name="description"
-            placeholder="Colle ici la fiche de poste ou les missions principales…"></textarea>
-          <p class="hint">Plus la description est detaillee, plus le CV et la lettre seront personnalises et adaptes au secteur.</p>
-        </div>
-
-        <!-- BUTTONS -->
-        <div class="btn-group">
-
-          <!-- Best — flagship -->
-          <button type="button" class="btn btn-best"
-            onclick="submitForm('/best', 'zip')"
-            title="Hook percutant + plan 30 jours + ton adapte — version conversion maximale">
-            ✦ &nbsp;Meilleure candidature &nbsp;<span class="badge">ZIP</span>
-          </button>
-
-          <!-- Standard -->
-          <button type="button" class="btn btn-primary"
-            onclick="submitForm('/generate', 'zip')">
-            Candidature standard &nbsp;<span class="badge" style="background:rgba(255,255,255,0.15);color:#fff">ZIP</span>
-          </button>
-
-          <div class="divider">ou telecharger separement</div>
-
-          <div class="btn-row">
-            <button type="button" class="btn btn-outline"
-              onclick="submitForm('/cv', 'pdf', 'CV')">
-              CV seul &nbsp;(PDF)
-            </button>
-            <button type="button" class="btn btn-outline"
-              onclick="submitForm('/lettre', 'pdf', 'Lettre')">
-              Lettre seule &nbsp;(PDF)
-            </button>
-          </div>
-
-        </div>
-
-        <!-- STATUS -->
-        <div class="status-wrap">
-          <div class="status" id="status"></div>
-        </div>
-
-      </form>
-
-      <!-- FOOTER INFO -->
-      <div class="footer-info">
-        <div class="info-item"><span class="info-dot"></span>CV adapte au secteur</div>
-        <div class="info-item"><span class="info-dot"></span>Lettre avec plan 30j</div>
-        <div class="info-item"><span class="info-dot"></span>Mode urgence auto</div>
+    <!-- Quick-fill role chips -->
+    <div class="chips-section">
+      <div class="chips-label">Postes qui te correspondent le mieux</div>
+      <div class="chips">
+        <button class="chip on" type="button" data-fill="Business Developer">
+          <span class="chip-star">★</span> Business Dev
+        </button>
+        <button class="chip" type="button" data-fill="Key Account Manager">
+          <span class="chip-star">★</span> Key Account
+        </button>
+        <button class="chip" type="button" data-fill="Talent Acquisition Manager">
+          <span class="chip-star">★</span> Talent Acq.
+        </button>
+        <button class="chip" type="button" data-fill="Sales Manager">Sales</button>
+        <button class="chip" type="button" data-fill="Digital Marketing Manager">Marketing Digital</button>
+        <button class="chip" type="button" data-fill="Chef de Produit">Chef Produit</button>
+        <button class="chip" type="button" data-fill="Conseiller de Vente Luxe">Luxe</button>
       </div>
+    </div>
+
+    <form id="mainForm" novalidate>
+
+      <!-- Poste -->
+      <div class="field">
+        <div class="field-header">
+          <label for="poste">Intitule du poste</label>
+          <div class="role-badge" id="roleBadge"></div>
+        </div>
+        <input type="text" id="poste" name="poste"
+          placeholder="ex : Business Developer, KAM, Talent Acquisition…"
+          required autocomplete="off" />
+      </div>
+
+      <!-- Entreprise -->
+      <div class="field">
+        <div class="field-header">
+          <label for="entreprise">Entreprise</label>
+          <div class="company-badge" id="companyBadge"></div>
+        </div>
+        <input type="text" id="entreprise" name="entreprise"
+          placeholder="ex : LVMH, BNP Paribas, startup SaaS…"
+          required autocomplete="off" />
+      </div>
+
+      <!-- Contrat -->
+      <div class="field">
+        <label>Type de contrat</label>
+        <div class="pills">
+          <div class="pill-opt">
+            <input type="radio" name="contrat" id="cdi" value="cdi" checked />
+            <label for="cdi">CDI</label>
+          </div>
+          <div class="pill-opt">
+            <input type="radio" name="contrat" id="alternance" value="alternance" />
+            <label for="alternance">Alternance</label>
+          </div>
+          <div class="pill-opt">
+            <input type="radio" name="contrat" id="stage" value="stage" />
+            <label for="stage">Stage</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="field">
+        <label for="description">Description du poste</label>
+        <textarea id="description" name="description"
+          placeholder="Colle ici la fiche de poste ou les missions principales — plus c'est detaille, plus le CV et la lettre seront cibles (mots-cles ATS, secteur, missions)."></textarea>
+        <p class="hint">La description permet la detection du secteur, l'injection de vocabulaire ATS et l'adaptation du plan 30 jours.</p>
+      </div>
+
+      <!-- ── BUTTONS ── -->
+      <div class="btn-stack">
+
+        <!-- Flagship — best -->
+        <button type="button" class="btn btn-best"
+          onclick="submitForm('/best','zip')"
+          title="Hook percutant + plan 30 jours + adaptation secteur — version conversion maximale">
+          <span class="star-icon">✦</span>
+          Meilleure candidature
+          <span class="btn-badge">ZIP</span>
+        </button>
+
+        <!-- Standard -->
+        <button type="button" class="btn btn-primary"
+          onclick="submitForm('/generate','zip')">
+          Candidature standard
+          <span class="btn-badge">ZIP</span>
+        </button>
+
+        <div class="sep">ou telecharger separement</div>
+
+        <div class="btn-pair">
+          <button type="button" class="btn btn-outline"
+            onclick="submitForm('/cv','pdf','CV')">
+            CV seul
+            <span class="btn-badge">PDF</span>
+          </button>
+          <button type="button" class="btn btn-outline"
+            onclick="submitForm('/lettre','pdf','Lettre')">
+            Lettre seule
+            <span class="btn-badge">PDF</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <!-- Status -->
+      <div class="status-wrap">
+        <div class="status" id="status"></div>
+      </div>
+
+    </form>
+
+    <!-- Feature strip -->
+    <div class="features">
+      <span class="feat">
+        <span class="feat-icon">✓</span>
+        CV adapte au secteur
+      </span>
+      <span class="feat">
+        <span class="feat-icon">✓</span>
+        Lettre + plan 30 jours
+      </span>
+      <span class="feat">
+        <span class="feat-icon">✓</span>
+        ATS keywords injectes
+      </span>
+      <span class="feat">
+        <span class="feat-icon">✓</span>
+        Mode urgence auto
+      </span>
     </div>
 
   </div>
+</div>
 
-  <script>
-    const API_BASE = window.location.origin;
+<script>
+  const API_BASE = window.location.origin;
 
-    // Disable all buttons while loading
-    function setLoading(on) {
-      document.querySelectorAll('.btn').forEach(b => {
-        b.disabled = on;
-        b.style.opacity = on ? '0.6' : '1';
-        b.style.cursor  = on ? 'not-allowed' : 'pointer';
+  /* ── ROLE DETECTION ─────────────────────────────────────────── */
+  const ROLES = [
+    {
+      id: 'business_dev',
+      label: 'Business Developer',
+      fit: 5,
+      kw: ['business dev','bizdev','bdr','sdr','developpement commercial','business developer',
+           'account executive','commercial b2b'],
+    },
+    {
+      id: 'key_account',
+      label: 'Key Account Manager',
+      fit: 5,
+      kw: ['key account','kam','account manager','grand compte','gestionnaire de compte'],
+    },
+    {
+      id: 'hr',
+      label: 'Talent Acquisition',
+      fit: 4,
+      kw: ['talent','recrutement','recruitment','talent acquisition','hrbp','sourcer','rh'],
+    },
+    {
+      id: 'sales',
+      label: 'Sales / Commercial',
+      fit: 4,
+      kw: ['sales','commercial','vente','closing','responsable commercial','manager des ventes'],
+    },
+    {
+      id: 'digital_marketing',
+      label: 'Marketing Digital',
+      fit: 3,
+      kw: ['digital','community','social media','content','growth','sea','seo','acquisition',
+           'performance marketing'],
+    },
+    {
+      id: 'product_marketing',
+      label: 'Product / Brand',
+      fit: 3,
+      kw: ['product','brand','chef de produit','category manager','chef produit',
+           'trade marketing','brand manager'],
+    },
+    {
+      id: 'financial_analyst',
+      label: 'Finance / Analyst',
+      fit: 2,
+      kw: ['financial analyst','analyste financier','controle de gestion','fp&a',
+           'audit','tresorerie','data analyst'],
+    },
+    {
+      id: 'purchasing',
+      label: 'Acheteur',
+      fit: 2,
+      kw: ['acheteur','achat','procurement','sourcing','buyer','category'],
+    },
+    {
+      id: 'luxe',
+      label: 'Luxe / Premium',
+      fit: 3,
+      kw: ['luxe','premium','haute couture','joaillerie','horlogerie','brand ambassador',
+           'conseiller de vente luxe'],
+    },
+  ];
+
+  const FIT = {
+    5: { label: 'Fit excellent', c: '#15803d', bg: '#f0fdf4' },
+    4: { label: 'Tres bon fit', c: '#0f766e', bg: '#f0fdfa' },
+    3: { label: 'Bon fit',      c: '#1d4ed8', bg: '#eff6ff' },
+    2: { label: 'Compatible',   c: '#b45309', bg: '#fffbeb' },
+    1: { label: 'Generique',    c: '#64748b', bg: '#f8fafc' },
+  };
+
+  function detectRole(text) {
+    const t = text.toLowerCase();
+    return ROLES.find(r => r.kw.some(k => t.includes(k))) || null;
+  }
+
+  function updateRoleBadge() {
+    const val   = document.getElementById('poste').value.trim();
+    const badge = document.getElementById('roleBadge');
+    if (!val) { badge.classList.remove('show'); return; }
+    const role = detectRole(val);
+    const f    = role ? FIT[role.fit] : FIT[1];
+    const lbl  = role ? `${role.label} · ${f.label}` : 'Profil generique';
+    badge.textContent   = lbl;
+    badge.style.color   = f.c;
+    badge.style.borderColor = f.c;
+    badge.style.background  = f.bg;
+    badge.classList.add('show');
+  }
+
+  /* ── COMPANY TYPE DETECTION ─────────────────────────────────── */
+  const BIG = ['lvmh','loreal','sanofi','bnp','axa','societe generale','total','michelin',
+    'renault','danone','hermes','chanel','kering','air france','edf','engie','orange',
+    'capgemini','deloitte','pwc','kpmg','mckinsey','bain','bcg','accenture','hsbc',
+    'natixis','carrefour','decathlon','stellantis','airbus','safran','thales','bouygues',
+    'vinci','sopra','printemps','galeries lafayette','dior','saint gobain'];
+  const STARTUP_KW = ['startup','scale-up','scaleup','saas','fintech','proptech',
+    'series','seed','levee de fonds','product-led','agile','growth'];
+
+  function detectCompany(name) {
+    const n = name.toLowerCase();
+    if (BIG.some(b => n.includes(b))) return { label: 'Grand groupe', c: '#1d4ed8', bg: '#eff6ff', icon: '🏛' };
+    if (STARTUP_KW.some(s => n.includes(s))) return { label: 'Startup', c: '#15803d', bg: '#f0fdf4', icon: '🚀' };
+    return null;
+  }
+
+  function updateCompanyBadge() {
+    const val   = document.getElementById('entreprise').value.trim();
+    const badge = document.getElementById('companyBadge');
+    if (!val) { badge.classList.remove('show'); return; }
+    const c = detectCompany(val);
+    if (c) {
+      badge.textContent   = `${c.icon} ${c.label}`;
+      badge.style.color   = c.c;
+      badge.style.background = c.bg;
+      badge.classList.add('show');
+    } else {
+      badge.classList.remove('show');
+    }
+  }
+
+  /* ── CHIPS ──────────────────────────────────────────────────── */
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.getElementById('poste').value = chip.dataset.fill;
+      updateRoleBadge();
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      document.getElementById('poste').focus();
+    });
+  });
+
+  /* ── LIVE INPUT EVENTS ──────────────────────────────────────── */
+  document.getElementById('poste').addEventListener('input', () => {
+    updateRoleBadge();
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  });
+  document.getElementById('entreprise').addEventListener('input', updateCompanyBadge);
+
+  /* ── PROGRESS ANIMATION ─────────────────────────────────────── */
+  let _progTimer = null;
+
+  function startProgress() {
+    const bar  = document.getElementById('progressBar');
+    const wrap = document.getElementById('progressWrap');
+    wrap.classList.add('show');
+    bar.style.width = '0%';
+    let p = 0;
+    _progTimer = setInterval(() => {
+      p += Math.random() * 12;
+      if (p > 88) p = 88;
+      bar.style.width = p + '%';
+    }, 350);
+  }
+
+  function endProgress(success) {
+    clearInterval(_progTimer);
+    const bar  = document.getElementById('progressBar');
+    const wrap = document.getElementById('progressWrap');
+    bar.style.transition = 'width 0.3s ease';
+    bar.style.width = success ? '100%' : '100%';
+    bar.style.background = success
+      ? 'linear-gradient(90deg, #15803d, #4ade80)'
+      : 'linear-gradient(90deg, #b91c1c, #f87171)';
+    setTimeout(() => {
+      wrap.classList.remove('show');
+      bar.style.width = '0%';
+      bar.style.background = 'linear-gradient(90deg, var(--navy), var(--gold))';
+      bar.style.transition = 'width 0.4s ease';
+    }, 800);
+  }
+
+  /* ── UTILS ──────────────────────────────────────────────────── */
+  function setLoading(on) {
+    document.querySelectorAll('.btn').forEach(b => { b.disabled = on; });
+  }
+
+  function showStatus(type, html) {
+    const el = document.getElementById('status');
+    el.className = 'status ' + type;
+    el.innerHTML = html;
+  }
+
+  function hideStatus() {
+    const el = document.getElementById('status');
+    el.className = 'status';
+    el.innerHTML = '';
+  }
+
+  /* ── SUBMIT ─────────────────────────────────────────────────── */
+  async function submitForm(action, fileType, label) {
+    const poste      = document.getElementById('poste').value.trim();
+    const entreprise = document.getElementById('entreprise').value.trim();
+
+    if (!poste) {
+      document.getElementById('poste').focus();
+      document.getElementById('poste').style.borderColor = '#b91c1c';
+      setTimeout(() => { document.getElementById('poste').style.borderColor = ''; }, 1800);
+      return;
+    }
+    if (!entreprise) {
+      document.getElementById('entreprise').focus();
+      document.getElementById('entreprise').style.borderColor = '#b91c1c';
+      setTimeout(() => { document.getElementById('entreprise').style.borderColor = ''; }, 1800);
+      return;
+    }
+
+    setLoading(true);
+    startProgress();
+    showStatus('loading', '<span class="spinner"></span>&nbsp;Generation en cours — adaptation secteur + ATS…');
+
+    try {
+      const formData = new FormData(document.getElementById('mainForm'));
+      const response = await fetch(`${API_BASE}${action}`, {
+        method: 'POST',
+        body: formData,
       });
-    }
 
-    function showStatus(type, html) {
-      const el = document.getElementById('status');
-      el.className = 'status ' + type;
-      el.innerHTML = html;
-    }
-
-    function hideStatus() {
-      const el = document.getElementById('status');
-      el.className = 'status';
-      el.innerHTML = '';
-    }
-
-    async function submitForm(action, fileType, label) {
-      const form = document.getElementById('mainForm');
-
-      // Manual validation
-      const poste      = form.poste.value.trim();
-      const entreprise = form.entreprise.value.trim();
-      if (!poste || !entreprise) {
-        form.poste.reportValidity();
-        form.entreprise.reportValidity();
-        return;
+      if (!response.ok) {
+        let detail = '';
+        try { const j = await response.json(); detail = j.detail || ''; } catch (_) {}
+        throw new Error(`Erreur ${response.status}${detail ? ' : ' + detail : ''}`);
       }
 
-      setLoading(true);
-      showStatus('loading', '<span class="spinner"></span>&nbsp;Generation en cours…');
+      const blob  = await response.blob();
+      const url   = URL.createObjectURL(blob);
+      const a     = document.createElement('a');
+      const eSlug = entreprise.replace(/[^a-zA-Z0-9]/g,'_').slice(0,20);
+      const ext   = fileType === 'zip' ? 'zip' : 'pdf';
+      const prefix = action === '/best'  ? 'BestApplication'
+                   : fileType === 'zip' ? 'Candidature'
+                   : (label || 'Document');
+      a.download = `${prefix}_${eSlug}.${ext}`;
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-      try {
-        const formData = new FormData(form);
-        const response = await fetch(`${API_BASE}${action}`, {
-          method: 'POST',
-          body: formData,
-        });
+      endProgress(true);
+      showStatus('success', '✓&nbsp; Telechargement lance — bonne chance !');
+      setTimeout(hideStatus, 4000);
 
-        if (!response.ok) {
-          let detail = '';
-          try { const j = await response.json(); detail = j.detail || ''; } catch (_) {}
-          throw new Error(`Erreur ${response.status}${detail ? ' : ' + detail : ''}`);
-        }
-
-        const blob = await response.blob();
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-
-        const eSlug = (formData.get('entreprise') || 'entreprise').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-        const ext   = fileType === 'zip' ? 'zip' : 'pdf';
-        const prefix = action === '/best'      ? 'BestApplication'
-                     : fileType === 'zip'      ? 'Candidature'
-                     : (label || 'Document');
-        a.download = `${prefix}_${eSlug}.${ext}`;
-        a.href = url;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showStatus('success', '✓&nbsp; Telechargement lance !');
-        setTimeout(hideStatus, 3500);
-
-      } catch (err) {
-        showStatus('error', '✕&nbsp; ' + err.message);
-        console.error('[CV Generator]', err);
-      } finally {
-        setLoading(false);
-      }
+    } catch (err) {
+      endProgress(false);
+      showStatus('error', '✕&nbsp; ' + err.message);
+      console.error('[CV Gen]', err);
+    } finally {
+      setLoading(false);
     }
-  </script>
+  }
+</script>
 </body>
 </html>

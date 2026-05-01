@@ -107,7 +107,6 @@ def _detect_sector_from_desc(description: str) -> str:
 
 
 def _sector_suffix(description: str) -> str:
-    """Phrase additionnelle adaptee au secteur detecte."""
     sector = _detect_sector_from_desc(description)
     if sector == "banque":
         return " Sensibilise a la culture risk/compliance et a la rigueur propre aux environnements bancaires."
@@ -118,6 +117,87 @@ def _sector_suffix(description: str) -> str:
     if sector == "startup":
         return " Recherche un environnement ou l'impact est visible rapidement et ou l'autonomie est un atout."
     return ""
+
+
+# ─── Injection ATS : mots-cles offre -> resume CV ────────────────────────────
+
+# Mots-cles ATS reconnus par role, avec leur synonym Amine peut revendiquer
+_ATS_POOL = {
+    "business_dev": {
+        "pipeline":          "pipeline commercial",
+        "hunting":           "approche hunting",
+        "crm":               "CRM HubSpot",
+        "b2b":               "B2B",
+        "negociation":       "negociation",
+        "prospection":       "prospection",
+        "closing":           "closing",
+        "partenariat":       "partenariats strategiques",
+        "key account":       "gestion grands comptes",
+        "portefeuille":      "portefeuille clients",
+    },
+    "key_account": {
+        "compte strategique": "grands comptes strategiques",
+        "business review":    "business reviews",
+        "upsell":             "upsell / cross-sell",
+        "negociation":        "negociation cadres",
+        "churn":              "reduction du churn",
+        "satisfaction":       "satisfaction client",
+    },
+    "digital_marketing": {
+        "kpi":            "pilotage KPIs",
+        "engagement":     "+35% engagement (GROW 360)",
+        "contenu":        "production de contenu",
+        "seo":            "sensibilise au SEO/SEA",
+        "conversion":     "optimisation conversion (+20% taux de clic)",
+        "campagne":       "coordination de campagnes",
+        "analytics":      "lecture analytics",
+        "social media":   "social media multi-plateformes",
+    },
+    "product_marketing": {
+        "roadmap":        "lecture de roadmap produit",
+        "go-to-market":   "demarche go-to-market",
+        "positionnement": "analyse positionnement",
+        "pricing":        "notions de pricing strategique",
+        "segment":        "segmentation marche",
+        "brief":          "briefs marketing produit",
+    },
+    "financial_analyst": {
+        "budget":         "suivi budgetaire 360 KEUR/mois",
+        "forecast":       "forecast et variance",
+        "reporting":      "reporting direction",
+        "kpi":            "tableaux de bord KPI",
+        "analyse":        "analyse de donnees financieres",
+        "consolidation":  "notions de consolidation (MBA)",
+    },
+    "hr": {
+        "sourcing":       "sourcing actif",
+        "assessment":     "evaluation candidats",
+        "onboarding":     "coordination POEI / onboarding",
+        "vivier":         "gestion de vivier candidats",
+        "employer brand": "marque employeur",
+    },
+    "purchasing": {
+        "negociation":    "negociation fournisseurs (Negociation Business School 2025)",
+        "sourcing":       "sourcing fournisseurs",
+        "appel d'offres": "appels d'offres",
+        "benchmark":      "benchmark prix",
+        "categorie":      "analyse categorielle",
+    },
+}
+
+
+def _ats_keywords_from_desc(description: str, role: str) -> list[str]:
+    """Retourne les mots-cles ATS detectes dans la description, formules pour Amine."""
+    desc  = (description or "").lower()
+    pool  = _ATS_POOL.get(role, {})
+    found = [label for kw, label in pool.items() if kw in desc]
+    return found[:3]  # max 3 pour ne pas surcharger le resume
+
+
+def _build_ats_suffix(keywords: list[str]) -> str:
+    if not keywords:
+        return ""
+    return " Mots-cles detectes : " + " · ".join(keywords) + "."
 
 
 # ─── Resumes par role ─────────────────────────────────────────────────────────
@@ -716,9 +796,17 @@ def generate(offer: dict, contrat: str = "cdi") -> bytes:
 
     # Mode urgence : tagline direct sans jargon MBA
     if simple:
-        tagline = f"Profil operationnel & relation client  |  Disponible immediatement"
+        tagline = "Profil operationnel & relation client  |  Disponible immediatement"
     else:
         tagline = _build_tagline(role, contrat)
+        # Si le titre de l'offre est court et propre, l'injecter dans le tagline
+        if titre and len(titre) <= 40 and titre.replace(" ", "").isalpha() is False:
+            pass  # garder le tagline role-based generique
+        elif titre and 5 <= len(titre) <= 35:
+            dispo = {"cdi": "Disponible juin 2026",
+                     "alternance": "Alternance sept. 2026",
+                     "stage": "Stage juil. 2026"}.get(contrat, "Disponible 2026")
+            tagline = f"{titre}  |  MBA Manager de Business Unit — PSB Paris  |  {dispo}"
 
     pdf = _CVPdf(format="A4")
     pdf.set_auto_page_break(auto=False)
@@ -752,6 +840,9 @@ def generate(offer: dict, contrat: str = "cdi") -> bytes:
         sector_sfx = _sector_suffix(description)
         if sector_sfx:
             summary = summary.rstrip(".") + "." + sector_sfx
+        ats_kw = _ats_keywords_from_desc(description, role)
+        if ats_kw:
+            summary = summary.rstrip(".") + ". Competences cles matchees : " + " · ".join(ats_kw) + "."
 
     pdf.section("Profil")
     pdf.paragraph(summary, font_size=8.7)
