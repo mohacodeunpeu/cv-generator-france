@@ -18,23 +18,38 @@ from modes import (
 
 # ─── Closing ─────────────────────────────────────────────────────────────────
 
-def _closing(contrat: str) -> str:
-    if contrat == "alternance":
-        return (
-            "Cette alternance represente exactement l'equilibre que je recherche : "
-            "progresser en MBA tout en apportant une contribution concrete depuis "
-            "le premier mois. Je reste disponible pour un echange a votre convenance."
-        )
-    if contrat == "stage":
-        return (
-            "Ce stage represente l'opportunite de mettre mes competences au service "
-            "de vos projets dans un environnement exigeant. "
-            "Je reste disponible pour un echange a votre convenance."
-        )
-    return (
-        "Je suis convaincu de pouvoir apporter une contribution concrete et rapide "
-        "a votre equipe. Je reste disponible pour un echange a votre convenance."
-    )
+_CLOSINGS = {
+    # contrat → mode → texte
+    "alternance": {
+        "sales":     "Cette alternance represente l'opportunite d'allier MBA et terrain commercial — ce que je cherche depuis le debut. Je suis disponible pour en discuter quand vous le souhaitez.",
+        "corporate": "Cette alternance me permettrait de combiner ma formation MBA avec une experience analytique concrete. Je suis disponible pour un echange a votre convenance.",
+        "people":    "Cette alternance est pour moi le meilleur moyen de progresser en RH tout en apportant quelque chose de concret des le premier jour. Disponible pour echanger.",
+        "luxe":      "Cette alternance represente une vraie opportunite d'entrer dans l'univers du luxe avec un engagement serieux. Je reste disponible pour un entretien.",
+        "urgent":    "Ce poste m'interesse et je suis disponible immediatement. N'hesitez pas a me contacter.",
+        "_default":  "Cette alternance represente exactement l'equilibre que je recherche : progresser en MBA tout en apportant une contribution concrete depuis le premier mois. Je reste disponible.",
+    },
+    "stage": {
+        "sales":     "Ce stage serait pour moi l'occasion de contribuer a un vrai objectif commercial et de prouver ce dont je suis capable en conditions reelles. Disponible a votre convenance.",
+        "corporate": "Ce stage me permettrait de mettre en pratique les outils analytiques developpes en MBA dans un contexte operationnel exigeant. Je reste disponible pour en discuter.",
+        "people":    "Ce stage est une vraie opportunite de contribuer concretement a vos processus RH. Je suis disponible pour en echanger.",
+        "luxe":      "Ce stage serait pour moi l'entree dans un univers que je respecte et ou je suis pret a m'investir pleinement. Disponible pour un entretien.",
+        "urgent":    "Je suis disponible immediatement pour ce poste. N'hesitez pas a me contacter.",
+        "_default":  "Ce stage represente l'opportunite de mettre mes competences au service de vos projets dans un environnement exigeant. Je reste disponible.",
+    },
+    "cdi": {
+        "sales":     "Je suis pret a m'engager sur des objectifs concrets et a delivrer rapidement. Un entretien de 30 minutes suffira a vous en convaincre — je reste disponible.",
+        "corporate": "Je suis convaincu que ce poste correspond a la fois a ce que j'apporte aujourd'hui et a ce que je veux construire. Disponible pour un echange a votre convenance.",
+        "people":    "Je serais ravi de vous montrer concretement comment je travaille sur un processus de recrutement reel. Je reste disponible pour un entretien.",
+        "luxe":      "Je suis disponible pour un entretien et convaincu que nous trouverons rapidement ce qui nous convient mutuellement.",
+        "urgent":    "Je suis disponible immediatement et serais heureux d'echanger avec vous a votre convenance.",
+        "_default":  "Je reste disponible pour un echange a votre convenance.",
+    },
+}
+
+
+def _closing(contrat: str, mode_id: str = "_default") -> str:
+    bank = _CLOSINGS.get(contrat, _CLOSINGS["cdi"])
+    return bank.get(mode_id, bank.get("_default", "Je reste disponible pour un echange a votre convenance."))
 
 
 # ─── Mode URGENT (jobs terrain) ───────────────────────────────────────────────
@@ -132,6 +147,18 @@ def _bridge(mode_id: str, description: str) -> str:
     return ""
 
 
+# ─── Anti-duplication ────────────────────────────────────────────────────────
+
+def _overlap(a: str, b: str, threshold: int = 3) -> bool:
+    """True si les 2 textes partagent trop de mots cles significatifs."""
+    stop = {"le","la","les","un","une","des","de","du","et","en","au","aux",
+            "ce","que","qui","je","mon","ma","mes","vous","votre","vos",
+            "dans","sur","par","pour","avec","sans","est","sont","a","c"}
+    wa = {w for w in a.lower().split() if len(w) > 4 and w not in stop}
+    wb = {w for w in b.lower().split() if len(w) > 4 and w not in stop}
+    return len(wa & wb) >= threshold
+
+
 # ─── Generation standard ─────────────────────────────────────────────────────
 
 def generate(offer: dict, contrat: str = "cdi") -> str:
@@ -151,7 +178,11 @@ def generate(offer: dict, contrat: str = "cdi") -> str:
     pitch   = mode_cfg["pitch"]
     plan    = mode_cfg["plan_30j"]
     human   = human_phrase(mode_id, ctype, entreprise)
-    closing = _closing(contrat)
+    closing = _closing(contrat, mode_id)
+
+    # Anti-duplication : supprime bridge si contenu trop proche du pitch
+    if bridge and _overlap(bridge, pitch):
+        bridge = ""
 
     paras = ["Madame, Monsieur,", hook]
     if bridge:
@@ -218,7 +249,10 @@ def generate_best(offer: dict, contrat: str = "cdi") -> str:
     pitch  = mode_cfg["pitch"]
     plan   = mode_cfg["plan_30j"]
     human  = human_phrase(mode_id, ctype, entreprise)
-    closing = _closing(contrat)
+    closing = _closing(contrat, mode_id)
+
+    if bridge and _overlap(bridge, pitch):
+        bridge = ""
 
     paras = ["Madame, Monsieur,", hook]
     if bridge:

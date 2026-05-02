@@ -75,19 +75,20 @@ _MODES = {
             ),
             "human": {
                 "grand_groupe": (
-                    "Ce qui m'attire chez {entreprise}, c'est la combinaison ressources "
-                    "et exigence : les grands groupes forment des commerciaux qui savent "
-                    "executer a un niveau que peu d'environnements permettent d'atteindre."
+                    "{entreprise} est exactement l'environnement dans lequel je veux "
+                    "progresser : exigence elevee, cycles commerciaux complexes, "
+                    "interlocuteurs de haut niveau. C'est ce qui fait sortir du lot "
+                    "un commercial en deux ans."
                 ),
                 "startup": (
-                    "J'ai une nette preference pour les environnements ou les decisions "
-                    "se prennent vite et ou l'impact commercial est visible immediatement. "
-                    "C'est ce que {entreprise} represente pour moi."
+                    "Dans un environnement comme {entreprise}, chaque deal compte "
+                    "doublement : pour le revenue et pour la credibilite du produit. "
+                    "C'est exactement la pression dans laquelle je performe le mieux."
                 ),
                 "pme": (
-                    "Ce qui m'attire dans une structure comme {entreprise}, c'est la "
-                    "proximite avec les decisions et la capacite de voir directement "
-                    "l'impact de son travail commercial."
+                    "Ce qui me motive dans une structure comme {entreprise} : "
+                    "l'impact est direct, les bons resultats se voient immediatement, "
+                    "et il y a une vraie marge de manoeuvre pour celui qui execute."
                 ),
             },
         },
@@ -158,18 +159,19 @@ _MODES = {
             ),
             "human": {
                 "grand_groupe": (
-                    "Les grandes structures forment des profils capables d'executer avec "
-                    "rigueur dans des environnements complexes. C'est exactement le niveau "
-                    "d'exigence que je recherche en rejoignant {entreprise}."
+                    "Rejoindre {entreprise}, c'est travailler dans un environnement ou "
+                    "la rigueur analytique est non negociable. C'est precisement le niveau "
+                    "de standards que mon MBA et mon experience operationnelle m'ont prepare a tenir."
                 ),
                 "startup": (
-                    "Ce qui m'attire dans un environnement comme {entreprise}, c'est "
-                    "la vitesse de decision et la possibilite de voir rapidement l'impact "
-                    "concret de son travail analytique."
+                    "Dans une structure comme {entreprise}, l'analyse n'est pas un reporting "
+                    "de plus — c'est ce qui guide les decisions rapides. C'est l'utilite "
+                    "concrete du travail analytique qui me motive."
                 ),
                 "pme": (
-                    "Dans une structure comme {entreprise}, le travail analytique a un "
-                    "impact direct et visible — c'est exactement ce que je recherche."
+                    "Ce qui m'attire chez {entreprise} : la taille permet d'avoir "
+                    "une vraie vue d'ensemble du business, pas juste un silo. "
+                    "Je travaille mieux quand je comprends pourquoi je produis ce que je produis."
                 ),
             },
         },
@@ -237,18 +239,20 @@ _MODES = {
             ),
             "human": {
                 "grand_groupe": (
-                    "Les grandes structures ont des besoins RH complexes et des volumes "
-                    "importants. C'est exactement le contexte dans lequel j'ai prouve "
-                    "ma capacite a delivrer chez {entreprise}."
+                    "Les grands groupes comme {entreprise} ont la particularite d'avoir "
+                    "des enjeux RH a la fois massifs et tres structures. C'est le contexte "
+                    "dans lequel j'ai prouve que je peux tenir un volume important "
+                    "sans perdre en qualite de selection."
                 ),
                 "startup": (
-                    "Dans un environnement comme {entreprise}, le recrutement est un "
-                    "levier de croissance direct. C'est cette vision que j'apporte : "
-                    "RH comme business partner, pas comme support."
+                    "Dans une startup comme {entreprise}, un bon recrutement peut "
+                    "changer la trajectoire d'une equipe entiere. Je ne recrute pas "
+                    "pour remplir des postes — je recrute pour construire quelque chose."
                 ),
                 "pme": (
-                    "Dans une structure comme {entreprise}, le recrutement a un impact "
-                    "direct et mesurable. C'est l'environnement ou j'aime travailler."
+                    "Dans une structure comme {entreprise}, chaque recrutement compte "
+                    "vraiment — il n'y a pas de marge pour une mauvaise decision. "
+                    "C'est la precision que j'apporte."
                 ),
             },
         },
@@ -318,17 +322,21 @@ _MODES = {
             ),
             "human": {
                 "grand_groupe": (
-                    "Rejoindre {entreprise}, c'est integrer une maison qui a fait de "
-                    "l'excellence une culture. C'est precisement ce niveau d'exigence "
-                    "qui me motive."
+                    "{entreprise} represente pour moi l'aboutissement d'une demarche "
+                    "deja commencee au Printemps Haussmann : servir une clientele qui "
+                    "n'accepte pas l'approximation. Je suis pret a m'y engager "
+                    "avec le meme niveau d'exigence."
                 ),
                 "startup": (
-                    "Ce qui m'attire chez {entreprise}, c'est l'ambition de "
-                    "democratiser le premium sans compromis sur la qualite."
+                    "Ce qui m'interesse chez {entreprise}, c'est la volonte de "
+                    "construire quelque chose de nouveau dans un univers qui existe "
+                    "depuis longtemps. Cette tension entre heritage et innovation, "
+                    "c'est exactement ce qui rend le secteur stimulant."
                 ),
                 "pme": (
-                    "Ce qui m'attire dans une maison comme {entreprise}, c'est "
-                    "l'authenticite — la passion du produit avant tout."
+                    "Dans une maison comme {entreprise}, le rapport au produit est "
+                    "different — plus direct, plus authentique. C'est ce type de "
+                    "relation au metier que je recherche."
                 ),
             },
         },
@@ -366,13 +374,27 @@ _MODES = {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _BIG_GROUPS = {
-    "lvmh","loreal","l'oreal","sanofi","bnp","axa","societe generale","total",
+    # France CAC40 + retail + luxe
+    "lvmh","loreal","l'oreal","l oreal","sanofi","bnp","axa","societe generale","total",
     "totalenergies","michelin","renault","stellantis","danone","hermes","chanel",
     "kering","dior","air france","edf","engie","orange","air liquide","saint-gobain",
     "schneider","legrand","thales","safran","airbus","bouygues","vinci","capgemini",
     "sopra","deloitte","pwc","kpmg","mckinsey","bain","bcg","accenture","hsbc",
     "natixis","carrefour","leclerc","decathlon","leroy merlin","fnac","galeries lafayette",
     "printemps","sephora","gucci","cartier","bulgari","tiffany","yves saint laurent",
+    "zara","inditex","h&m","uniqlo","saint laurent","van cleef","dior","givenchy",
+    # Tech & conseil international
+    "salesforce","google","microsoft","amazon","apple","meta","netflix","oracle",
+    "sap","ibm","cisco","adobe","linkedin","slack","hubspot","zendesk","workday",
+    "servicenow","stripe","adyen","paypal","spotify","uber","airbnb","booking",
+    "doctolib","blablacar","leboncoin","cdiscount","rakuten","veepee",
+    "publicis","havas","dentsu","wpp","omnicom","ipg",
+    # Banque / assurance
+    "credit agricole","bnp paribas","societe generale","lcl","cic","bred",
+    "allianz","generali","covea","maif","macif","mma","groupama","ag2r",
+    # RH / recrutement
+    "adp","manpower","randstad","adecco","hays","michael page","robert half",
+    "korn ferry","spencer stuart","egon zehnder","apec","france travail",
 }
 
 _STARTUP_KW = {
@@ -381,9 +403,18 @@ _STARTUP_KW = {
 }
 
 
+def _norm(s: str) -> str:
+    """Lowercase + strip accents courants pour comparaison robuste."""
+    return (s.lower()
+             .replace("é","e").replace("è","e").replace("ê","e")
+             .replace("à","a").replace("â","a")
+             .replace("ô","o").replace("û","u").replace("î","i")
+             .replace("'","'").replace("’","'"))
+
+
 def detect_company_type(entreprise: str, description: str = "") -> str:
-    e = (entreprise or "").lower()
-    d = (description or "").lower()
+    e = _norm(entreprise or "")
+    d = _norm(description or "")
     if any(b in e for b in _BIG_GROUPS):
         return "grand_groupe"
     if any(s in f"{e} {d}" for s in _STARTUP_KW):
