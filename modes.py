@@ -21,6 +21,13 @@ _MODES = {
             "grand compte","developpement commercial","hunting","hunter",
             "account executive","revenue","responsable commercial","ventes",
             "charge d'affaires","ingenieur commercial",
+            # Variantes terrain pro
+            "responsable zone","animateur commercial","animateur des ventes",
+            "animateur reseau","charge de relation client","relation client",
+            "charge de clientele","conseiller commercial","attache commercial",
+            "directeur commercial","vp sales","head of sales","head of revenue",
+            "sales manager","territory manager","area manager","regional manager",
+            "responsable secteur","chef des ventes","inspecteur commercial",
         ],
         "cv": {
             "tagline": "Business Developer B2B  |  MBA Manager de Business Unit",
@@ -104,6 +111,16 @@ _MODES = {
             "chef de projet","purchasing","acheteur","procurement","trade marketing",
             "marketing strategique","category","tresorerie","risk","compliance",
             "chef de projet digital","growth","performance marketing","seo","sea",
+            # Communication / evenementiel / coordination
+            "communication","charge de communication","responsable communication",
+            "evenementiel","evenement","coordinateur","charge de mission",
+            "charge de projet","responsable marketing","marketing digital",
+            "chef de mission","gestionnaire de projet","content manager",
+            "responsable contenu","charge de contenu","media","relations presse",
+            # Finance / gestion
+            "gestionnaire","analyste","conseiller en gestion","patrimoine",
+            "conseiller financier","conseiller bancaire","charge de clientele pro",
+            "teleconseiller pro","responsable financier",
         ],
         "cv": {
             "tagline": "MBA Manager de Business Unit  |  PSB Paris School of Business",

@@ -154,12 +154,22 @@ OUTILS_BASE = "CRM : HubSpot, Sales Navigator  |  Marketing : Canva, Notion, Wix
 # ─── Detection jobs simples (mode urgence) ────────────────────────────────────
 
 SIMPLE_JOB_KEYWORDS = [
-    "serveur", "serveuse", "vendeur", "vendeuse", "caissier", "caissiere",
-    "livreur", "livreuse", "agent", "animateur", "hotesse", "standardiste",
-    "receptionniste", "barman", "bartender", "equipier", "plongeur",
-    "magasinier", "preparateur", "conducteur", "chauffeur", "operateur",
-    "agent de securite", "vigile", "gardien", "aide", "assistant polyvalent",
-    "employe polyvalent", "manutentionnaire",
+    # Restauration / hotellerie
+    "serveur", "serveuse", "barman", "bartender", "plongeur", "commis",
+    "cuisinier", "cuisiniere", "chef de partie", "aide cuisinier",
+    "maitre d hotel", "maitre d'hotel", "runner", "busboy",
+    # Caisse / vente terrain simple
+    "caissier", "caissiere", "hote de caisse", "hotesse de caisse",
+    "vendeur", "vendeuse", "equipier", "employe de rayon",
+    # Livraison / logistique terrain
+    "livreur", "livreuse", "conducteur", "chauffeur", "chauffeur vtc",
+    "magasinier", "preparateur de commandes", "manutentionnaire", "operateur",
+    # Securite / gardiennage
+    "agent de securite", "vigile", "gardien", "surveillant",
+    # Accueil / service
+    "hotesse", "standardiste", "receptionniste", "animateur",
+    # Generiques terrain
+    "agent", "aide", "assistant polyvalent", "employe polyvalent",
 ]
 
 COMMERCIAL_KEYWORDS = [
