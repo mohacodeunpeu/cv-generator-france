@@ -154,22 +154,54 @@ OUTILS_BASE = "CRM : HubSpot, Sales Navigator  |  Marketing : Canva, Notion, Wix
 # ─── Detection jobs simples (mode urgence) ────────────────────────────────────
 
 SIMPLE_JOB_KEYWORDS = [
-    # Restauration / hotellerie
-    "serveur", "serveuse", "barman", "bartender", "plongeur", "commis",
+    # ── Restauration / cuisine ──────────────────────────────────────────────
+    "serveur", "serveuse", "barman", "bartender", "barmaid",
+    "plongeur", "plongeuse", "commis de cuisine", "commis de salle",
     "cuisinier", "cuisiniere", "chef de partie", "aide cuisinier",
     "maitre d hotel", "maitre d'hotel", "runner", "busboy",
-    # Caisse / vente terrain simple
+    "chef patissier", "patissier", "boulanger", "traiteur",
+    "pizzaiolo", "sushiman", "grillardin", "rotisseur",
+    "employe de restauration", "agent de restauration",
+    # ── Caisse / vente terrain ──────────────────────────────────────────────
     "caissier", "caissiere", "hote de caisse", "hotesse de caisse",
     "vendeur", "vendeuse", "equipier", "employe de rayon",
-    # Livraison / logistique terrain
-    "livreur", "livreuse", "conducteur", "chauffeur", "chauffeur vtc",
-    "magasinier", "preparateur de commandes", "manutentionnaire", "operateur",
-    # Securite / gardiennage
-    "agent de securite", "vigile", "gardien", "surveillant",
-    # Accueil / service
-    "hotesse", "standardiste", "receptionniste", "animateur",
-    # Generiques terrain
-    "agent", "aide", "assistant polyvalent", "employe polyvalent",
+    "employe commercial", "agent commercial terrain", "placier",
+    "demonstrateur", "promoteur des ventes", "merchandiser",
+    # ── Livraison / logistique terrain ─────────────────────────────────────
+    "livreur", "livreuse", "chauffeur livreur", "coursier",
+    "conducteur", "chauffeur", "chauffeur vtc", "chauffeur uber",
+    "magasinier", "preparateur de commandes", "manutentionnaire",
+    "operateur logistique", "agent logistique", "cariste",
+    "trieur", "agent de quai", "agent d'exploitation",
+    # ── Securite / gardiennage ──────────────────────────────────────────────
+    "agent de securite", "agent de surveillance", "vigile",
+    "gardien", "gardien de nuit", "surveillant", "portier",
+    "agent cynophile", "rondier", "maitre chien",
+    # ── Nettoyage / entretien ───────────────────────────────────────────────
+    "agent d'entretien", "agent de nettoyage", "technicien de surface",
+    "femme de chambre", "valet de chambre", "gouvernante",
+    "agent de proprete", "operateur de nettoyage",
+    # ── Accueil / service client terrain ───────────────────────────────────
+    "hotesse", "hotesse d'accueil", "standardiste", "receptionniste",
+    "agent d'accueil", "conseiller accueil", "operateur d'accueil",
+    "animateur", "animatrice", "hote", "hote d'accueil",
+    # ── Sante / aide a la personne ─────────────────────────────────────────
+    "aide soignant", "aide soignante", "auxiliaire de vie",
+    "agent de service hospitalier", "brancardier", "ambulancier",
+    "auxiliaire de puericulture", "garde d'enfants", "nounou",
+    "assistant de vie", "aide menagere",
+    # ── BTP / technique terrain ─────────────────────────────────────────────
+    "ouvrier", "manoeuvre", "technicien de maintenance",
+    "electricien", "plombier", "menuisier", "peintre",
+    "carreleur", "charpentier", "macon", "soudeur",
+    "technicien poseur", "installateur",
+    # ── Retail / grande distribution ────────────────────────────────────────
+    "employe libre service", "employe polyvalent", "assistant polyvalent",
+    "agent de drive", "preparateur drive", "employe drive",
+    "hote de drive", "hotesse de drive",
+    # ── Generiques terrain ──────────────────────────────────────────────────
+    "agent", "aide", "operateur de production", "operateur de saisie",
+    "facteur", "postier", "agent postal",
 ]
 
 COMMERCIAL_KEYWORDS = [

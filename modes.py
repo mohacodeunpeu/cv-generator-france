@@ -16,18 +16,32 @@ _MODES = {
     # ── 1. SALES ─────────────────────────────────────────────────────────────
     "sales": {
         "detect_kw": [
+            # Core B2B / chasse
             "business dev","bizdev","commercial","vente","sales","closing",
-            "prospection","sdr","bdr","key account","account manager","kam",
-            "grand compte","developpement commercial","hunting","hunter",
-            "account executive","revenue","responsable commercial","ventes",
-            "charge d'affaires","ingenieur commercial",
-            # Variantes terrain pro
-            "responsable zone","animateur commercial","animateur des ventes",
-            "animateur reseau","charge de relation client","relation client",
-            "charge de clientele","conseiller commercial","attache commercial",
-            "directeur commercial","vp sales","head of sales","head of revenue",
-            "sales manager","territory manager","area manager","regional manager",
-            "responsable secteur","chef des ventes","inspecteur commercial",
+            "prospection","sdr","bdr","hunting","hunter","sourcing commercial",
+            # Comptes / portefeuille
+            "key account","account manager","kam","grand compte","account executive",
+            "gestionnaire de compte","charge de compte","customer success",
+            "customer success manager","csm","account director",
+            # Titres classiques
+            "responsable commercial","charge d'affaires","ingenieur commercial",
+            "attache commercial","conseiller commercial","technico-commercial",
+            "vdp","vdi","vendeur independant",
+            # Management commercial
+            "directeur commercial","directeur des ventes","chef des ventes",
+            "vp sales","head of sales","head of revenue","sales manager",
+            "responsable equipe commerciale","manager commercial",
+            # Zone / reseau
+            "responsable zone","territory manager","area manager","regional manager",
+            "responsable secteur","inspecteur commercial","responsable regional",
+            "chef de secteur","animateur commercial","animateur des ventes",
+            "animateur reseau","chef de region",
+            # Relation client pro
+            "charge de relation client","relation client","charge de clientele",
+            "responsable relation client","charge de clientele pro",
+            # Divers revenue
+            "developpement commercial","revenue","partenariats","partnerships",
+            "alliance","channel","indirect","revendeur","franchise",
         ],
         "cv": {
             "tagline": "Business Developer B2B  |  MBA Manager de Business Unit",
@@ -104,23 +118,51 @@ _MODES = {
     # ── 2. CORPORATE ─────────────────────────────────────────────────────────
     "corporate": {
         "detect_kw": [
+            # Finance / contrôle
             "financial analyst","analyste financier","controle de gestion","fp&a",
-            "data analyst","business analyst","consultant","conseil","audit",
-            "reporting","digital marketing","marketing manager","product manager",
-            "chef de produit","brand manager","category manager","project manager",
-            "chef de projet","purchasing","acheteur","procurement","trade marketing",
-            "marketing strategique","category","tresorerie","risk","compliance",
-            "chef de projet digital","growth","performance marketing","seo","sea",
-            # Communication / evenementiel / coordination
+            "tresorerie","risk","compliance","audit","auditeur","reviseur",
+            "responsable financier","directeur financier","daf","cfo","credit manager",
+            "conseiller financier","conseiller en gestion","conseiller bancaire",
+            "conseiller en patrimoine","conseiller patrimonial","gestionnaire de patrimoine",
+            "analyste credit","analyste risque","charge de recouvrement",
+            # Data / analyse
+            "data analyst","business analyst","data scientist","bi analyst",
+            "analyste bi","analyste donnees","reporting","data engineer",
+            "analyste performance","web analyst","crm analyst",
+            # Consulting / stratégie
+            "consultant","conseil","strategy","charge de mission","chef de mission",
+            "responsable strategie","directeur strategie","charge de projet strategique",
+            # Marketing
+            "digital marketing","marketing manager","responsable marketing",
+            "marketing digital","performance marketing","growth","seo","sea","sem",
+            "brand manager","trade marketing","marketing strategique",
+            "responsable acquisition","acquisition","growth hacker","growth marketer",
+            "head of marketing","directeur marketing","cmo",
+            # Product / chef de produit
+            "product manager","chef de produit","product owner","po","pm",
+            "product marketing","brand manager","category manager",
+            "responsable produit","product lead","head of product",
+            # Communication / contenu / events
             "communication","charge de communication","responsable communication",
-            "evenementiel","evenement","coordinateur","charge de mission",
-            "charge de projet","responsable marketing","marketing digital",
-            "chef de mission","gestionnaire de projet","content manager",
-            "responsable contenu","charge de contenu","media","relations presse",
-            # Finance / gestion
-            "gestionnaire","analyste","conseiller en gestion","patrimoine",
-            "conseiller financier","conseiller bancaire","charge de clientele pro",
-            "teleconseiller pro","responsable financier",
+            "content manager","responsable contenu","charge de contenu",
+            "content creator","editeur","redacteur","journaliste",
+            "relations presse","rp","attache de presse","media","community manager",
+            "social media manager","influencer marketing",
+            "evenementiel","evenement","coordinateur evenementiel",
+            "responsable evenementiel","charge d'evenementiel","event manager",
+            # Gestion de projet
+            "project manager","chef de projet","charge de projet",
+            "responsable projet","pmo","gestionnaire de projet",
+            "coordinateur","chef de mission","charge de mission",
+            # Achats / procurement
+            "purchasing","acheteur","procurement","buyer","category",
+            "responsable achats","directeur achats","category manager",
+            # RH corporate (hors recrutement pur)
+            "responsable paie","gestionnaire paie","charge de formation",
+            "responsable formation","responsable rse","charge de rse",
+            # Divers corporate
+            "teleconseiller pro","charge de clientele pro","back office",
+            "middle office","front office banque","relationship manager",
         ],
         "cv": {
             "tagline": "MBA Manager de Business Unit  |  PSB Paris School of Business",
@@ -197,10 +239,27 @@ _MODES = {
     # ── 3. PEOPLE / HR ───────────────────────────────────────────────────────
     "people": {
         "detect_kw": [
-            "talent acquisition","talent","recrutement","recruitment","hrbp",
-            "sourcer","chasseur de tete","rh","ressources humaines",
-            "people manager","campus manager","charge de recrutement",
-            "responsable rh","generaliste rh","people ops","people partner",
+            # Recrutement
+            "talent acquisition","talent","recrutement","recruitment",
+            "charge de recrutement","responsable recrutement","chargee de recrutement",
+            "sourcer","sourceur","chasseur de tete","headhunter",
+            "campus recruiter","campus manager","campus",
+            "recruteur","recruteuse","talent manager","talent partner",
+            # RH généraliste / opérationnel
+            "rh","ressources humaines","hrbp","hr business partner",
+            "generaliste rh","responsable rh","drh","drhh","drh adjoint",
+            "directeur rh","charge de missions rh","assistant rh",
+            "people ops","people partner","people manager","people lead",
+            "hr manager","hr generalist","head of people","chief people officer",
+            # Formation / développement
+            "charge de formation","responsable formation","learning",
+            "talent development","responsable developpement rh",
+            "responsable people","developement des competences",
+            # Relations sociales / paie (HRBP)
+            "relations sociales","dialogue social","responsable relations sociales",
+            "juriste rh","charge de relations sociales",
+            # Marque employeur
+            "marque employeur","employer brand","attractivite",
         ],
         "cv": {
             "tagline": "Talent Acquisition & RH Operationnelle  |  MBA Manager de Business Unit",
@@ -278,10 +337,27 @@ _MODES = {
     # ── 4. LUXE / PREMIUM ────────────────────────────────────────────────────
     "luxe": {
         "detect_kw": [
-            "luxe","premium","haute couture","joaillerie","horlogerie",
-            "brand ambassador","conseiller de vente luxe","retail luxe",
-            "fashion","maison","haut de gamme","bijouterie","parfumerie",
-            "cosmetique premium","mode","luxury","prestige",
+            # Luxe / prestige
+            "luxe","luxury","prestige","haut de gamme","premium",
+            "haute couture","couture","pret a porter haut de gamme",
+            # Bijouterie / horlogerie
+            "joaillerie","bijouterie","joaillier","bijoutier",
+            "horlogerie","horloger","montres","gemologie",
+            # Mode / fashion
+            "fashion","mode","stylisme","styliste","textile premium",
+            "responsable boutique luxe","directeur boutique luxe",
+            # Beaute / parfum
+            "parfumerie","cosmetique premium","beaute premium",
+            "conseiller beaute luxe","make up artist","maquilleur",
+            # Ambassadeur / conseil
+            "brand ambassador","ambassadeur de marque","conseiller de vente luxe",
+            "conseiller luxe","retail luxe","client advisor","luxury advisor",
+            "personal shopper","styliste conseil",
+            # Maisons
+            "maison","maison de luxe","house","flagship",
+            # Hospitality premium
+            "hotel 5 etoiles","hotel palace","palace","concierge","butler",
+            "responsable clientele vip","vip","privatisation",
         ],
         "cv": {
             "tagline": "Conseiller Premium  |  Printemps Haussmann  |  MBA Manager de Business Unit",
