@@ -1,0 +1,22 @@
+# Design lecture humaine (retail premium, hospitality) : colonne latérale, photo possible.
+# Moins sûr pour les ATS (deux colonnes) : réservé au mode HUMAN_FIRST.
+id: human_premium
+name: Premium lecture humaine
+version: 2
+ats_safe: false
+layout: two_column
+header: band
+photo_modes: [OFF, HEADER, SIDEBAR]
+colors:
+  ink: "#1B1A17"
+  muted: "#5E5A52"
+  accent: "#6B4E2E"
+  accent2: "#1C5D7A"
+  rule: "#DDD6CC"
+  band: "#F5F1EA"
+fonts: {body: "Fira Sans", display: "Fira Sans"}
+sizes_pt: {name: 22, headline: 12, section: 8.6, body: 9.4, meta: 8.4}
+margins_mm: {top: 11, right: 13, bottom: 11, left: 13}
+bullet: "•"
+max_bullets_featured: 4
+max_bullets_other: 2

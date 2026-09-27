@@ -1,0 +1,28 @@
+id: retail_premium
+name: Retail premium / luxe
+version: 1
+detect:
+  title_keywords: [conseiller de vente, conseillère de vente, sales advisor, client advisor, sales associate, vendeur luxe, vendeuse luxe, brand ambassador, conseiller clientèle boutique, store, boutique, visual merchandiser]
+  text_keywords: [boutique, maison, luxe, premium, clientèle internationale, expérience client, clienteling, cérémonial de vente, grand magasin, objectifs individuels, haut de gamme]
+vocabulary: [expérience client, clienteling, clientèle internationale, cérémonial de vente, fidélisation, objectifs individuels, univers de marque, haut de gamme]
+priorities:
+  - excellence de l'expérience client
+  - atteinte des objectifs individuels
+  - langues étrangères pour la clientèle internationale
+  - présentation et codes de la maison
+signals_positive: [grand magasin premium, dépassement d'objectif, langues, clientèle internationale]
+expectations: [présentation soignée, disponibilité week-ends (si l'offre le dit), sens du service]
+dominant_skills: [vente conseil, relation client, langues, fidélisation, présentation]
+formality: 4
+cv_style:
+  ats_mode: HUMAN_FIRST
+  design: human_premium
+  photo: optional
+  emphasis: [enseignes premium, langues, résultats vs objectifs]
+  summary_angle: "vente conseil premium, clientèle internationale, exigence de service"
+letter_style:
+  tone: élégant, sobre, précis
+  length_words: [200, 300]
+  must: ["l'univers de la maison (depuis l'offre)", "une preuve de relation clientèle haut de gamme"]
+common_mistakes: [superlatifs vides sur le luxe, oublier les langues, ton trop familier]
+useful_proofs: [Printemps Haussmann, +10% vs objectif, langues parlées]

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="{{ letter.language }}">
+<head>
+<meta charset="utf-8">
+<title>Lettre — {{ name }}</title>
+<style>
+{{ font_css | safe }}
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "PAI Sans", "Fira Sans", "DejaVu Sans", sans-serif; color: {{ d.colors.ink }}; font-size: 10.4pt; line-height: 1.5;
+       -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { width: 210mm; min-height: 297mm; padding: 18mm 20mm 16mm; position: relative; }
+.badge { position: absolute; right: 20mm; top: 7mm; font-size: 7.6pt; font-weight: 600; letter-spacing: .8pt; color: #8A2B12;
+         border: .8pt solid #8A2B12; padding: .6mm 1.6mm; border-radius: 1mm; }
+.sender .name { font-size: 15pt; font-weight: 600; color: {{ d.colors.ink }}; letter-spacing: .2pt; }
+.sender .contact { font-size: 8.8pt; color: {{ d.colors.muted }}; margin-top: 1mm; }
+.rule { height: 1.6pt; background: {{ d.colors.accent }}; width: 22mm; margin: 5mm 0 7mm; }
+.meta { display: flex; justify-content: space-between; gap: 8mm; font-size: 9.6pt; margin-bottom: 7mm; }
+.recipient { color: {{ d.colors.ink }}; }
+.date { color: {{ d.colors.muted }}; white-space: nowrap; }
+.subject { font-weight: 600; margin-bottom: 6mm; }
+p { margin: 0 0 3.6mm; text-align: left; }
+.signature { margin-top: 7mm; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+  {% if letter.draft %}<div class="badge">{{ draft_label }}</div>{% endif %}
+  <div class="sender"><div class="name">{{ name }}</div><div class="contact">{{ contact | join("  ·  ") }}</div></div>
+  <div class="rule"></div>
+  <div class="meta"><div class="recipient">{{ letter.recipient }}</div><div class="date">{{ letter.place_date }}</div></div>
+  <div class="subject">{{ letter.subject }}</div>
+  {% if letter.salutation %}<p>{{ letter.salutation }}</p>{% endif %}
+  {% for para in paragraphs %}<p>{{ para }}</p>{% endfor %}
+  <div class="signature">{{ letter.signature }}</div>
+</div>
+</body>
+</html>

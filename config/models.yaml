@@ -1,0 +1,91 @@
+# Modèles IA par tâche — versionné. Changer un modèle = modifier ce fichier, pas le code.
+# Les "artifact_tiers" sont utilisés par PAI Studio (page claude.ai, capacité `sample`) :
+#   quick ≈ extraction rapide, default ≈ rédaction, complex ≈ stratégie / critique / jugement.
+version: 3
+
+default_provider: claude        # claude | openai | local | null  (surchargeable par PAI_AI_PROVIDER)
+
+providers:
+  claude:
+    tasks:
+      extract: claude-haiku-4-5
+      analyze_offer: claude-haiku-4-5
+      analyze_company: claude-haiku-4-5
+      match: claude-sonnet-5
+      strategy: claude-opus-5-5
+      cv_content: claude-sonnet-5
+      cv_fix: claude-sonnet-5
+      letter: claude-sonnet-5
+      answers: claude-sonnet-5
+      critique: claude-opus-5-5
+      factuality_judge: claude-opus-5-5
+      judge_pair: claude-opus-5-5
+      judge_visual: claude-opus-5-5
+      learning_rules: claude-sonnet-5
+      chat: claude-haiku-4-5
+    # Prix (USD / million de tokens) pour le garde-fou de coût. À ajuster si la grille change.
+    pricing_usd_per_mtok:
+      claude-opus-5-5: {input: 4.0, output: 20.0}
+      claude-sonnet-5: {input: 2.0, output: 10.0}
+      claude-haiku-4-5: {input: 1.0, output: 5.0}
+    # Capacités par modèle. Opus 5.5 et Sonnet 5 refusent `temperature` (erreur 400) :
+    # la stabilité vient de l'effort bas/moyen, des sorties JSON validées et du cache.
+    capabilities:
+      claude-opus-5-5: {temperature: false, thinking: adaptive, effort: true}
+      claude-sonnet-5: {temperature: false, thinking: adaptive, effort: true}
+      claude-haiku-4-5: {temperature: true, thinking: none, effort: false}
+    effort_by_task:
+      strategy: high
+      critique: high
+      factuality_judge: high
+      judge_pair: high
+      judge_visual: medium
+      match: medium
+      cv_content: medium
+      cv_fix: medium
+      letter: medium
+      answers: medium
+      learning_rules: medium
+  openai:
+    # API compatible OpenAI. Le nom du modèle vient de l'environnement (OPENAI_MODEL) : aucun nom inventé ici.
+    tasks: {default: "${OPENAI_MODEL}"}
+  local:
+    # Ollama ou tout serveur compatible OpenAI (LOCAL_BASE_URL, LOCAL_MODEL).
+    tasks: {default: "${LOCAL_MODEL}"}
+
+artifact_tiers:
+  extract: quick
+  analyze_offer: quick
+  analyze_company: quick
+  match: default
+  strategy: complex
+  cv_content: default
+  cv_fix: default
+  letter: default
+  answers: default
+  critique: complex
+  factuality_judge: complex
+  judge_pair: complex
+  judge_visual: complex
+  learning_rules: default
+  chat: quick
+
+generation:
+  temperature: 0.2
+  max_retries: 2            # nouvelles tentatives après la première, puis échec propre (FAILED)
+  max_tokens:
+    default: 4000
+    cv_content: 6000
+    critique: 5000
+    letter: 3000
+
+cost_guard:
+  usd_to_eur: 0.92
+  eur_per_pack_max: 0.80    # plafond par Application Pack
+  eur_per_day_max: 6.00     # plafond journalier
+  deep_mode_estimate_calls: 11
+
+modes:
+  QUICK:    {steps: [ingest, analyze, match, strategy]}
+  STANDARD: {steps: [ingest, analyze, match, strategy, cv, validate, critique, letter, questions, pack], critique_cycles: 1, variants: 1}
+  DEEP:     {steps: [ingest, analyze, match, strategy, cv, validate, critique, letter, questions, pack], critique_cycles: 3, variants: 3, visual_qa: true}

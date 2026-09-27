@@ -1,0 +1,12 @@
+code: CA
+name: Canada
+language: en
+paper: Letter
+photo: never
+age: never
+family_status: never
+nationality: never
+address: city_only
+max_pages: 2
+date_format: "MMM YYYY"
+notes: ["Québec : documents en français si l'offre est en français."]

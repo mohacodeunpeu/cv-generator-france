@@ -1,0 +1,24 @@
+id: customer_success
+name: Customer success
+version: 1
+detect:
+  title_keywords: [customer success manager, csm, customer success, chargé de succès client, chargée de succès client, onboarding specialist, account manager saas]
+  text_keywords: [onboarding, churn, rétention, adoption, nps, saas, renouvellement, expansion, satisfaction client, qbr]
+vocabulary: [onboarding, adoption, rétention, churn, renouvellement, expansion, satisfaction client, business review]
+priorities: [rétention et adoption, relation de long terme, pédagogie produit, suivi d'indicateurs]
+signals_positive: [portefeuille suivi, fidélisation, outils CRM, reporting]
+expectations: [aisance avec les outils SaaS, organisation, écoute]
+dominant_skills: [relation client, fidélisation, crm, reporting, gestion de portefeuille]
+formality: 2
+cv_style:
+  ats_mode: HYBRID
+  design: hybrid_modern
+  photo: optional
+  emphasis: [fidélisation, KPI de suivi, outils]
+  summary_angle: "relation client long terme, suivi d'indicateurs, pédagogie"
+letter_style:
+  tone: structuré, empathique
+  length_words: [200, 300]
+  must: ["un exemple de suivi ou de fidélisation", "un indicateur suivi"]
+common_mistakes: [se présenter comme vendeur pur, absence de KPI de rétention]
+useful_proofs: [suivi KPI et reporting, partenariats long terme, CRM HubSpot]

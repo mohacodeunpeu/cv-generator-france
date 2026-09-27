@@ -1,0 +1,30 @@
+id: international_vie
+name: International / VIE
+version: 1
+detect:
+  title_keywords: [vie, v.i.e, volontariat international, international business developer, export, export manager, area manager, business developer international, international sales]
+  text_keywords: [volontariat international en entreprise, business france, export, international, zone, filiale, expatriation, mission de 12 mois, mission de 24 mois, anglais courant, pays]
+vocabulary: [développement international, export, filiale, zone géographique, multiculturel, business france, marché local, implantation]
+priorities:
+  - aisance en anglais (et autres langues) prouvée
+  - capacité d'adaptation à un nouveau pays
+  - autonomie loin du siège
+  - expérience commerciale ou projet à l'international
+signals_positive: [expérience à l'étranger, clientèle internationale, langues certifiées (TOEIC), autonomie]
+expectations: [éligibilité VIE (âge et nationalité : à confirmer par l'utilisateur, jamais supposés), mobilité, reporting au siège]
+eligibility_checks:
+  - "VIE : conditions d'âge et de nationalité fixées par Business France — à vérifier par l'utilisateur, jamais écrites sans confirmation."
+dominant_skills: [anglais, adaptabilité, prospection, relation client internationale, autonomie]
+formality: 3
+cv_style:
+  ats_mode: HYBRID
+  design: hybrid_modern
+  photo: optional
+  emphasis: [langues et niveaux prouvés, expérience internationale, autonomie]
+  summary_angle: "profil international, multilingue, autonome à distance du siège"
+letter_style:
+  tone: ouvert, précis sur le pays et la mission
+  length_words: [220, 340]
+  must: ["le pays ou la zone de la mission (depuis l'offre)", "une preuve d'adaptation internationale"]
+common_mistakes: [lettre générique non liée au pays, niveau de langue non prouvé, oublier la durée de mission]
+useful_proofs: [TOEIC, mission à Lisbonne, clientèle internationale, langues parlées]

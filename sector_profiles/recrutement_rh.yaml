@@ -1,0 +1,28 @@
+id: recrutement_rh
+name: Recrutement / RH
+version: 1
+detect:
+  title_keywords: [chargé de recrutement, chargée de recrutement, recruteur, recruteuse, talent acquisition, recruitment officer, recruiter, consultant en recrutement, chasseur de têtes, assistant rh, chargé rh, chargée rh, sourceur, sourcing specialist]
+  text_keywords: [sourcing, entretiens, candidats, recrutement, ats, jobboards, onboarding, marque employeur, présélection, short-list]
+vocabulary: [sourcing, préqualification, entretiens, short-list, candidats, besoins des managers, marque employeur, jobboards, onboarding]
+priorities:
+  - volume et qualité de sourcing
+  - conduite d'entretiens et évaluation
+  - relation avec les managers / clients internes
+  - suivi administratif et outils (ATS, jobboards)
+signals_positive: [nombre de candidats traités, dispositifs (POEI, France Travail), relation client B2B du recrutement]
+expectations: [discrétion, rigueur, sens du service]
+dominant_skills: [recrutement, sourcing, entretiens, relation client, organisation]
+formality: 3
+cv_style:
+  ats_mode: ATS_FIRST
+  design: ats_classic
+  photo: optional
+  emphasis: [volumes de candidats, dispositifs, outils]
+  summary_angle: "recrutement opérationnel et relation managers, orienté volume et qualité"
+letter_style:
+  tone: humain, structuré
+  length_words: [200, 300]
+  must: ["un volume de recrutement", "la relation avec les managers ou entreprises clientes"]
+common_mistakes: [confondre RH généraliste et recrutement, absence de volumes, jargon sans preuve]
+useful_proofs: [candidats par session, coordination POEI, relation entreprises]

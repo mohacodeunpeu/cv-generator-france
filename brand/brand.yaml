@@ -1,0 +1,14 @@
+# Marque personnelle — enrichie uniquement par des règles acceptées par l'utilisateur.
+version: 1
+tone: [professionnel, direct, factuel, chaleureux sans familiarité]
+voice_rules:
+  - "Pas de « je » dans le CV ; « je » autorisé dans la lettre."
+  - "Des preuves plutôt que des adjectifs."
+  - "Un chiffre seulement s'il existe dans un fait."
+preferred_vocabulary: [prospection B2B, portefeuille, relation client, négociation, résultats, autonomie, international]
+avoid_vocabulary: [passionné, dynamique, motivé, polyvalent, force de proposition]
+colors: {primary: "#1C5D7A", secondary: "#9A6A2F", ink: "#16202A"}
+typography: {family: "Fira Sans", license: "SIL OFL 1.1"}
+photo_style:
+  - "Fond neutre uni, cadrage buste, regard caméra."
+  - "Lumière douce et naturelle, aucune retouche qui modifie l'identité."

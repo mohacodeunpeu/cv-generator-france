@@ -1,0 +1,27 @@
+# Grille de points (mesure uniquement : ne modifie jamais le profil, n'autorise jamais d'invention).
+version: 1
+events:
+  good_title:            {points: 5,   label: "Bon titre (aligné sur l'offre et vrai)"}
+  good_experience_pick:  {points: 5,   label: "Bonne sélection d'expériences"}
+  personalization:       {points: 5,   label: "Personnalisation réelle (éléments propres à l'offre)"}
+  design_fit:            {points: 3,   label: "Design adapté au secteur et au pays"}
+  excellent_result:      {points: 10,  label: "Résultat excellent (retour recruteur, entretien)"}
+  weak_title:            {points: -5,  label: "Titre faible ou générique"}
+  major_gap:             {points: -10, label: "Manque important (mot-clé REQUIRED absent alors qu'un fait le couvre)"}
+  invented_fact:         {points: -20, label: "Fait inventé ou interdit détecté"}
+
+# Benchmark : pondération de la partie déterministe (0-100) et de la partie juge IA (0-100).
+benchmark:
+  deterministic_weights:
+    factuality: 35          # % de lignes tracées, 0 si fait interdit
+    keyword_coverage: 25    # couverture REQUIRED/IMPORTANT (pondérée)
+    ats_parse: 15           # texte extractible, ordre de lecture, sections trouvées
+    pages: 10               # 1 page (junior) / 2 max
+    pdf_qa: 15              # débordements, marges, contraste, tailles
+  judge_criteria: [role_fit, clarity_10s, personalization, readability]
+  judge_passes: 3
+  significance: "delta > 2 * max(stdev_a, stdev_b) et > 3 points"
+
+learning:
+  min_feedback_for_trend: 5
+  min_comparable_applications_for_conclusion: 20

@@ -1,0 +1,28 @@
+id: commercial
+name: Commercial / vente
+version: 1
+detect:
+  title_keywords: [commercial, commerciale, attaché commercial, attachée commerciale, technico-commercial, conseiller commercial, conseillère commerciale, sales representative, sales executive, ingénieur commercial, chargé de clientèle, vendeur, vendeuse, sales]
+  text_keywords: [vente, objectifs commerciaux, chiffre d'affaires, négociation, portefeuille, terrain, prospection, devis, fidélisation]
+vocabulary: [objectifs commerciaux, chiffre d'affaires, portefeuille clients, négociation, terrain, fidélisation, argumentaire, découverte des besoins, conclusion de ventes]
+priorities:
+  - atteinte d'objectifs (preuves chiffrées)
+  - aisance relationnelle et négociation
+  - organisation terrain et suivi client
+  - connaissance du cycle de vente
+signals_positive: [dépassement d'objectif, portefeuille, clientèle exigeante, négociation]
+expectations: [présence terrain, reporting, disponibilité]
+dominant_skills: [vente, négociation, prospection, relation client, fidélisation]
+formality: 3
+cv_style:
+  ats_mode: ATS_FIRST
+  design: hybrid_modern
+  photo: optional
+  emphasis: [résultats vs objectifs, type de clientèle, négociation]
+  summary_angle: "commercial terrain orienté objectifs et relation durable"
+letter_style:
+  tone: concret, énergique sans excès
+  length_words: [220, 320]
+  must: ["un résultat vs objectif", "le type de clientèle"]
+common_mistakes: [phrases génériques sur le « sens du contact », absence de chiffres, oubli de la clientèle cible]
+useful_proofs: [pourcentage vs objectif, portefeuille, clients internationaux, fidélisation]

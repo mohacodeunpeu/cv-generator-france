@@ -1,0 +1,32 @@
+id: business_development
+name: Business development
+version: 1
+detect:
+  title_keywords: [business developer, business development, bizdev, biz dev, bdr, sdr, développeur commercial, développeuse commerciale, développeur d'affaires, chargé d'affaires, chargée d'affaires, new business, sales development]
+  text_keywords: [prospection, pipeline, closing, nouveaux clients, leads, cycle de vente, outbound, cold calling, chasse, rendez-vous qualifiés, génération de leads, ouverture de comptes]
+vocabulary: [pipeline, prospection outbound, qualification de leads, cycle de vente, closing, décideurs, taux de conversion, CRM, chasse, ouverture de comptes]
+priorities:
+  - volume et qualité de prospection (appels, emails, LinkedIn)
+  - capacité à ouvrir de nouveaux comptes
+  - résultats chiffrés (leads, rendez-vous, CA)
+  - maîtrise d'un CRM et discipline de pipeline
+  - ténacité et résilience face au refus
+signals_positive: [chiffres de prospection, outil CRM nommé, cycle complet de la prospection au closing, B2B]
+expectations: [autonomie terrain, reporting régulier, objectifs mensuels]
+dominant_skills: [prospection, négociation, crm, qualification, closing, relation client]
+formality: 3
+cv_style:
+  ats_mode: ATS_FIRST
+  design: hybrid_modern
+  photo: optional
+  emphasis: [chiffres de prospection, outils CRM, verbes d'action commerciaux]
+  summary_angle: "profil chasseur B2B, orienté chiffres et pipeline"
+letter_style:
+  tone: direct, orienté résultats
+  length_words: [220, 320]
+  must: ["au moins un résultat chiffré de prospection", "outil CRM cité"]
+common_mistakes:
+  - lister des qualités sans chiffres
+  - ne pas nommer le type de clientèle (B2B, PME, grands comptes)
+  - cacher l'expérience de prospection sous un intitulé générique
+useful_proofs: [leads qualifiés par mois, portefeuille géré, partenariats conclus, taux de conversion]

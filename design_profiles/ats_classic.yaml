@@ -1,0 +1,21 @@
+# Design ATS pur : une colonne, noir et gris, aucun aplat de couleur.
+id: ats_classic
+name: ATS classique
+version: 2
+ats_safe: true
+layout: single_column
+header: plain
+photo_modes: [OFF]
+colors:
+  ink: "#111418"
+  muted: "#4F5861"
+  accent: "#2A3440"
+  accent2: "#2A3440"
+  rule: "#C9CFD5"
+  band: "#FFFFFF"
+fonts: {body: "Fira Sans", display: "Fira Sans"}
+sizes_pt: {name: 20, headline: 11.5, section: 8.6, body: 9.5, meta: 8.5}
+margins_mm: {top: 12, right: 15, bottom: 12, left: 15}
+bullet: "–"
+max_bullets_featured: 4
+max_bullets_other: 2

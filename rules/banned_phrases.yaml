@@ -1,0 +1,73 @@
+# Liste noire de phrases creuses (lettres, résumés, réponses).
+# hard = ligne rejetée ; soft = avertissement du critique (à éviter mais toléré).
+# Comparaison normalisée (casse et accents ignorés). Ajouter une phrase = modifier ce fichier.
+version: 2
+hard:
+  fr:
+    - dynamique et motivé
+    - dynamique et motivée
+    - motivé et dynamique
+    - motivée et dynamique
+    - fort de mon expérience
+    - forte de mon expérience
+    - fort de mes expériences
+    - forte de mes expériences
+    - je me permets de vous adresser
+    - je me permets de vous écrire
+    - vous trouverez ci-joint
+    - correspond parfaitement à mon profil
+    - correspond en tout point à mon profil
+    - je suis convaincu d'être le candidat idéal
+    - je suis convaincue d'être la candidate idéale
+    - le candidat idéal
+    - la candidate idéale
+    - je serais un atout
+    - un atout majeur pour votre entreprise
+    - mettre mes compétences à votre service
+    - c'est avec un grand intérêt que
+    - c'est avec enthousiasme que
+    - c'est avec une grande motivation que
+    - rigoureux, organisé et autonome
+    - doté d'un excellent relationnel
+    - dotée d'un excellent relationnel
+    - passionné par le challenge
+    - passionnée par le challenge
+    - sortir de ma zone de confort
+    - penser en dehors de la boîte
+  en:
+    - dynamic and motivated
+    - motivated and dynamic
+    - i am writing to apply
+    - i am writing to express my interest
+    - i believe i would be a great fit
+    - perfect fit for this role
+    - the ideal candidate
+    - team player
+    - hard-working
+    - go-getter
+    - think outside the box
+    - results-driven professional
+    - proven track record of success
+    - synergy
+soft:
+  fr:
+    - force de proposition
+    - esprit d'équipe
+    - sens du relationnel
+    - excellent relationnel
+    - rigoureux et organisé
+    - rigoureuse et organisée
+    - passionné par
+    - passionnée par
+    - je reste à votre disposition pour tout complément d'information
+    - dans l'attente de votre réponse
+    - veuillez agréer
+    - n'hésitez pas à me contacter
+    - polyvalent
+    - polyvalente
+  en:
+    - detail-oriented
+    - self-starter
+    - passionate about
+    - excellent communication skills
+    - looking forward to hearing from you
