@@ -1,0 +1,130 @@
+# PAI — déploiement auto-hébergé (Oracle Cloud Free Tier ou tout serveur Docker).
+# Projet isolé : noms préfixés pai_, réseaux, volumes, ports et secrets propres. N'utilise ni la base,
+# ni le réseau, ni les ports, ni les secrets de JobAgent.
+#
+#   cp .env.example .env && nano .env            # secrets (jamais dans Git)
+#   docker compose up -d --build                 # base + interface/API + worker
+#   docker compose --profile caddy up -d         # + HTTPS public avec Caddy (domaine requis)
+#
+# Sans domaine public : l'interface n'écoute que sur 127.0.0.1:${PAI_HTTP_PORT:-8080} (accès par Tailscale
+# ou tunnel SSH, voir RUNBOOK.md).
+name: pai
+
+x-app: &app
+  build:
+    context: .
+  image: pai-app:${PAI_VERSION:-latest}
+  env_file: .env
+  environment:
+    DB_URL: postgresql+psycopg://pai:${PAI_DB_PASSWORD:?PAI_DB_PASSWORD manquant dans .env}@pai_db:5432/pai
+    PAI_DATA_DIR: /app/data
+    ENVIRONMENT: production
+  volumes:
+    - pai_data:/app/data
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  shm_size: 512m          # Chromium (rendu PDF)
+  depends_on:
+    pai_db:
+      condition: service_healthy
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+services:
+  pai_db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pai
+      POSTGRES_DB: pai
+      POSTGRES_PASSWORD: ${PAI_DB_PASSWORD:?PAI_DB_PASSWORD manquant dans .env}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes:
+      - pai_pgdata:/var/lib/postgresql/data
+    networks: [pai_internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pai -d pai"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1g }
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  pai_web:
+    <<: *app
+    command: ["web"]
+    environment:
+      DB_URL: postgresql+psycopg://pai:${PAI_DB_PASSWORD:?PAI_DB_PASSWORD manquant dans .env}@pai_db:5432/pai
+      PAI_DATA_DIR: /app/data
+      ENVIRONMENT: production
+      PAI_INLINE_WORKER: "0"              # le worker est un service séparé
+      FORWARDED_ALLOW_IPS: "*"            # seul Caddy (réseau pai_edge) ou 127.0.0.1 atteint ce port
+    ports:
+      - "127.0.0.1:${PAI_HTTP_PORT:-8080}:8000"
+    networks: [pai_internal, pai_edge]
+    deploy:
+      resources:
+        limits: { cpus: "1.5", memory: 2g }
+
+  pai_worker:
+    <<: *app
+    command: ["worker"]
+    networks: [pai_internal, pai_edge]   # pai_edge : sortie vers l'API IA
+    healthcheck:
+      disable: true
+    depends_on:
+      pai_web:
+        condition: service_healthy        # migrations appliquées par pai_web
+    deploy:
+      resources:
+        limits: { cpus: "1.5", memory: 2g }
+
+  pai_caddy:
+    profiles: ["caddy"]
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      PAI_DOMAIN: ${PAI_DOMAIN:?PAI_DOMAIN manquant dans .env (profil caddy)}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - pai_caddy_data:/data
+      - pai_caddy_config:/config
+    networks: [pai_edge]
+    depends_on:
+      pai_web:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256m }
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  pai_internal:
+    name: pai_internal
+    internal: true          # la base n'a aucun accès Internet ni port publié
+  pai_edge:
+    name: pai_edge
+
+volumes:
+  pai_pgdata:
+    name: pai_pgdata
+  pai_data:
+    name: pai_data
+  pai_caddy_data:
+    name: pai_caddy_data
+  pai_caddy_config:
+    name: pai_caddy_config

@@ -1,0 +1,43 @@
+# HTTPS automatique (Let's Encrypt) devant PAI. Le domaine vient de PAI_DOMAIN (.env).
+# La CSP à nonce est posée par l'application ; Caddy ne pose qu'une CSP de repli si elle manque.
+{$PAI_DOMAIN} {
+	encode zstd gzip
+
+	request_body {
+		max_size 25MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Robots-Tag "noindex, nofollow, noarchive"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		?Content-Security-Policy "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+		-Server
+		-Via
+	}
+
+	# Aucune indexation : un robots.txt qui refuse tout.
+	respond /robots.txt <<TXT
+		User-agent: *
+		Disallow: /
+		TXT 200
+
+	reverse_proxy pai_web:8000
+
+	log {
+		output stdout
+		format filter {
+			wrap console
+			fields {
+				request>headers>Cookie delete
+				request>headers>Authorization delete
+				request>headers>X-Csrf-Token delete
+				resp_headers>Set-Cookie delete
+				request>uri regexp "/v1/files/[^/?]+" "/v1/files/***"
+			}
+		}
+	}
+}

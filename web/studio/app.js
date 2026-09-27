@@ -44,6 +44,8 @@
 
   let renderQueued = false;
   const render = () => { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; doRender(); }); };
+  const UNK = { company: 'Entreprise non précisée', location: 'Lieu non précisé', contract: 'Contrat non précisé' };
+  const disp = (v, k) => (!v || v === 'UNKNOWN' ? UNK[k] : v);
   const toast = (msg) => { S.toast = msg; renderToast(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast = null; renderToast(); }, 3600); };
 
   // ─── Profil (vue enrichie) ───────────────────────────────────────────────
@@ -450,7 +452,7 @@
       const aiA = await tryAi('analyse', () => AI.ask('analyze_offer', { offer_text: offer.text.slice(0, 12000), job_title_hint: offer.title_hint, company_hint: offer.company_hint,
         deterministic_json: JSON.stringify(Object.assign({}, base, { sector_scores: undefined })) }, { signal, onText: liveText('analyse') }));
       const a = aiA && typeof aiA === 'object' ? E.mergeAiAnalysis(base, aiA) : base;
-      setStep('analyse', 'done', `${a.job_title} · ${a.company} · ${a.contract} · ${E.sector(a.sector_id).name || a.sector_id}${a.source === 'deterministic' ? ' (sans IA)' : ''}`);
+      setStep('analyse', 'done', `${a.job_title} · ${disp(a.company, 'company')} · ${disp(a.contract, 'contract')} · ${E.sector(a.sector_id).name || a.sector_id}${a.source === 'deterministic' ? ' (sans IA)' : ''}`);
 
       setStep('match', 'run');
       const m = E.computeMatch(P, a);
@@ -645,7 +647,7 @@
   }
   function packRow(p) {
     const a = p.analysis || {};
-    return `<button class="item" data-act="open-pack" data-arg="${esc(p.id)}"><span class="grow"><span class="t">${esc(a.job_title || '—')} · ${esc(a.company || '—')}</span>
+    return `<button class="item" data-act="open-pack" data-arg="${esc(p.id)}"><span class="grow"><span class="t">${esc(a.job_title || '—')} · ${esc(disp(a.company, 'company'))}</span>
       <span class="s">${fmtDate(p.created_at)} · ${esc(p.mode)} · MATCH ${pct(p.match && p.match.match)}${p.offer && p.offer.synthetic ? ' · SYNTHETIC' : ''}</span></span>${chip(p.status, p.status === 'FINAL' ? 'good' : 'warn')}</button>`;
   }
 
@@ -685,7 +687,7 @@
     const a = p.analysis; const tabs = [['synthese', 'Synthèse'], ['cv', 'CV Studio'], ['lettre', 'Letter Studio'], ['questions', 'Questions'], ['export', 'Export'], ['copilote', 'Copilote']];
     const tab = p.cvs.length ? S.packTab : 'synthese';
     return `<div class="page"><div class="row" style="justify-content:space-between;align-items:flex-start"><div class="stack" style="gap:6px"><h1 class="title">${esc(a.job_title)}</h1>
-      <div class="row">${chip(a.company)} ${chip(a.location)} ${chip(a.contract)} ${chip(E.sector(a.sector_id).name || a.sector_id, 'accent')} ${chip(p.status, p.status === 'FINAL' ? 'good' : 'warn')} ${p.offer.synthetic ? chip('SYNTHETIC', 'warn') : ''}</div></div>
+      <div class="row">${chip(disp(a.company, 'company'))} ${chip(disp(a.location, 'location'))} ${chip(disp(a.contract, 'contract'))} ${chip(E.sector(a.sector_id).name || a.sector_id, 'accent')} ${chip(p.status, p.status === 'FINAL' ? 'good' : 'warn')} ${p.offer.synthetic ? chip('SYNTHETIC', 'warn') : ''}</div></div>
       <button class="btn sm ghost" data-act="go" data-arg="packs">← Tous les packs</button></div>
       <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" data-act="pack-tab" data-arg="${k}" ${!p.cvs.length && k !== 'synthese' ? 'disabled' : ''}>${l}</button>`).join('')}</div>
       ${({ synthese: packSynthese, cv: packCv, lettre: packLetter, questions: packQuestions, export: packExport, copilote: packCopilot })[tab](p)}</div>`;
@@ -838,7 +840,7 @@
     const packs = S.packs.filter((p) => p.cvs && p.cvs.length);
     return `<div class="page"><div class="stack"><h1 class="title">Training Lab</h1><p class="lede">Annonce → CV → votre avis → V2 → comparaison → score. Ouvrez un pack, donnez votre avis dans CV Studio puis « Régénérer avec mes retours ».</p></div>
       <div class="card">${packs.length ? `<div class="table-wrap"><table class="t"><thead><tr><th>Pack</th><th>Versions</th><th>Avis</th><th>Factualité</th><th>Points</th><th></th></tr></thead><tbody>
-      ${packs.map((p) => `<tr><td>${esc(p.analysis.job_title)}<div class="muted" style="font-size:12px">${esc(p.analysis.company)} · ${fmtDate(p.created_at)}</div></td><td>${p.cvs.map((c) => esc(c.label)).join(', ')}</td>
+      ${packs.map((p) => `<tr><td>${esc(p.analysis.job_title)}<div class="muted" style="font-size:12px">${esc(disp(p.analysis.company, 'company'))} · ${fmtDate(p.created_at)}</div></td><td>${p.cvs.map((c) => esc(c.label)).join(', ')}</td>
       <td class="num">${S.feedback.filter((f) => f.pack_id === p.id).length}</td><td class="num">${pct(p.scores.factuality_cv)} %</td><td class="num">${(p.scores.points || {}).total ?? '—'}</td>
       <td><button class="btn sm" data-act="open-pack-cv" data-arg="${esc(p.id)}">Ouvrir</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Générez un premier pack pour démarrer l\'entraînement.</div>'}</div></div>`;
   };

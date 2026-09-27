@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 import secrets
 from contextlib import asynccontextmanager
@@ -27,8 +28,24 @@ STUDIO_SERVER = paths.WEB_DIR / "dist" / "pai_studio_server.html"
 LOGIN_COOKIE = "pai_login"
 
 
+class RedactFileTokens(logging.Filter):
+    """A10 : le jeton d'un lien de fichier signé n'apparaît jamais dans le journal d'accès."""
+
+    PATTERN = re.compile(r"(/v1/files/)[^\s?\"]+")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.args, tuple):
+            record.args = tuple(self.PATTERN.sub(r"\1***", a) if isinstance(a, str) else a for a in record.args)
+        elif isinstance(record.msg, str):
+            record.msg = self.PATTERN.sub(r"\1***", record.msg)
+        return True
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    access = logging.getLogger("uvicorn.access")
+    if not any(isinstance(f, RedactFileTokens) for f in access.filters):
+        access.addFilter(RedactFileTokens())
     init_db()
     with session_scope() as s:
         ensure_profile_doc(s)

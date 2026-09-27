@@ -359,3 +359,29 @@ def test_interrupted_job_is_requeued_then_abandoned_after_max_attempts(client):
     jobs.requeue_stale()
     final = jobs.get_job(job.id)
     assert final.status == "FAILED" and "tentatives" in final.error
+
+
+# ── Journaux et administration en ligne de commande ──────────────────────────
+def test_access_log_never_contains_file_tokens():
+    import logging
+
+    from pai.api.app import RedactFileTokens
+
+    record = logging.LogRecord("uvicorn.access", logging.INFO, "", 0, '%s - "%s %s HTTP/%s" %d',
+                               ("127.0.0.1", "GET", "/v1/files/eyJmIjoiZmlsXzEifQ.abc.def", "1.1", 200), None)
+    RedactFileTokens().filter(record)
+    assert "eyJ" not in record.getMessage() and "/v1/files/***" in record.getMessage()
+
+
+def test_cli_api_key_create_list_revoke(client, capsys):
+    from pai.cli import main
+
+    assert main(["api-key", "create", "jobagent", "--scopes", "read,outcomes"]) == 0
+    raw = capsys.readouterr().out.strip().splitlines()[-1]
+    headers = {"Authorization": f"Bearer {raw}"}
+    assert raw.startswith("pai_") and client.get("/v1/profile", headers=headers).status_code == 200
+    assert main(["api-key", "list"]) == 0
+    listing = capsys.readouterr().out
+    assert "jobagent" in listing and raw not in listing  # la clé n'est jamais réaffichée
+    assert main(["api-key", "revoke", "jobagent"]) == 0
+    assert client.get("/v1/profile", headers=headers).status_code == 401

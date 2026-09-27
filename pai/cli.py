@@ -91,7 +91,11 @@ def cmd_create_user(args: argparse.Namespace) -> int:
     generated = not password
     password = password or secrets.token_urlsafe(18)
     create_user(args.username, password, must_change=generated)
-    if generated:
+    if generated and args.stdout:
+        # Usage Docker (`docker compose run --rm pai_web python -m pai create-user … --stdout`) : affiché une seule fois
+        # dans CE terminal, jamais écrit dans un journal ni un fichier ; changement imposé au premier login.
+        print(f"Utilisateur « {args.username} » créé. Mot de passe provisoire (à changer au premier login) : {password}")
+    elif generated:
         env = Path(args.env_file)
         lines = [ln for ln in env.read_text(encoding="utf-8").splitlines() if not ln.startswith("PAI_INITIAL_PASSWORD=")] if env.exists() else []
         lines.append(f"PAI_INITIAL_PASSWORD={password}")
@@ -103,10 +107,44 @@ def cmd_create_user(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_api_key(args: argparse.Namespace) -> int:
+    """Clés d'API (JobAgent, scripts) : affichées UNE seule fois à la création, stockées hachées (SHA-256)."""
+    from sqlalchemy import select
+
+    from .api.auth import SCOPES, create_api_key
+    from .db.models import ApiKey, AuditLog, utcnow
+    from .db.session import init_db, session_scope
+
+    init_db()
+    if args.action == "create":
+        scopes = [x.strip() for x in (args.scopes or "read").split(",") if x.strip()]
+        raw = create_api_key(args.name, scopes)
+        print(f"Clé « {args.name} » ({', '.join(sorted(scopes))}) — copiez-la maintenant, elle ne sera plus affichée :\n{raw}")
+        return 0
+    with session_scope() as s:
+        keys = s.scalars(select(ApiKey).order_by(ApiKey.created_at)).all()
+        if args.action == "list":
+            for k in keys:
+                state = "révoquée" if k.revoked_at else "active"
+                print(f"{k.id:>4}  {k.name:<24} {k.prefix}…  {','.join(k.scopes):<40} {state}")
+            if not keys:
+                print(f"Aucune clé. Droits possibles : {', '.join(sorted(SCOPES))}")
+            return 0
+        target = next((k for k in keys if k.name == args.name and k.revoked_at is None), None)
+        if target is None:
+            print(f"Aucune clé active nommée « {args.name} ».")
+            return 1
+        target.revoked_at = utcnow()
+        s.add(AuditLog(actor="cli", action="revoke_api_key", target=args.name))
+        print(f"Clé « {args.name} » révoquée.")
+    return 0
+
+
 def cmd_benchmark(args: argparse.Namespace) -> int:
     from .benchmark import run_benchmark
 
-    result = run_benchmark(include_legacy=not args.no_legacy, output_dir=Path(args.output) if args.output else None)
+    result = run_benchmark(include_legacy=not args.no_legacy, output_dir=Path(args.output) if args.output else None,
+                           persist=args.persist)
     print(json.dumps(result["summary"], ensure_ascii=False, indent=2))
     return 0
 
@@ -152,11 +190,18 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("username")
     p.add_argument("--password")
     p.add_argument("--env-file", default=".env")
+    p.add_argument("--stdout", action="store_true", help="afficher le mot de passe généré une seule fois (Docker)")
     p.set_defaults(fn=cmd_create_user)
+    p = sub.add_parser("api-key", help="Clés d'API : create NOM --scopes read,generate | list | revoke NOM")
+    p.add_argument("action", choices=["create", "list", "revoke"])
+    p.add_argument("name", nargs="?", default="")
+    p.add_argument("--scopes", help="read, analyze, generate, feedback, outcomes, benchmark, admin (séparés par des virgules)")
+    p.set_defaults(fn=cmd_api_key)
     sub.add_parser("secret", help="Générer une SECRET_KEY").set_defaults(fn=cmd_secret)
     p = sub.add_parser("benchmark", help="Benchmark déterministe (offres du dossier benchmark/)")
     p.add_argument("--no-legacy", action="store_true")
     p.add_argument("--output")
+    p.add_argument("--persist", action="store_true", help="enregistrer en base (historique + page Benchmark de l'interface serveur)")
     p.set_defaults(fn=cmd_benchmark)
     p = sub.add_parser("build-studio", help="Construire la page PAI Studio (web/)")
     p.add_argument("--output")
