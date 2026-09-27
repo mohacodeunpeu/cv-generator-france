@@ -950,9 +950,15 @@
     const todo = ['Clé API Anthropic : seulement pour le serveur PAI auto-hébergé (PAI Studio n\'en a pas besoin).', 'Accès SSH au serveur Oracle 24/7 (déploiement docker compose « pai »).',
       'Domaine géré sur Cloudflare (tunnel nommé) ou compte Tailscale (Funnel) pour l\'URL stable du serveur.', 'Export JSON du JobAgent ou nouvelle URL /profil (le lien trycloudflare a expiré ou est bloqué).',
       'Photo professionnelle (fond neutre, cadrage buste).', 'Anciens CV et lettres en PDF, pour le benchmark « ancien vs nouveau » sur de vraies offres.', 'Offres réelles (texte collé) pour remplacer les 13 offres SYNTHETIC du benchmark.'];
-    return `<div class="page"><h1 class="title">Réglages</h1><div class="split"><div class="stack">
+    const server = window.PAI_SERVER === true;
+    const csrf = ((document.querySelector('meta[name="pai-csrf"]') || {}).content) || '';
+    const account = server ? `<div class="card stack"><h3 class="h3">Compte (serveur PAI)</h3>
+        <p class="muted" style="margin:0;font-size:13.5px">Changer le mot de passe révoque vos autres sessions. La déconnexion est effective côté serveur.</p>
+        <div class="row"><a class="btn" href="/change-password">Changer le mot de passe</a>
+        <form method="post" action="/logout" style="margin:0"><input type="hidden" name="csrf" value="${esc(csrf)}"><button class="btn danger" type="submit">Se déconnecter</button></form></div></div>` : '';
+    return `<div class="page"><h1 class="title">Réglages</h1><div class="split"><div class="stack">${account}
       <div class="card"><h3 class="h3">Intelligence</h3><div class="list">
-        <div class="item"><span class="grow">Claude (capacité sample)</span>${S.ai === 'denied' ? chip('Refusé : mode dégradé', 'bad') : S.caps.sample ? chip('Disponible', 'good') : chip('Indisponible', 'warn')}</div>
+        <div class="item"><span class="grow">${server ? 'IA du serveur PAI (fournisseur configuré)' : 'Claude (capacité sample)'}</span>${S.ai === 'denied' ? chip('Refusé : mode dégradé', 'bad') : S.caps.sample ? chip('Disponible', 'good') : chip('Indisponible', 'warn')}</div>
         <div class="item"><span class="grow">Images (contrôle visuel du PDF en DEEP)</span>${lim && lim.images ? chip('Oui', 'good') : chip('Non', '')}</div>
         <div class="item"><span class="grow">Stockage privé (capacité db)</span>${S.storage === 'db' ? chip('Actif', 'good') : chip('Mémoire seulement : rien n\'est conservé', 'warn')}</div>
         <div class="item"><span class="grow">Téléchargements</span>${S.caps.downloads ? chip('Actif', 'good') : chip('Indisponible', 'warn')}</div></div></div>

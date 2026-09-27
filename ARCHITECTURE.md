@@ -64,7 +64,35 @@ DEEP (3 variantes, jusqu'à 3 cycles, QA visuelle).
 | `render.py`, `pdf_qa.py` | HTML/CSS → Chromium → PDF (polices embarquées) ; QA PNG + extraction ATS |
 | `pipeline.py`, `pack.py` | Orchestration, repli déterministe, pack ZIP (PDF + JSON + MD) |
 | `providers/` | `ClaudeProvider`, `OpenAICompatProvider` (OpenAI, Ollama), `NullProvider`, `CachedProvider` (cache + rejeu) |
-| `db/`, `api/` | SQLAlchemy 2 + Alembic, FastAPI `/v1`, auth, jobs |
+| `benchmark.py` | Benchmark ancien générateur vs PAI : même instrument, texte extrait du PDF |
+| `db/models.py`, `db/repo.py` | 30 tables SQLAlchemy 2 (migrations Alembic), générations immuables, instantanés de profil |
+| `api/app.py`, `api/v1.py` | FastAPI : connexion, interface, `/v1`, routes historiques authentifiées |
+| `api/auth.py`, `api/security.py` | argon2, sessions signées révocables, CSRF, limitation, clés d'API, CSP à nonce, en-têtes |
+| `api/jobs.py` | File de jobs en base (SKIP LOCKED sur PostgreSQL), idempotence, reprise après interruption |
+
+Hors paquet : `web/studio/` (PAI Studio : `engine.js` = moteur JS, `app.js` = interface, `server_shim.js` =
+pont vers l'API du serveur), `web/build_studio.py` (construit la page claude.ai et la variante serveur),
+`deploy/` (entrypoint, Caddyfile, sauvegarde/restauration chiffrées, test de fumée), `migrations/` (Alembic).
+
+## Une seule interface, deux branchements
+
+PAI Studio ne connaît qu'une interface : `window.claude.use('db' | 'sample' | 'downloads')`.
+- Sur claude.ai, ce sont les capacités de la plateforme (base privée, compte Claude, téléchargements).
+- Sur le serveur, `server_shim.js` les implémente : `db` → `/v1/store` (PostgreSQL), `sample` →
+  `/v1/ai/complete` (fournisseur configuré, plafond de coût journalier), `downloads` → téléchargement navigateur.
+Le serveur sert la page avec un nonce CSP par requête et le jeton CSRF de la session.
+
+## Sécurité (serveur)
+
+- Un seul utilisateur, mot de passe argon2 (12 caractères minimum), changement imposé au premier login.
+- Session = jeton signé (itsdangerous) dans un cookie HttpOnly/Secure/SameSite=strict, durée limitée ;
+  déconnexion et changement de mot de passe révoquent toutes les sessions (`users.sessions_valid_after`).
+- CSRF : jeton lié à la session, exigé en en-tête pour toute écriture ; formulaire de connexion à double soumission.
+- Limitation des tentatives de connexion (IP + identifiant). Clés d'API hachées (SHA-256), à droits limités.
+- En-têtes : CSP à nonce (scripts : soi-même + cdn.jsdelivr.net), `frame-ancestors 'none'`, `nosniff`,
+  `no-referrer`, `X-Robots-Tag: noindex`, HSTS en production ; `Cache-Control: no-store` sur `/v1`.
+- Fichiers : liens signés à durée courte, aucune donnée personnelle dans l'URL ; jetons masqués dans les journaux.
+- Réseau Docker : base sur un réseau interne sans Internet, interface liée à 127.0.0.1 (Caddy ou Tailscale devant).
 
 ## Données
 

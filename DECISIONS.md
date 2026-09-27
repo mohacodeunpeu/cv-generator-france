@@ -53,3 +53,48 @@
 12. **Push uniquement sur la branche de travail `claude/elegant-dirac-vhi4np` + PR brouillon.**
     La directive dit « aucun push sans demande explicite » ; l'environnement cloud est éphémère et impose de
     pousser la branche pour ne rien perdre. Rien n'est poussé sur `master` : la fusion reste ta décision.
+
+## 2026-09-27 — Serveur, benchmark, déploiement
+
+13. **Le serveur sert la même interface PAI Studio, branchée sur son API.** Écarté : une seconde interface
+    (Jinja ou Next.js). Raison : une seule interface à maintenir et à tester ; `server_shim.js` implémente
+    `window.claude.use()` sur `/v1/store` et `/v1/ai/complete`. Le test e2e « serveur » le prouve dans Chromium,
+    sous CSP stricte.
+
+14. **Sessions signées + révocation serveur, sans table de sessions.** Écarté : sessions en base ou JWT.
+    Raison : un seul utilisateur ; `users.sessions_valid_after` suffit à révoquer toutes les sessions à la
+    déconnexion et au changement de mot de passe (testé : un ancien cookie rejoué reçoit 401).
+
+15. **File de jobs dans PostgreSQL (`SELECT … FOR UPDATE SKIP LOCKED`).** Écarté : Redis + Celery/RQ.
+    Raison : un service de moins sur un petit serveur ; idempotence (`Idempotency-Key` unique), reprise des jobs
+    interrompus, 3 workers en parallèle testés sans double traitement. SQLite : un seul worker (documenté).
+
+16. **Plafond de coût journalier calculé depuis le journal des appels IA en base.** Écarté : compteur en mémoire.
+    Raison : un compteur en mémoire se remet à zéro à chaque requête ou redémarrage ; ici, plafond atteint →
+    voies déterministes, jamais d'erreur bloquante.
+
+17. **Benchmark : un seul instrument pour l'ancien et le nouveau, appliqué au texte extrait du PDF.**
+    Écarté : comparer le score interne de PAI (qui connaît ses propres liens aux faits). Raison : équité ; la mise
+    en page (dates, formule d'appel, bloc destinataire, citations de l'offre, notations « KEUR », « LT », codes de
+    langue) est neutralisée des deux côtés. Chaque ligne rejetée a été relue : les 5 faux positifs trouvés côté
+    ancien générateur ont été corrigés avant de publier les chiffres.
+
+18. **Sélection gloutonne des faits dans le CV.** Écarté : tri par score de couverture isolé. Raison : deux puces
+    prouvant le même mot-clé gaspillaient la place ; choisir d'abord le fait qui prouve un mot-clé encore absent
+    fait passer la couverture honnête de 95,3 % à 97,4 % sans rien inventer. Même algorithme en Python et JS,
+    parité vérifiée sur 13 offres (`tests/golden/cv_parity.json`).
+
+19. **Image Docker = image officielle Playwright Python.** Écarté : `python:slim` + installation de Chromium.
+    Raison : Chromium et ses dépendances système garantis, versions alignées sur `playwright==1.56.0`, image
+    multi-architecture (Oracle Ampere A1 = arm64). Coût : ~3,6 Go de disque, acceptable sur le Free Tier.
+
+20. **Sauvegardes chiffrées avec age, clé privée hors du serveur.** Écarté : GPG symétrique (phrase secrète sur
+    le serveur). Raison : un serveur compromis ne peut pas relire ses propres sauvegardes. Cycle sauvegarde →
+    modification → restauration vérifié sur la pile Docker réelle.
+
+21. **Routes historiques (`/cv`, `/lettre`, `/generate`, `/best`) conservées mais authentifiées et produites par
+    le nouveau pipeline.** Écarté : les supprimer. Raison : compatibilité des anciens appels, sans jamais
+    réintroduire le MBA ni une ligne non prouvée.
+
+22. **Intégration continue GitHub Actions.** Tests Python (SQLite + PostgreSQL 16), migrations, parité JS,
+    e2e navigateur, `pip-audit`, `docker compose config`, uniquement avec des données fictives.

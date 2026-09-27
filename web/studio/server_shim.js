@@ -58,5 +58,6 @@
     return { status: 'saved' };
   } };
   const user = { isOwner: () => true, canEdit: () => true, can: () => true };
+  window.PAI_SERVER = true;
   window.claude = { use: async (name) => ({ db, sample, downloads, user })[name] || null };
 }());

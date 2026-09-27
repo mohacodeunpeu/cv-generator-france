@@ -105,5 +105,12 @@ def test_server_studio_login_generate_persist(server):
         page.reload()
         page.locator("#nav button[data-arg=packs]").click()
         page.get_by_text("Business Developer Junior").first.wait_for(timeout=20000)
+
+        # Réglages → Se déconnecter : révocation côté serveur, retour à la connexion.
+        page.locator("#nav button[data-arg=reglages]").click()
+        page.get_by_role("button", name="Se déconnecter").click()
+        page.wait_for_url("**/login", timeout=10000)
+        with httpx.Client(base_url=server, cookies={"pai_session": cookies["pai_session"]}) as api:
+            assert api.get("/v1/profile").status_code == 401  # l'ancien cookie ne vaut plus rien
         assert not errors, errors
         browser.close()
