@@ -78,17 +78,36 @@ def letter_html(letter: LetterDocument, name: str, contact: list[str], design_id
 
 
 class PdfRenderer:
-    """Navigateur Chromium partagé (un par processus), protégé par un verrou."""
+    """Chromium partagé, confiné dans UN thread dédié : l'API synchrone de Playwright est liée au thread
+    qui l'a créée, alors que FastAPI et le worker appellent le rendu depuis plusieurs threads."""
 
     _lock = threading.Lock()
     _instance: "PdfRenderer | None" = None
 
     def __init__(self) -> None:
+        from concurrent.futures import ThreadPoolExecutor
+
+        self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="pai-chromium")
+        self._pw = None
+        self._browser = None
+        self._executor.submit(self._start).result()
+
+    def _start(self) -> None:
         from playwright.sync_api import sync_playwright
 
         self._pw = sync_playwright().start()
         executable = get_settings().chromium_executable or None
         self._browser = self._pw.chromium.launch(executable_path=executable, args=["--no-sandbox", "--disable-gpu"])
+
+    def _render(self, html: str, paper: str) -> bytes:
+        assert self._browser is not None
+        page = self._browser.new_page()
+        try:
+            page.set_content(html, wait_until="load")
+            page.evaluate("document.fonts.ready")
+            return page.pdf(format="Letter" if paper == "Letter" else "A4", print_background=True, prefer_css_page_size=True)
+        finally:
+            page.close()
 
     @classmethod
     def get(cls) -> "PdfRenderer":
@@ -98,22 +117,24 @@ class PdfRenderer:
             return cls._instance
 
     def pdf(self, html: str, paper: str = "A4") -> bytes:
-        with self._lock:
-            page = self._browser.new_page()
-            try:
-                page.set_content(html, wait_until="load")
-                page.evaluate("document.fonts.ready")
-                return page.pdf(format="Letter" if paper == "Letter" else "A4", print_background=True, prefer_css_page_size=True)
-            finally:
-                page.close()
+        return self._executor.submit(self._render, html, paper).result(timeout=120)
+
+    def _stop(self) -> None:
+        if self._browser is not None:
+            self._browser.close()
+        if self._pw is not None:
+            self._pw.stop()
 
     @classmethod
     def shutdown(cls) -> None:
         with cls._lock:
             if cls._instance is not None:
-                cls._instance._browser.close()
-                cls._instance._pw.stop()
+                inst = cls._instance
                 cls._instance = None
+                try:
+                    inst._executor.submit(inst._stop).result(timeout=30)
+                finally:
+                    inst._executor.shutdown(wait=True)
 
 
 def render_cv_pdf(cv: CvDocument, photo_uri: str = "") -> bytes:

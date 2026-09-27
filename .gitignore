@@ -19,3 +19,6 @@ web/dist/
 node_modules/
 proofs/private/
 web/vendor/
+
+# Données de test générées (python web/build_studio.py --data-json tests/js/.data.json)
+tests/js/.data.json

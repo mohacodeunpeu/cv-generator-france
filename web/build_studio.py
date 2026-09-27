@@ -1,6 +1,7 @@
 """Construit PAI Studio (page unique pour claude.ai) à partir des sources web/studio/ et des règles du dépôt.
 
-Sortie : web/dist/pai_studio.html (+ pdf.worker.min.js à publier à côté).
+Sortie : web/dist/pai_studio.html (artefact claude.ai) ou, avec --server, web/dist/pai_studio_server.html
+(même interface servie par le serveur PAI, avec web/studio/server_shim.js).
 Les règles, prompts et polices sont injectés : une seule source de vérité, le dépôt.
 Le profil N'EST PAS injecté (données personnelles) : il vit dans la base privée de l'artefact.
 """
@@ -83,17 +84,31 @@ def ensure_pdf_worker() -> Path:
     return ensure_vendor("pdf.worker.min.js")
 
 
-def build(output: Path | None = None) -> str:
+def _server_document(html: str) -> str:
+    """Variante serveur : document complet + pont `window.claude` → API du serveur PAI (web/studio/server_shim.js)."""
+    head, sep, body = html.partition("</style>")
+    if not sep:
+        raise ValueError("index.html : balise </style> introuvable")
+    shim = (STUDIO / "server_shim.js").read_text(encoding="utf-8")
+    body = body.replace("<script>/*@DATA@*/</script>", f"<script>{shim}</script>\n<script>/*@DATA@*/</script>", 1)
+    return ('<!doctype html>\n<html lang="fr">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">\n<meta name="robots" content="noindex,nofollow">\n'
+            f"{head}{sep}\n</head>\n<body>{body}</body>\n</html>\n")
+
+
+def build(output: Path | None = None, server: bool = False) -> str:
     DIST.mkdir(parents=True, exist_ok=True)
     data = json.dumps(studio_data(), ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     fonts = {name: base64.b64encode((ROOT / "fonts" / name).read_bytes()).decode("ascii") for name in FONTS}
     html = (STUDIO / "index.html").read_text(encoding="utf-8")
+    if server:
+        html = _server_document(html)
     html = html.replace("/*@STYLES@*/", (STUDIO / "styles.css").read_text(encoding="utf-8"))
     html = html.replace("/*@DATA@*/", f"window.PAI_DATA = {data};")
     html = html.replace("/*@FONTS@*/", "window.PAI_FONTS = " + json.dumps(fonts, separators=(",", ":")) + ";")
     html = html.replace("/*@ENGINE@*/", (STUDIO / "engine.js").read_text(encoding="utf-8"))
     html = html.replace("/*@APP@*/", (STUDIO / "app.js").read_text(encoding="utf-8"))
-    out = output or DIST / "pai_studio.html"
+    out = output or DIST / ("pai_studio_server.html" if server else "pai_studio.html")
     out.write_text(html, encoding="utf-8")
     size_kb = out.stat().st_size // 1024
     return f"{out} ({size_kb} Ko)"
@@ -107,5 +122,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "--data-json":
         write_data_json(Path(sys.argv[2]))
         print(sys.argv[2])
+    elif len(sys.argv) > 1 and sys.argv[1] == "--server":
+        print(build(Path(sys.argv[2]) if len(sys.argv) > 2 else None, server=True))
     else:
         print(build(Path(sys.argv[1]) if len(sys.argv) > 1 else None))

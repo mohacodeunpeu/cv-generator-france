@@ -1,5 +1,5 @@
 /* Tests du moteur PAI Studio sous Node (node:test, aucune dépendance).
- * Lancement : node --test tests/js/  (après `python web/build_studio.py --data-json tests/js/.data.json`)
+ * Lancement : node --test tests/js/*.test.js  (après `python web/build_studio.py --data-json tests/js/.data.json`)
  * Vérifie la parité avec le moteur Python : mêmes cas pièges, mêmes analyses d'offres (tests/golden/).
  */
 'use strict';

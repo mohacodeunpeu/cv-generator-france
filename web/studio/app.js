@@ -139,7 +139,7 @@
           FiraMedium: { normal: 'FiraSans-Medium.ttf', bold: 'FiraSans-Bold.ttf', italics: 'FiraSans-Italic.ttf', bolditalics: 'FiraSans-Bold.ttf' },
         };
       }
-      if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'; // le worker est déjà chargé par <script> : pdf.js l'utilise sur le fil principal
+      if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'; // le worker est déjà chargé par une balise script : pdf.js l'utilise sur le fil principal
     },
     colors(doc) { return Object.assign({}, E.design(doc.design_profile).colors, doc.colors || {}); },
     stamp(lang, x) {

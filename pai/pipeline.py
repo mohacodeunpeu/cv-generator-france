@@ -7,6 +7,7 @@ le pack est quand même produit, 100 % factuel, et le journal indique ce qui a �
 from __future__ import annotations
 
 import json
+import secrets
 from typing import Any, Callable
 
 from . import ENGINE_VERSION
@@ -313,7 +314,8 @@ class Pipeline:
         strategy = self.strategy(analysis, match)
         versions = Versions(offer_v=offer.text_hash[:12], profile_v=profile_version_tag(self.profile), engine_v=ENGINE_VERSION,
                             prompt_v=prompts_version(), rules_v=self.rules.version)
-        pack = ApplicationPack(id=f"pack_{stable_hash([offer.id, versions.profile_v, self.mode, len(self.log)], 10)}",
+        # Identifiant unique : une génération est immuable, deux runs de la même offre donnent deux packs.
+        pack = ApplicationPack(id=f"pack_{stable_hash([offer.id, versions.profile_v, self.mode], 6)}{secrets.token_hex(3)}",
                                mode=self.mode, provider=self.provider.name, versions=versions, offer=offer,  # type: ignore[arg-type]
                                analysis=analysis, match=match, strategy=strategy)
         if self.mode == "QUICK":

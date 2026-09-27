@@ -115,7 +115,7 @@ def cmd_build_studio(args: argparse.Namespace) -> int:
     sys.path.insert(0, str(paths.WEB_DIR))
     from build_studio import build  # type: ignore[import-not-found]
 
-    print(build(Path(args.output) if args.output else None))
+    print(build(Path(args.output) if args.output else None, server=args.server))
     return 0
 
 
@@ -160,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(fn=cmd_benchmark)
     p = sub.add_parser("build-studio", help="Construire la page PAI Studio (web/)")
     p.add_argument("--output")
+    p.add_argument("--server", action="store_true", help="variante servie par le serveur PAI (API /v1 au lieu de claude.ai)")
     p.set_defaults(fn=cmd_build_studio)
     p = sub.add_parser("worker", help="Worker de jobs (file PostgreSQL)")
     p.add_argument("--once", action="store_true")

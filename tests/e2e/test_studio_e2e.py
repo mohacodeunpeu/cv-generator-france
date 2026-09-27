@@ -2,8 +2,8 @@
 
 Parcours : tableau de bord → nouvelle candidature (STANDARD) → pack → CV Studio → lettre → export PDF/ZIP →
 profil → mobile. Vérifie aussi que les pièges de la doublure IA (MBA, faux chiffre, fait UNVERIFIED,
-salaire inventé) n'atteignent jamais le document final. Captures d'écran → docs/proofs/studio/
-(profil FICTIF « Camille Test » uniquement).
+salaire inventé) n'atteignent jamais le document final. Captures d'écran → data/proofs/studio/ (hors Git),
+ou docs/proofs/studio/ pour régénérer les preuves : PAI_PROOFS_DIR=docs/proofs/studio (profil FICTIF « Camille Test »).
 """
 
 from __future__ import annotations
@@ -11,13 +11,17 @@ from __future__ import annotations
 import functools
 import http.server
 import json
+import os
 import threading
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-PROOFS = ROOT / "docs" / "proofs" / "studio"
+PROOFS = Path(os.environ.get("PAI_PROOFS_DIR") or ROOT / "data" / "proofs" / "studio")
+if not PROOFS.is_absolute():
+    PROOFS = ROOT / PROOFS
+PROOFS.mkdir(parents=True, exist_ok=True)
 OFFER = ("Business Developer Junior (H/F) — CDI — Paris\nAcme SaaS édite un logiciel pour les PME françaises depuis 2015.\n\n"
          "Vos missions\n- Prospecter de nouveaux clients PME par téléphone et LinkedIn.\n- Suivre votre pipeline dans HubSpot.\n\n"
          "Votre profil\n- Anglais courant requis.\n- Maîtrise d'un CRM indispensable.")
