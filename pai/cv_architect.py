@@ -64,6 +64,27 @@ def _coverage_score(fact: Fact, match: Match) -> float:
     return sum(weights.get(c.priority, 1) for c in match.coverage if c.covered and fact.id in c.fact_ids)
 
 
+def _pick(facts: list[Fact], match: Match, covered: set[str], limit: int) -> list[Fact]:
+    """Sélection gloutonne : à chaque tour, le fait qui prouve le plus de mots-clés de l'offre ENCORE ABSENTS du CV
+    (REQUIRED 3, IMPORTANT 2, NICE 1) ; à égalité, l'ordre de pertinence habituel. Aucun ajout de contenu :
+    seulement un meilleur choix parmi les faits utilisables. Même algorithme dans web/studio/engine.js (pickGreedy)."""
+    weights = {"REQUIRED": 3, "IMPORTANT": 2, "NICE": 1}
+    weight = {c.term: weights.get(c.priority, 1) for c in match.coverage}
+    terms = {f.id: [c.term for c in match.coverage if c.covered and f.id in c.fact_ids] for f in facts}
+    rest = sorted(facts, key=lambda f: (-_coverage_score(f, match), f.kind != "result", -len(extract_numbers(f.text))))
+    chosen: list[Fact] = []
+    while rest and len(chosen) < limit:
+        best_i, best_gain = 0, -1
+        for i, f in enumerate(rest):
+            gain = sum(weight[t] for t in terms[f.id] if t not in covered)
+            if gain > best_gain:
+                best_i, best_gain = i, gain
+        fact = rest.pop(best_i)
+        chosen.append(fact)
+        covered.update(terms[fact.id])
+    return chosen
+
+
 def _fact_lines(profile: MasterProfile, ids: list[str], section: str, prefix: str) -> list[Line]:
     lines = []
     for i, fid in enumerate(ids, 1):
@@ -118,13 +139,14 @@ def build_cv_deterministic(profile: MasterProfile, analysis: Analysis, match: Ma
         lines.append(Line(id="s2", section="summary", kind="claim", text=_cap(best.hook) + where + ".",
                           fact_ids=best.hook_fact_ids))
 
-    # Expériences : puces = faits enfants, les plus pertinents pour l'offre d'abord
+    # Expériences : puces = faits enfants ; d'abord ceux qui prouvent des mots-clés encore absents du CV
+    summary_ids = {fid for ln in lines for fid in ln.fact_ids}
+    covered = {c.term for c in match.coverage if c.covered and summary_ids & set(c.fact_ids)}
     blocks = experience_blocks(profile, strategy)
     for block in blocks:
         children = [f for f in profile.children(block.experience_id) if f.kind in ("result", "responsibility")]
-        children.sort(key=lambda f: (-_coverage_score(f, match), f.kind != "result", -len(extract_numbers(f.text))))
         limit = max_featured if block.featured else max_other
-        for k, fact in enumerate(children[:limit], 1):
+        for k, fact in enumerate(_pick(children, match, covered, limit), 1):
             line = Line(id=f"e.{block.experience_id.split('.', 1)[1]}.b{k}", section="experience", kind="claim",
                         text=_cap(fact.text), fact_ids=[fact.id], experience_id=block.experience_id)
             lines.append(line)
@@ -136,8 +158,7 @@ def build_cv_deterministic(profile: MasterProfile, analysis: Analysis, match: Ma
         groups["digital" if norm(f.text) in _DIGITAL else "commercial"].append(f)
     groups["tools"] = profile.by_kind("tool")
     for key, facts in groups.items():
-        facts.sort(key=lambda f: -_coverage_score(f, match))
-        for i, f in enumerate(facts[:6], 1):
+        for i, f in enumerate(_pick(facts, match, covered, 6), 1):
             lines.append(Line(id=f"k.{key}.{i}", section="skills", kind="fact", text=f.text, fact_ids=[f.id],
                               group=SKILL_GROUPS[lang][key]))
 

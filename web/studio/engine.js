@@ -664,6 +664,20 @@
   };
   const eduIds = (P) => [P.byKind('education').map((f) => f.id), P.byKind('certification').filter((f) => f.id !== 'cert.toeic').map((f) => f.id)];
   E.experienceBlocks = (P, strat) => P.experiences().map((e) => ({ experience_id: e.id, title: e.data.title || '', company: e.data.company || '', city: e.data.city || '', period: e.data.period_label || '', featured: (strat.best.experiences_up || []).includes(e.id), bullet_ids: [] }));
+  // Sélection gloutonne (parité avec pai/cv_architect.py::_pick) : d'abord les faits qui prouvent des mots-clés encore absents du CV.
+  const baseCmp = (m) => (x, y) => (covScore(y, m) - covScore(x, m)) || ((x.kind !== 'result') - (y.kind !== 'result')) || (E.extractNumbers(y.text).length - E.extractNumbers(x.text).length);
+  const pickGreedy = (facts, m, covered, limit) => {
+    const W = { REQUIRED: 3, IMPORTANT: 2, NICE: 1 };
+    const weight = new Map(m.coverage.map((c) => [c.term, W[c.priority] || 1]));
+    const terms = new Map(facts.map((f) => [f.id, m.coverage.filter((c) => c.covered && (c.fact_ids || []).includes(f.id)).map((c) => c.term)]));
+    const rest = facts.slice().sort(baseCmp(m)); const out = [];
+    while (rest.length && out.length < limit) {
+      let bi = 0; let bg = -1;
+      rest.forEach((f, i) => { const g = terms.get(f.id).filter((t) => !covered.has(t)).reduce((sum, t) => sum + weight.get(t), 0); if (g > bg) { bg = g; bi = i; } });
+      const [f] = rest.splice(bi, 1); out.push(f); terms.get(f.id).forEach((t) => covered.add(t));
+    }
+    return out;
+  };
   E.buildCvDeterministic = (P, a, m, strat, profileValidated) => {
     const lang = a.language_of_offer === 'en' ? 'en' : 'fr'; const c = country(a.country); const best = strat.best; const d = design(best.design_profile);
     const lines = [{ id: 'h1', section: 'headline', kind: 'headline', text: best.title, fact_ids: P.fact('target.roles') ? ['target.roles'] : [], offer_terms: [a.job_title] }];
@@ -673,17 +687,18 @@
       const hf = P.fact(best.hook_fact_ids[0]); const par = hf && hf.parent ? P.fact(hf.parent) : null;
       lines.push({ id: 's2', section: 'summary', kind: 'claim', text: cap(best.hook) + (par ? ` (${par.data.company})` : '') + '.', fact_ids: best.hook_fact_ids });
     }
+    const summaryIds = new Set(lines.flatMap((l) => l.fact_ids));
+    const covered = new Set(m.coverage.filter((c) => c.covered && (c.fact_ids || []).some((id) => summaryIds.has(id))).map((c) => c.term));
     const blocks = E.experienceBlocks(P, strat);
     for (const b of blocks) {
       const ch = P.children(b.experience_id).filter((f) => ['result', 'responsibility'].includes(f.kind));
-      ch.sort((x, y) => (covScore(y, m) - covScore(x, m)) || ((x.kind !== 'result') - (y.kind !== 'result')) || (E.extractNumbers(y.text).length - E.extractNumbers(x.text).length));
       const limit = b.featured ? (d.max_bullets_featured || 4) : (d.max_bullets_other || 2);
-      ch.slice(0, limit).forEach((f, k) => { const id = `e.${b.experience_id.split('.').slice(1).join('.')}.b${k + 1}`; lines.push({ id, section: 'experience', kind: 'claim', text: cap(f.text), fact_ids: [f.id], experience_id: b.experience_id }); b.bullet_ids.push(id); });
+      pickGreedy(ch, m, covered, limit).forEach((f, k) => { const id = `e.${b.experience_id.split('.').slice(1).join('.')}.b${k + 1}`; lines.push({ id, section: 'experience', kind: 'claim', text: cap(f.text), fact_ids: [f.id], experience_id: b.experience_id }); b.bullet_ids.push(id); });
     }
     const groups = { commercial: [], tools: P.byKind('tool'), digital: [] };
     for (const f of P.byKind('skill')) (DIGITAL.has(E.norm(f.text)) ? groups.digital : groups.commercial).push(f);
     for (const [key, facts] of Object.entries(groups)) {
-      facts.slice().sort((x, y) => covScore(y, m) - covScore(x, m)).slice(0, 6).forEach((f, i) => lines.push({ id: `k.${key}.${i + 1}`, section: 'skills', kind: 'fact', text: f.text, fact_ids: [f.id], group: GROUPS[lang][key] }));
+      pickGreedy(facts, m, covered, 6).forEach((f, i) => lines.push({ id: `k.${key}.${i + 1}`, section: 'skills', kind: 'fact', text: f.text, fact_ids: [f.id], group: GROUPS[lang][key] }));
     }
     const [edu, certs] = eduIds(P);
     lines.push(...factLines(P, edu, 'education', 'd'), ...factLines(P, certs, 'certifications', 'c'));

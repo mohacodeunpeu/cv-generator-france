@@ -62,3 +62,15 @@ test('pipeline déterministe : CV et lettre 100 % tracés', () => {
   assert.ok(letter.lines.filter((l) => l.kind === 'offer_ref').length >= 2);
   assert.equal(cv.draft, true);
 });
+
+const cvParity = path.join(ROOT, 'tests', 'golden', 'cv_parity.json');
+test('CV déterministe : parité avec Python (sélection gloutonne des faits, 13 offres)', { skip: !fs.existsSync(cvParity) }, () => {
+  const P = E.P(profile);
+  for (const item of JSON.parse(fs.readFileSync(cvParity, 'utf8'))) {
+    const a = E.deterministicAnalysis({ text: item.text, title_hint: item.title_hint, company_hint: item.company_hint });
+    const m = E.computeMatch(P, a);
+    const s = E.deterministicStrategy(P, a, m);
+    const cv = E.buildCvDeterministic(P, a, m, s, false);
+    assert.deepEqual(cv.lines.map((l) => ({ id: l.id, text: l.text, fact_ids: l.fact_ids })), item.lines, `${item.id} : lignes du CV`);
+  }
+});
