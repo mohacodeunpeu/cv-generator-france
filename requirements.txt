@@ -10,6 +10,8 @@ python-dotenv==1.2.3
 Jinja2==3.1.6
 itsdangerous==2.2.0
 argon2-cffi==25.1.0
+# Chiffrement au repos des clés d'API saisies dans l'interface (Fernet, clé dérivée de SECRET_KEY)
+cryptography==50.0.1
 SQLAlchemy==2.1.1
 alembic==1.20.0
 psycopg[binary]==3.3.6

@@ -6,6 +6,10 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Modèles par défaut des fournisseurs compatibles OpenAI qui en ont un (surchargeables : env ou Réglages → IA).
+GEMINI_DEFAULT_MODEL = "gemini-2.5-flash"
+MISTRAL_DEFAULT_MODEL = "mistral-large-latest"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore", env_prefix="")
@@ -17,9 +21,14 @@ class Settings(BaseSettings):
     # Base de données : PostgreSQL 16 en production, SQLite accepté en local et en test.
     db_url: str = "sqlite:///./data/pai.db"
 
-    # Fournisseur IA : claude | openai | local | null (mode dégradé, sans IA).
+    # Fournisseur IA : claude | gemini | mistral | openai | local | null (mode dégradé, sans IA).
+    # Les réglages enregistrés depuis l'interface (Réglages → IA, clés chiffrées en base) priment sur ces variables.
     pai_ai_provider: str = ""
     anthropic_api_key: str = ""
+    gemini_api_key: str = ""
+    gemini_model: str = GEMINI_DEFAULT_MODEL
+    mistral_api_key: str = ""
+    mistral_model: str = MISTRAL_DEFAULT_MODEL
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = ""

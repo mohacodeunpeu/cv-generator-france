@@ -19,7 +19,8 @@ from .base import AIProvider, ProviderError, ProviderResult
 @dataclass
 class ClaudeProvider(AIProvider):
     name: str = "claude"
-    api_key: str = ""
+    api_key: str = field(default="", repr=False)
+    model: str = ""   # modèle unique imposé depuis Réglages → IA ; vide = modèle par tâche (config/models.yaml)
     _client: Any = field(default=None, repr=False)
 
     @property
@@ -30,6 +31,8 @@ class ClaudeProvider(AIProvider):
         return load_rules().models.get("providers", {}).get("claude", {})
 
     def model_for(self, task: str) -> str:
+        if self.model:
+            return self.model
         tasks = self._cfg().get("tasks", {})
         return tasks.get(task) or tasks.get("cv_content") or "claude-sonnet-5"
 
@@ -74,7 +77,7 @@ class ClaudeProvider(AIProvider):
         except anthropic.RateLimitError as exc:
             raise ProviderError(f"Limite de débit Anthropic atteinte : {exc.message}") from exc
         except anthropic.AuthenticationError as exc:
-            raise ProviderError("Clé ANTHROPIC_API_KEY refusée") from exc
+            raise ProviderError("Clé d'API Anthropic refusée (ANTHROPIC_API_KEY ou Réglages → IA)") from exc
         except anthropic.APIStatusError as exc:
             raise ProviderError(f"Erreur API Anthropic {exc.status_code} : {exc.message}") from exc
         except anthropic.APIConnectionError as exc:

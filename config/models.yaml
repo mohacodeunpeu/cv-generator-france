@@ -1,9 +1,11 @@
 # Modèles IA par tâche — versionné. Changer un modèle = modifier ce fichier, pas le code.
 # Les "artifact_tiers" sont utilisés par PAI Studio (page claude.ai, capacité `sample`) :
 #   quick ≈ extraction rapide, default ≈ rédaction, complex ≈ stratégie / critique / jugement.
-version: 3
+# Fournisseurs interchangeables. Priorité : Réglages → IA (interface, clés chiffrées en base) → variables
+# d'environnement (PAI_AI_PROVIDER, *_API_KEY, *_MODEL) → default_provider ci-dessous → null (sans IA).
+version: 4
 
-default_provider: claude        # claude | openai | local | null  (surchargeable par PAI_AI_PROVIDER)
+default_provider: claude        # claude | gemini | mistral | openai | local | null
 
 providers:
   claude:
@@ -46,11 +48,23 @@ providers:
       letter: medium
       answers: medium
       learning_rules: medium
+  # Fournisseurs compatibles OpenAI (/chat/completions) : un seul modèle pour toutes les tâches.
+  # Coût : non chiffré (0 € dans le journal des appels) — le garde-fou de coût ne compte que Claude.
+  # Fixer un plafond de dépense dans la console du fournisseur.
+  gemini:
+    # Google Gemini, point d'accès compatible OpenAI : https://generativelanguage.googleapis.com/v1beta/openai
+    # Clé : GEMINI_API_KEY ou Réglages → IA. Modèle : GEMINI_MODEL ou Réglages → IA.
+    tasks: {default: "${GEMINI_MODEL:-gemini-2.5-flash}"}
+  mistral:
+    # Mistral AI (La Plateforme) : https://api.mistral.ai/v1
+    # Clé : MISTRAL_API_KEY ou Réglages → IA. Modèle : MISTRAL_MODEL ou Réglages → IA.
+    tasks: {default: "${MISTRAL_MODEL:-mistral-large-latest}"}
   openai:
-    # API compatible OpenAI. Le nom du modèle vient de l'environnement (OPENAI_MODEL) : aucun nom inventé ici.
+    # API OpenAI (ou compatible : OPENAI_BASE_URL). Le nom du modèle vient de l'environnement (OPENAI_MODEL)
+    # ou des Réglages → IA : aucun nom inventé ici.
     tasks: {default: "${OPENAI_MODEL}"}
   local:
-    # Ollama ou tout serveur compatible OpenAI (LOCAL_BASE_URL, LOCAL_MODEL).
+    # Ollama ou tout serveur compatible OpenAI (LOCAL_BASE_URL, LOCAL_MODEL, ou Réglages → IA). Coût nul.
     tasks: {default: "${LOCAL_MODEL}"}
 
 artifact_tiers:

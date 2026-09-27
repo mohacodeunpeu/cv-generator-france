@@ -116,17 +116,40 @@ modifié la base, restaurer la sauvegarde faite juste avant (§ 4).
 
 ## 6. Changer de fournisseur IA
 
-Dans `.env`, puis `docker compose up -d --force-recreate pai_web pai_worker` :
+Six choix interchangeables : `claude`, `gemini`, `mistral`, `openai`, `local` (Ollama), `null` (sans IA).
+Aucun module métier n'importe de SDK : changer de fournisseur ne touche pas au code.
+
+**Depuis l'interface (recommandé, sans redémarrage)** : Réglages → IA → choisir le fournisseur, saisir la clé,
+enregistrer, puis « Tester la connexion ». La clé est chiffrée en base et n'est plus jamais réaffichée (seul un
+indice `••••a1b2` apparaît). API équivalente : `GET/PUT /v1/settings/ai`, `POST /v1/settings/ai/test` (droit
+`admin` pour écrire ; voir `docs/api.md`).
+
+**Par l'environnement** (`.env`, puis `docker compose up -d --force-recreate pai_web pai_worker`) :
 
 | Fournisseur | Réglages |
 |---|---|
 | Claude | `PAI_AI_PROVIDER=claude`, `ANTHROPIC_API_KEY=…` (modèles par tâche : `config/models.yaml`) |
+| Gemini | `PAI_AI_PROVIDER=gemini`, `GEMINI_API_KEY=…`, `GEMINI_MODEL=…` (défaut `gemini-2.5-flash`) |
+| Mistral | `PAI_AI_PROVIDER=mistral`, `MISTRAL_API_KEY=…`, `MISTRAL_MODEL=…` (défaut `mistral-large-latest`) |
 | OpenAI | `PAI_AI_PROVIDER=openai`, `OPENAI_API_KEY=…`, `OPENAI_MODEL=…` |
 | Local (Ollama) | `PAI_AI_PROVIDER=local`, `LOCAL_BASE_URL=http://hôte:11434/v1`, `LOCAL_MODEL=…` |
 | Sans IA | `PAI_AI_PROVIDER=null` : voies déterministes, 100 % factuelles, coût nul |
 
+- **Priorité** : Réglages → IA (base) → environnement → `default_provider` de `config/models.yaml` → sans IA.
+  Base indisponible → environnement, sans erreur. Le worker et `python -m pai generate` utilisent le même choix.
+- **État** : `GET /v1/status` → `ai_mode` = `REMOTE` (fournisseur distant configuré), `LOCAL` (modèle local
+  configuré) ou `DEGRADED` (sans IA : clé ou modèle manquant, ou `null`).
+- **Clés** : chiffrées au repos (Fernet, clé dérivée de `SECRET_KEY`), jamais renvoyées ni journalisées ; chaque
+  modification est tracée dans `audit_log`, sans secret. **Changer `SECRET_KEY` rend les clés enregistrées
+  illisibles** : elles sont ignorées (mode dégradé si c'était la seule clé) et sont à ressaisir.
+- **URL de base** (OpenAI, local) : la changer efface la clé enregistrée de ce fournisseur (à ressaisir) ; une clé
+  venant de `.env` n'est jamais envoyée à une URL de base modifiée depuis l'interface.
+
 Plafonds : `COST_CAP_EUR_PER_PACK` et `COST_CAP_EUR_PER_DAY`. Une fois un plafond atteint, chaque étape bascule
-sur sa voie déterministe, sans erreur. Les réponses IA sont mises en cache (`data/cache`, `PAI_AI_CACHE`).
+sur sa voie déterministe, sans erreur. Seuls les appels Claude sont chiffrés en euros (grille de
+`config/models.yaml`) : pour Gemini, Mistral et OpenAI, fixer aussi un plafond de dépense dans la console du
+fournisseur. Les réponses IA sont mises en cache (`data/cache`, `PAI_AI_CACHE`) ; le test de connexion contourne
+cache et plafond (un très petit appel, journalisé comme les autres).
 
 ## 7. Mot de passe et accès
 
