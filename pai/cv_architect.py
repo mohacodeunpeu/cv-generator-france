@@ -82,7 +82,8 @@ def language_line(profile: MasterProfile, lang: str) -> Line | None:
     parts, ids = [], []
     for f in facts:
         name, level = f.data.get("language", f.text), f.data.get("level", "")
-        label = f"{name} ({level}" + (", TOEIC 915/990" if toeic and toeic.usable and norm(name) == "anglais" else "") + ")"
+        toeic_txt = f", {toeic.text}" if toeic and toeic.usable and norm(name) == "anglais" else ""
+        label = f"{name} ({level}{toeic_txt})"
         parts.append(label)
         ids.append(f.id)
     if toeic and toeic.usable:

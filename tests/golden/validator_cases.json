@@ -1,0 +1,30 @@
+{
+  "_comment": "Cas partagés par les tests Python (tests/test_claims.py) et JS (tests/js/engine.test.js). Profil : tests/fixtures/profile_test.json. ok = attendu.",
+  "offer": "Business Developer Junior H/F — Acme SaaS. Prospection B2B de PME, CRM Salesforce, anglais courant. Paris.",
+  "offer_terms": ["Business Developer Junior", "Acme SaaS"],
+  "cases": [
+    {"id": "ok_prospection", "kind": "claim", "text": "Prospection B2B et négociation directe avec les décideurs", "fact_ids": ["exp.alpha.t1", "exp.alpha.t2"], "ok": true},
+    {"id": "ok_portefeuille", "kind": "claim", "text": "Portefeuille B2B de 250 K€/mois suivi sous HubSpot", "fact_ids": ["exp.alpha.r1", "exp.alpha.t3"], "ok": true},
+    {"id": "ok_leads", "kind": "claim", "text": "25+ leads qualifiés par mois grâce à LinkedIn Sales Navigator", "fact_ids": ["exp.alpha.r2", "exp.alpha.t3"], "ok": true},
+    {"id": "ok_crm_implique", "kind": "claim", "text": "Pipeline suivi dans un CRM", "fact_ids": ["exp.alpha.t3"], "ok": true},
+    {"id": "ok_langue", "kind": "claim", "text": "Anglais courant (TOEIC 905/990)", "fact_ids": ["lang.en", "cert.toeic"], "ok": true},
+    {"id": "ok_headline", "kind": "headline", "text": "Business Developer Junior — PME", "fact_ids": ["target.roles"], "ok": true},
+    {"id": "ok_retail", "kind": "claim", "text": "+12 % vs objectif mensuel auprès d'une clientèle internationale premium", "fact_ids": ["exp.beta.r1", "exp.beta.r2"], "ok": true},
+    {"id": "ok_offer_ref", "kind": "offer_ref", "text": "Votre annonce met l'accent sur la prospection B2B de PME.", "fact_ids": [], "offer_quote": "Prospection B2B de PME", "ok": true},
+    {"id": "trap_mba", "kind": "claim", "text": "Titulaire d'un MBA Manager de Business Unit", "fact_ids": ["edu.bachelor"], "ok": false},
+    {"id": "trap_master", "kind": "claim", "text": "Master en commerce international", "fact_ids": ["edu.bachelor"], "ok": false},
+    {"id": "trap_number", "kind": "claim", "text": "50+ leads qualifiés par mois", "fact_ids": ["exp.alpha.r2"], "ok": false},
+    {"id": "trap_tool", "kind": "claim", "text": "Pilotage du pipeline sous Salesforce", "fact_ids": ["exp.alpha.t3"], "ok": false},
+    {"id": "trap_lang_level", "kind": "claim", "text": "Anglais bilingue", "fact_ids": ["lang.en"], "ok": false},
+    {"id": "trap_management", "kind": "claim", "text": "Management d'une équipe de commerciaux", "fact_ids": ["exp.alpha.t1"], "ok": false},
+    {"id": "trap_participe", "kind": "claim", "text": "Pilotage de la refonte du site client", "fact_ids": ["exp.gamma.t1"], "ok": false},
+    {"id": "trap_company", "kind": "claim", "text": "Prospection B2B chez L'Oréal", "fact_ids": ["exp.alpha.t1"], "ok": false},
+    {"id": "trap_nofact", "kind": "claim", "text": "Expert en closing", "fact_ids": [], "ok": false},
+    {"id": "trap_unverified", "kind": "claim", "text": "Licence de gestion", "fact_ids": ["edu.unverified"], "ok": false},
+    {"id": "trap_unknown_fact", "kind": "claim", "text": "Prospection B2B", "fact_ids": ["exp.nope"], "ok": false},
+    {"id": "trap_banned", "kind": "projection", "text": "Dynamique et motivé, je serais un atout pour Acme SaaS", "fact_ids": [], "ok": false},
+    {"id": "trap_year", "kind": "claim", "text": "Community Manager chez Studio Nova depuis 2019", "fact_ids": ["exp.gamma"], "ok": false},
+    {"id": "trap_headline_number", "kind": "headline", "text": "Business Developer Junior — 5 ans", "fact_ids": ["target.roles"], "ok": false},
+    {"id": "trap_bad_quote", "kind": "offer_ref", "text": "Vous cherchez un expert Salesforce senior.", "fact_ids": [], "offer_quote": "expert Salesforce senior avec 10 ans", "ok": false}
+  ]
+}

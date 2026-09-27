@@ -286,7 +286,7 @@ def deterministic_analysis(offer: Offer, rules: RuleSet | None = None) -> Analys
 
 def clean_title(title: str) -> str:
     t = re.sub(r"\s*[\(\[]?\s*(h\s*/\s*f|f\s*/\s*h|m\s*/\s*f|f\s*/\s*m|h/f/x|x/f/h)\s*[\)\]]?", "", title, flags=re.I)
-    t = re.sub(r"\s*[-–|]\s*(cdi|cdd|stage|alternance|freelance|vie|v\.i\.e)\b.*$", "", t, flags=re.I)
+    t = re.sub(r"\s*[-–—|]\s*(cdi|cdd|stage|alternance|freelance|vie|v\.i\.e|interim|intérim)\b.*$", "", t, flags=re.I)
     return t.strip(" -–|,") or "UNKNOWN"
 
 

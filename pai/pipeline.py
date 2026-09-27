@@ -133,6 +133,7 @@ class Pipeline:
         report = validator.validate_lines(lines)
         targets = set(report.rejected_ids) | set((instructions or {}).keys())
         attempts = 0
+        dropped: list[dict[str, Any]] = []
         while targets and self.ai and attempts < 2:
             attempts += 1
             payload = []
@@ -158,11 +159,16 @@ class Pipeline:
                 text = str(item.get("text", "")).strip()
                 if text:
                     new_lines.append(ln.model_copy(update={"text": text, "fact_ids": [str(x) for x in item.get("fact_ids", ln.fact_ids)]}))
+                else:
+                    reasons = next((v.reasons for v in report.verdicts if v.line_id == ln.id), [])
+                    dropped.append({"id": ln.id, "text": ln.text,
+                                    "reasons": reasons + ["supprimée à la correction : aucune version vraie possible"]})
             lines = new_lines
             instructions = None
             report = validator.validate_lines(lines)
             targets = set(report.rejected_ids)
         kept, removed = drop_rejected(lines, report)
+        removed = dropped + removed
         final_report = validator.validate_lines(kept)
         final_report.forbidden_hits += report.forbidden_hits
         return kept, final_report, removed

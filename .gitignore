@@ -18,3 +18,4 @@ backups/
 web/dist/
 node_modules/
 proofs/private/
+web/vendor/

@@ -40,7 +40,7 @@ def answer_deterministic(question: str, profile: MasterProfile) -> Answer:
         text = " ; ".join(f.text for f in wanted)
         if any("anglais" in norm(f.text) for f in wanted) and profile.fact("cert.toeic"):
             ids.append("cert.toeic")
-            text += " (TOEIC 915/990)"
+            text += f" ({profile.value('cert.toeic')})"
         return Answer(question=question, type=qtype, answer=text + ".", fact_ids=ids, confidence="HIGH" if wanted else "BLOCKED")
     if qtype == "ADMIN" and re.search(r"mobilit|demenag|relocat", q) and profile.fact("mobility.idf"):
         return Answer(question=question, type=qtype, answer=profile.value("mobility.idf") + " (confirmée). Au-delà : à préciser.",
