@@ -1,6 +1,13 @@
 fastapi
 uvicorn[standard]
-fpdf2
-qrcode[pil]
-python-multipart
+reportlab
+pydantic
+pydantic-settings
+python-dotenv
 jinja2
+python-multipart
+anthropic
+
+
+# Legacy compatibility retained for existing flows.
+# PAI is now structured as a dedicated autonomous product.
