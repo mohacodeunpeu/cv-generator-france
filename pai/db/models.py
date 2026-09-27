@@ -92,6 +92,16 @@ class StoreDocument(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
+class AppSetting(Base):
+    """Réglages modifiables depuis l'interface (clé → valeur JSON), ex. `ai` : fournisseur IA actif, modèles,
+    URL de base et clés d'API CHIFFRÉES (Fernet dérivé de SECRET_KEY) — jamais de secret en clair."""
+
+    __tablename__ = "app_settings"
+    key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    value: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
 class StoredFile(TimestampMixin, Base):
     __tablename__ = "files"
     id: Mapped[str] = mapped_column(String(40), primary_key=True)

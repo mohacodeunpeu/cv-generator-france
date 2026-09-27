@@ -18,25 +18,26 @@ from typing import Any, Callable
 from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, ValidationError
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from .. import ENGINE_VERSION
 from ..config import get_settings
 from ..db.models import Feedback, Generation, Job, Outcome, StoredFile, StoreDocument, utcnow
 from ..db.repo import load_current_profile, persist_pack, record_calls, save_profile_doc, spent_today
 from ..db.session import session_scope
-from ..ingest import IngestError, offer_from_text, offer_from_url
+from ..ingest import IngestError, UrlIngestError, offer_from_text, offer_from_url
 from ..pipeline import Pipeline
 from ..profile import import_json, profile_version_tag, validate_profile
 from ..providers import get_provider
 from ..providers.base import BudgetExceeded, DegradedMode, ProviderError, extract_json
 from ..rules import load_rules, prompts_version
 from ..schemas import Offer
-from . import jobs
+from . import jobs, settings_ai
 from .auth import Principal, require
 from .security import sign, unsign
 
 router = APIRouter(prefix="/v1", tags=["v1"])
+router.include_router(settings_ai.router)  # /v1/settings/ai, /v1/settings/ai/test
 
 
 class OfferIn(BaseModel):
@@ -111,6 +112,40 @@ def run_pack_job(payload: dict[str, Any], progress: Callable[[str, str], None] |
         "quality_scores": json.loads(json.dumps(pack.scores, default=str)), "risks": pack.risks, "next_action": pack.next_action,
         "missing_profile_data": pack.missing_profile_data, "versions": pack.versions.model_dump(), "cost_eur": pack.cost_eur,
     }
+
+
+# ── Offre depuis une URL (l'interface l'appelle quand l'utilisateur colle un lien) ──
+class UrlIn(BaseModel):
+    url: str = Field(min_length=1, max_length=2000)
+
+
+OFFER_FIELDS = {"id", "text", "title_hint", "company_hint", "source_url", "text_hash", "source_type"}
+
+
+@router.post("/ingest/url")
+def ingest_url(body: UrlIn, _: Principal = require("analyze")) -> dict[str, Any]:
+    """Lecture sûre (SSRF) d'une page publique ; rien n'est enregistré. Échec → 422 {code, message} :
+    login_walled, bad_url, blocked_address, too_large, timeout, http_error, unreadable."""
+    try:
+        offer = offer_from_url(body.url.strip())
+    except UrlIngestError as exc:
+        raise HTTPException(status_code=422, detail={"code": exc.code, "message": exc.message}) from exc
+    except IngestError as exc:
+        raise HTTPException(status_code=422, detail={"code": "unreadable", "message": str(exc)}) from exc
+    return {"offer": offer.model_dump(include=OFFER_FIELDS)}
+
+
+@router.get("/status")
+def server_status(_: Principal = require("read")) -> dict[str, Any]:
+    """État pour l'interface : version du moteur, mode IA (REMOTE | LOCAL | DEGRADED), fournisseur actif, base."""
+    active, mode = settings_ai.ai_status()
+    try:
+        with session_scope() as s:
+            s.execute(text("SELECT 1"))
+        db = "ok"
+    except Exception:  # noqa: BLE001 — l'état se lit même base en panne
+        db = "error"
+    return {"engine_v": ENGINE_VERSION, "ai_mode": mode, "active_provider": active, "db": db}
 
 
 # ── Analyse, stratégie, CV, lettre ───────────────────────────────────────────
