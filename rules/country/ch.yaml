@@ -1,0 +1,12 @@
+code: CH
+name: Suisse
+language: fr
+paper: A4
+photo: common
+age: optional
+family_status: never
+nationality: optional   # permis de travail parfois demandé : jamais inventé
+address: city_only
+max_pages: 2
+date_format: "MM/YYYY"
+notes: ["Permis de travail : à renseigner seulement si confirmé par l'utilisateur."]

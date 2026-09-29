@@ -1,0 +1,12 @@
+code: NL
+name: Pays-Bas
+language: en
+paper: A4
+photo: discouraged
+age: never
+family_status: never
+nationality: never
+address: city_only
+max_pages: 1
+date_format: "MM/YYYY"
+notes: []

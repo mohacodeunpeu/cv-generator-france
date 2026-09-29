@@ -1,0 +1,22 @@
+# Digital Creative — colonne latérale sombre avec photo, tags, langues en points, frise. Digital, marketing, produit, start-up.
+id: digital_creative
+name: Digital Creative
+family: digital_creative
+version: 1
+ats_safe: false
+ats_level: low                 # colonne latérale : à éviter quand un logiciel ATS est détecté
+layout: two_column
+header: plain
+photo_modes: [OFF, SIDEBAR, HEADER]
+photo_default: SIDEBAR
+density: balanced
+palettes: [petrol, forest, graphite, bordeaux]
+palette_default: petrol
+fonts: {display: "Manrope", body: "Fira Sans"}
+pitch: "Colonne latérale sombre, photo ronde, compétences en tags, frise d'expériences : moderne et visuel."
+colors: {ink: "#14202A", muted: "#56616B", accent: "#1D6E82", accent2: "#D2B47A", rule: "#DCE3E6", band: "#0F2E38"}
+sizes_pt: {name: 20, headline: 10, section: 10.5, body: 9.2, meta: 8.2}
+margins_mm: {top: 11, right: 12, bottom: 10, left: 12}
+bullet: "•"
+max_bullets_featured: 4
+max_bullets_other: 2

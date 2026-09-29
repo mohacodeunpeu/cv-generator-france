@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0A0C0F">
+<title>PAI — Connexion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+/* Même langage que PAI Studio (design system « Atelier », docs/DESIGN_SYSTEM.md) : graphite, ivoire, pétrole, champagne. */
+:root {
+  color-scheme: dark;
+  --bg: #0A0C0F; --glass: rgba(16, 21, 26, .74); --field: rgba(8, 10, 13, .6);
+  --hair: rgba(237, 233, 222, .08); --hair-2: rgba(237, 233, 222, .16);
+  --ink: #EDE9DE; --ink-2: #BEBAAF; --muted: #8B8C86; --faint: #5D615F;
+  --petrol-3: #79B7C3; --champ: #D9C9A2; --champ-2: #EADFC4; --bad: #E48B7D; --bad-soft: rgba(228, 139, 125, .12);
+  --aurora-a: rgba(46, 130, 146, .30); --aurora-b: rgba(29, 59, 105, .55); --aurora-c: rgba(217, 201, 162, .10);
+  --dots: rgba(237, 233, 222, .05); --shadow: 0 40px 90px -40px rgba(0, 0, 0, .9);
+  --focus: 0 0 0 1px rgba(121, 183, 195, .6), 0 0 0 5px rgba(46, 130, 146, .2);
+  --f-display: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --f-ui: "Instrument Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #F4F2EC; --glass: rgba(251, 250, 246, .82); --field: rgba(255, 255, 255, .78);
+    --hair: rgba(20, 24, 28, .09); --hair-2: rgba(20, 24, 28, .16);
+    --ink: #15191D; --ink-2: #3A4046; --muted: #6A6E6E; --faint: #9A9D9B;
+    --petrol-3: #1C6272; --champ: #8E7440; --champ-2: #7A6335; --bad: #A83A2C; --bad-soft: rgba(168, 58, 44, .08);
+    --aurora-a: rgba(46, 130, 146, .16); --aurora-b: rgba(121, 183, 195, .22); --aurora-c: rgba(217, 201, 162, .28);
+    --dots: rgba(20, 24, 28, .05); --shadow: 0 30px 70px -36px rgba(20, 24, 28, .35);
+    --focus: 0 0 0 1px rgba(28, 98, 114, .5), 0 0 0 5px rgba(28, 98, 114, .12);
+  }
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; min-height: 100vh; min-height: 100svh; display: grid; place-items: center; overflow-x: hidden;
+  padding: calc(40px + env(safe-area-inset-top, 0px)) 16px calc(32px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-ui); -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(var(--dots) 1px, transparent 1px); background-size: 22px 22px; }
+main { position: relative; isolation: isolate; width: min(420px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; }
+/* halo : calque fixe découpé à l'écran (aucun défilement horizontal, même sur mobile) */
+.aurora { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.aurora::before { content: ""; position: absolute; left: 50%; top: 40%; width: min(900px, 150vw); height: 560px; transform: translate(-50%, -50%); filter: blur(44px);
+  background: radial-gradient(38% 42% at 30% 55%, var(--aurora-a), transparent 70%), radial-gradient(40% 46% at 70% 45%, var(--aurora-b), transparent 72%),
+    radial-gradient(22% 26% at 52% 30%, var(--aurora-c), transparent 70%);
+  animation: aurora 22s ease-in-out infinite alternate; }
+@keyframes aurora { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-47%, -53%) scale(1.06); } 100% { transform: translate(-53%, -48%) scale(1.02); } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+.kicker { margin: 0 0 22px; font: 600 11px/1 var(--f-ui); letter-spacing: .3em; text-transform: uppercase; color: var(--champ); animation: rise .8s var(--ease-out) both; }
+h1 { margin: 0; font: 400 clamp(92px, 24vw, 148px)/.8 var(--f-display); letter-spacing: -.035em; animation: rise .9s .05s var(--ease-out) both; }
+h1 em { font-style: normal; margin-left: .03em; padding-right: .02em; color: var(--champ);
+  background: linear-gradient(170deg, var(--champ-2), var(--champ) 55%, #B79E66); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.subbrand { margin: 22px 0 0; font: 600 11.5px/1.4 var(--f-ui); letter-spacing: .3em; text-transform: uppercase; color: var(--muted); animation: rise .9s .1s var(--ease-out) both; }
+.lede { margin: 16px 0 0; max-width: 16em; font: 400 clamp(22px, 5.4vw, 27px)/1.18 var(--f-display); letter-spacing: -.005em; color: var(--ink-2); text-wrap: balance; animation: rise .9s .15s var(--ease-out) both; }
+form { width: 100%; margin-top: 36px; padding: 22px; border-radius: 24px; text-align: left; border: 1px solid transparent;
+  background: linear-gradient(var(--glass), var(--glass)) padding-box,
+    linear-gradient(135deg, rgba(121, 183, 195, .5), rgba(217, 201, 162, .26) 38%, var(--hair) 60%, rgba(46, 130, 146, .38)) border-box;
+  backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 14px; animation: rise .9s .22s var(--ease-out) both; }
+.field { display: flex; flex-direction: column; gap: 7px; }
+label { font: 500 13px/1.2 var(--f-ui); color: var(--muted); }
+input { width: 100%; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--hair-2); background: var(--field); color: var(--ink);
+  font: 400 16px/1 var(--f-ui); transition: border-color .2s, box-shadow .2s; }
+input:hover { border-color: rgba(121, 183, 195, .35); }
+input:focus { outline: none; border-color: transparent; box-shadow: var(--focus); }
+button { position: relative; overflow: hidden; margin-top: 6px; min-height: 54px; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  border-radius: 16px; border: 1px solid rgba(234, 223, 196, .28); cursor: pointer; color: #F6F2E8; font: 600 16px/1 var(--f-ui); letter-spacing: .005em;
+  background: linear-gradient(135deg, #34899A 0%, #1C6272 48%, #1D3B69 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 18px 40px -18px rgba(46, 130, 146, .95); transition: transform .2s, box-shadow .35s; }
+button::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .18) 50%, transparent 70%);
+  transform: translateX(-120%); transition: transform .9s var(--ease-out); }
+button:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), 0 24px 48px -18px rgba(46, 130, 146, 1); }
+button:hover::after { transform: translateX(120%); }
+button:focus-visible { outline: none; box-shadow: var(--focus); }
+button svg { width: 18px; height: 18px; transition: transform .3s var(--ease-out); }
+button:hover svg { transform: translateX(3px); }
+.err { margin: 0; display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--bad-soft); color: var(--bad); font-size: 13.5px; line-height: 1.4; }
+.foot { margin: 26px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--faint); max-width: 34ch; animation: rise .9s .3s var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="aurora" aria-hidden="true"></div>
+  <p class="kicker">{{ 'Espace privé' if mode == 'login' else 'Premier accès' }}</p>
+  <h1>PA<em>I</em></h1>
+  <p class="subbrand">Personal Application Intelligence</p>
+  <p class="lede">{{ "Transforme n'importe quelle offre en candidature personnalisée." if mode == 'login' else 'Choix du mot de passe : 12 caractères minimum.' }}</p>
+  <form method="post" action="{{ '/login' if mode == 'login' else '/change-password' }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% if mode == 'login' %}
+    <div class="field"><label for="u">Identifiant</label><input id="u" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></div>
+    <div class="field"><label for="p">Mot de passe</label><input id="p" name="password" type="password" autocomplete="current-password" required></div>
+    <button type="submit">Se connecter <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    {% else %}
+    <div class="field"><label for="o">Mot de passe actuel</label><input id="o" name="old" type="password" autocomplete="current-password" required autofocus></div>
+    <div class="field"><label for="n">Nouveau mot de passe</label><input id="n" name="new" type="password" autocomplete="new-password" minlength="12" required></div>
+    <button type="submit">Enregistrer <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    {% endif %}
+    {% if error %}<p class="err" role="alert">{{ error }}</p>{% endif %}
+  </form>
+  <p class="foot">Accès privé. PAI ne postule jamais et n'envoie rien à ta place.</p>
+</main>
+</body>
+</html>

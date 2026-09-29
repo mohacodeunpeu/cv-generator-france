@@ -1,0 +1,12 @@
+# Vérifie toutes les 10 minutes si une nouvelle version de PAI est publiée sur la branche suivie.
+[Unit]
+Description=PAI : vérification des mises à jour toutes les 10 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=10min
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,28 @@
+id: digital_web
+name: Digital / web
+version: 1
+detect:
+  title_keywords: [chef de projet digital, cheffe de projet digital, project manager digital, community manager, social media manager, webmaster, web project manager, growth, traffic manager, chargé de marketing digital, chargée de marketing digital, content manager, website builder]
+  text_keywords: [site web, wix, wordpress, cms, landing page, réseaux sociaux, seo, taux de clic, ux, contenu, engagement, analytics, no-code]
+vocabulary: [landing pages, taux de clic, engagement, planning éditorial, UX, conversion, CMS, livraison de projets]
+priorities:
+  - projets livrés et résultats mesurés (trafic, clic, engagement)
+  - maîtrise des outils (CMS, design, analytics)
+  - gestion de projet et relation client
+  - capacité à produire du contenu
+signals_positive: [sites livrés, "% de clic ou d'engagement", outils nommés, autonomie]
+expectations: [portfolio si possible, rigueur de livraison]
+dominant_skills: [gestion de projet, création de contenu, site web, réseaux sociaux, ux]
+formality: 2
+cv_style:
+  ats_mode: HYBRID
+  design: hybrid_modern
+  photo: optional
+  emphasis: [projets livrés, métriques web, outils]
+  summary_angle: "projets digitaux livrés en autonomie, orientés conversion"
+letter_style:
+  tone: concret, orienté livrables
+  length_words: [200, 300]
+  must: ["un livrable concret", "une métrique web"]
+common_mistakes: [lister des outils sans résultats, pas de lien vers des réalisations]
+useful_proofs: [sites clients livrés, +20% taux de clic, +35% engagement]

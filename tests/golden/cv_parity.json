@@ -1,0 +1,1552 @@
+[
+ {
+  "id": "bd_saas_paris",
+  "text": "Business Developer Junior (H/F) — CDI — Paris 9e\nNordlys édite un logiciel SaaS de gestion des notes de frais pour les PME (80 salariés, 1 200 clients).\n\nVos missions\n- Prospecter de nouveaux clients PME par téléphone, email et LinkedIn (outbound).\n- Qualifier les leads entrants et générer des rendez-vous pour les Account Executives.\n- Suivre votre pipeline dans HubSpot et reporter vos résultats chaque semaine.\n- Participer aux salons professionnels et aux campagnes de prospection.\n\nVotre profil\n- Bac+3 minimum (école de commerce ou université).\n- Une première expérience en prospection B2B est indispensable (stage, alternance ou CDI).\n- Maîtrise d'un CRM (HubSpot idéalement) et de LinkedIn Sales Navigator.\n- Anglais courant requis : 30 % de nos prospects sont à l'international.\n- Ténacité, sens de l'organisation, goût du challenge.\n\nRémunération : 34 à 38 k€ fixe + variable jusqu'à 8 k€. Télétravail 2 jours par semaine.\nDémarrage : dès que possible.",
+  "title_hint": "Business Developer Junior (H/F)",
+  "company_hint": "Nordlys",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Business Developer Junior",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "am_media_ladefense",
+  "text": "Account Manager (F/H) — CDI — La Défense\nVeltra Media accompagne les enseignes de distribution dans leurs campagnes publicitaires en magasin et en ligne.\n\nMissions\n- Gérer et développer un portefeuille d'une trentaine de comptes clés (annonceurs et agences).\n- Identifier les opportunités d'upsell et de cross-sell, négocier les renouvellements.\n- Construire les bilans de campagne et les business reviews trimestrielles.\n- Assurer le reporting d'activité (Excel, tableaux de bord) auprès de la direction commerciale.\n\nProfil recherché\n- 2 ans d'expérience minimum en gestion de portefeuille clients B2B.\n- Excellent relationnel et capacité à négocier avec des décideurs.\n- Maîtrise d'Excel indispensable ; Salesforce est un plus.\n- Anglais professionnel.\n\nSalaire : 40-45 k€ + variable. Mutuelle, tickets restaurant, 2 jours de télétravail.",
+  "title_hint": "Account Manager (F/H)",
+  "company_hint": "Veltra Media",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Account Manager",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "Négociation directe avec décideurs",
+    "fact_ids": [
+     "exp.alpha.t2"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "vie_barcelona",
+  "text": "V.I.E — Business Developer Espagne (H/F) — Barcelone — 18 mois\nCastellane Industries, ETI française spécialisée dans les équipements de froid commercial, ouvre sa filiale espagnole.\n\nMission\n- Développer le portefeuille de clients B2B (distributeurs, installateurs) sur la zone Catalogne.\n- Prospecter, organiser les rendez-vous, préparer les offres commerciales avec le siège.\n- Représenter l'entreprise sur les salons professionnels locaux.\n- Remonter les informations marché au siège (reporting mensuel dans le CRM).\n\nProfil\n- Formation Bac+3 à Bac+5 en commerce.\n- Espagnol courant impératif ; anglais professionnel.\n- Première expérience commerciale ou en prospection B2B.\n- Autonomie, adaptabilité, goût de l'international.\n- Éligibilité au VIE requise.\n\nIndemnité VIE selon le barème Business France. Départ : janvier 2027.",
+  "title_hint": "VIE Business Developer — Barcelone",
+  "company_hint": "Castellane Industries",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "VIE Business Developer — Barcelone",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Négociation directe avec décideurs",
+    "fact_ids": [
+     "exp.alpha.t2"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "vie_dubai_en",
+  "text": "V.I.E — Sales Development Representative (M/F) — Dubai — 24 months\nAerion Solutions provides air-quality monitoring solutions to hotels, malls and office buildings in the Gulf region.\n\nWhat you will do\n- Generate and qualify B2B leads across the UAE and Saudi Arabia.\n- Run outbound campaigns (calls, emails, LinkedIn) and book meetings for the Regional Sales Manager.\n- Keep the CRM up to date and report weekly on pipeline metrics.\n- Support the team at trade shows (Gitex, The Hotel Show).\n\nWhat we are looking for\n- Bachelor's degree in business or equivalent.\n- Fluent English is required; Arabic is a strong plus.\n- First experience in B2B prospecting or sales.\n- Comfortable with CRM tools and LinkedIn Sales Navigator.\n- Eligible for the V.I.E program.\n\nPackage: V.I.E allowance (Business France scale), start date: February 2027.",
+  "title_hint": "V.I.E Sales Development Representative — Dubai",
+  "company_hint": "Aerion Solutions",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "V.I.E Sales Development Representative — Dubai",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "commercial_terrain_lyon",
+  "text": "Attaché commercial terrain (H/F) — CDI — Lyon et agglomération\nSodexa Pro distribue des fournitures et équipements de bureau aux PME de la région Auvergne-Rhône-Alpes.\n\nVos missions\n- Développer un secteur géographique : prospection terrain, rendez-vous clients, négociation.\n- Fidéliser un portefeuille existant de 150 clients PME.\n- Atteindre vos objectifs mensuels de chiffre d'affaires.\n- Saisir votre activité dans notre CRM.\n\nVotre profil\n- Permis B obligatoire (véhicule de fonction fourni).\n- Expérience réussie en vente BtoB, idéalement terrain.\n- Aisance relationnelle, sens de la négociation, rigueur.\n\nRémunération : 28 k€ fixe + commissions (45 k€ annuels possibles). Véhicule, téléphone, ordinateur.",
+  "title_hint": "Attaché commercial terrain (H/F)",
+  "company_hint": "Sodexa Pro",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Attaché commercial terrain",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "Négociation directe avec décideurs",
+    "fact_ids": [
+     "exp.alpha.t2"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.beta.b3",
+    "text": "Vente conseil en environnement premium",
+    "fact_ids": [
+     "exp.beta.t1"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "recrutement_paris",
+  "text": "Chargé de recrutement (H/F) — CDD 12 mois — Paris 10e\nTalentis Intérim, réseau d'agences spécialisées dans les métiers de la logistique et du tertiaire.\n\nMissions\n- Recueillir les besoins des entreprises clientes et rédiger les annonces.\n- Sourcer les candidats (jobboards, réseaux sociaux, partenaires emploi) et mener les entretiens.\n- Organiser des sessions de recrutement collectives et des job datings.\n- Travailler avec France Travail sur les dispositifs de formation (POEI) : un plus apprécié.\n- Développer la relation avec les entreprises clientes du secteur.\n\nProfil\n- Bac+2/3 en RH ou commerce.\n- Première expérience en recrutement ou en agence d'emploi.\n- Excellent sens relationnel, organisation, réactivité.\n- Maîtrise des outils bureautiques (Excel).\n\nSalaire : 30 k€ annuel brut + primes. Démarrage immédiat.",
+  "title_hint": "Chargé de recrutement (H/F)",
+  "company_hint": "Talentis Intérim",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Chargé de recrutement",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "retail_luxe_paris",
+  "text": "Conseiller de vente (H/F) — Maison de maroquinerie — CDI — Paris 8e (boutique Faubourg Saint-Honoré)\nMaison Arlette, maroquinier français fondé en 1921, recherche un conseiller de vente pour sa boutique parisienne.\n\nVos responsabilités\n- Offrir une expérience client d'exception à une clientèle locale et internationale.\n- Développer et fidéliser votre clientèle (clienteling, suivi des clients privilégiés).\n- Atteindre vos objectifs individuels de vente.\n- Participer à la mise en valeur des collections en boutique.\n\nProfil\n- Expérience réussie dans la vente en environnement premium ou luxe.\n- Anglais courant indispensable ; mandarin ou arabe très appréciés.\n- Présentation soignée, sens du service, élégance du discours.\n- Disponibilité le samedi.\n\nRémunération attractive (fixe + variable sur objectifs individuels et collectifs).",
+  "title_hint": "Conseiller de vente — maroquinerie de luxe (H/F)",
+  "company_hint": "Maison Arlette",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Conseiller de vente — maroquinerie de luxe",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "+12 % vs objectif mensuel (Maison Lumen).",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Vente conseil en environnement premium",
+    "fact_ids": [
+     "exp.beta.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b3",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "digital_project_paris",
+  "text": "Chef de projet digital junior (H/F) — CDI — Paris 11e\nStudio Kairn crée des sites vitrines et des landing pages pour des TPE et des marques émergentes.\n\nMissions\n- Piloter les projets clients de la prise de brief à la mise en ligne.\n- Construire et optimiser des sites sous Wix et WordPress.\n- Améliorer les taux de conversion des landing pages (tests, UX, contenus).\n- Produire des visuels simples (Canva) et coordonner les rédacteurs.\n\nProfil\n- Première expérience en gestion de projets web.\n- Maîtrise de Wix ; WordPress et notions de SEO appréciés.\n- Sens du client, autonomie, organisation.\n- Anglais lu et écrit.\n\n32-36 k€ selon profil. Télétravail partiel.",
+  "title_hint": "Chef de projet digital junior (H/F)",
+  "company_hint": "Studio Kairn",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Chef de projet digital junior",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Négociation directe avec décideurs",
+    "fact_ids": [
+     "exp.alpha.t2"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "customer_success_paris",
+  "text": "Customer Success Manager (H/F) — CDI — Paris (hybride)\nPlumeo est une plateforme SaaS de gestion des entretiens annuels utilisée par 600 entreprises.\n\nTes missions\n- Assurer l'onboarding des nouveaux clients et l'adoption de la plateforme.\n- Suivre la satisfaction (NPS) et réduire le churn de ton portefeuille.\n- Identifier les opportunités d'expansion avec l'équipe commerciale.\n- Animer des business reviews et suivre tes KPI dans HubSpot.\n\nTon profil\n- 1 à 3 ans d'expérience en relation client B2B, account management ou customer success.\n- Excellente communication, pédagogie, sens de l'organisation.\n- HubSpot ou autre CRM : requis.\n- Anglais professionnel.\n\n38-44 k€ + bonus. 3 jours de télétravail.",
+  "title_hint": "Customer Success Manager (H/F)",
+  "company_hint": "Plumeo",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Customer Success Manager",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.beta.b3",
+    "text": "Vente conseil en environnement premium",
+    "fact_ids": [
+     "exp.beta.t1"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "adv_montreuil",
+  "text": "Assistant(e) ADV et commercial (H/F) — CDI — Montreuil\nBatiflex Distribution, grossiste en matériaux de second œuvre, 120 salariés.\n\nMissions\n- Établir les devis et saisir les commandes clients dans SAP.\n- Suivre les livraisons, la facturation et les relances.\n- Tenir les tableaux de bord de l'activité commerciale (Excel).\n- Être l'interlocuteur des clients professionnels et des commerciaux terrain.\n\nProfil\n- Maîtrise de SAP obligatoire.\n- Excel avancé (tableaux croisés dynamiques).\n- Rigueur, organisation, sens du service client.\n- Bac+2 minimum.\n\n29-32 k€ sur 13 mois.",
+  "title_hint": "Assistant ADV et commercial (H/F)",
+  "company_hint": "Batiflex Distribution",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Assistant ADV et commercial",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Négociation directe avec décideurs",
+    "fact_ids": [
+     "exp.alpha.t2"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "evenementiel_paris",
+  "text": "Chargé(e) d'événementiel (H/F) — CDD 6 mois — Paris 7e\nL'Hôtel Le Mirador (5 étoiles, 90 chambres) développe son activité séminaires et réceptions privées.\n\nMissions\n- Accueillir les demandes, construire les propositions et suivre les réservations d'événements.\n- Coordonner les équipes internes (banquets, cuisine, technique) et les prestataires.\n- Assurer l'accueil des clients le jour J et le suivi après l'événement.\n- Contribuer à la fidélisation de la clientèle entreprises.\n\nProfil\n- Première expérience en hôtellerie, événementiel ou vente premium.\n- Anglais courant ; une troisième langue est un atout.\n- Sens de l'accueil, organisation, gestion du stress.\n\nHoraires variables selon les événements. Salaire selon profil.",
+  "title_hint": "Chargé d'événementiel (H/F)",
+  "company_hint": "Hôtel Le Mirador",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Chargé d'événementiel",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "+12 % vs objectif mensuel (Maison Lumen).",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Vente conseil en environnement premium",
+    "fact_ids": [
+     "exp.beta.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b3",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "client_relations_london_en",
+  "text": "Client Relations Executive — French speaker — London — Permanent\nHartwell & Finch is a luxury concierge company serving private clients across Europe.\n\nResponsibilities\n- Be the first point of contact for French-speaking private clients (phone, email, chat).\n- Handle requests end to end: reservations, gifts, travel arrangements.\n- Build long-term relationships and anticipate client needs.\n- Keep client records accurate in our CRM.\n\nRequirements\n- Native French and fluent English are essential.\n- Experience in premium retail, hospitality or client services.\n- Outstanding service mindset, discretion and organisation.\n- Arabic or Spanish would be an advantage.\n\nSalary: £30,000–£34,000. Hybrid after probation.",
+  "title_hint": "Client Relations Executive (French speaker)",
+  "company_hint": "Hartwell & Finch",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Client Relations Executive (French speaker)",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Clientèle internationale premium (Maison Lumen).",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "25+ leads qualifiés/mois",
+    "fact_ids": [
+     "exp.alpha.r2"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Vente conseil en environnement premium",
+    "fact_ids": [
+     "exp.beta.t1"
+    ]
+   },
+   {
+    "id": "e.beta.b3",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "head_of_sales_paris",
+  "text": "Head of Sales (H/F) — CDI — Paris\nQuartzline, scale-up SaaS (logistique), 150 salariés, recrute son Head of Sales France.\n\nMissions\n- Manager une équipe de 8 commerciaux (SDR et Account Executives) et la faire grandir.\n- Définir la stratégie commerciale et le plan de prospection grands comptes.\n- Piloter le forecast, le pipeline et les KPI sous Salesforce.\n- Recruter et former les nouveaux commerciaux.\n\nProfil\n- 10 ans d'expérience minimum dans la vente SaaS B2B, dont 4 ans de management d'équipe.\n- Master ou école de commerce.\n- Maîtrise de Salesforce indispensable.\n- Anglais bilingue.\n\nPackage : 90-110 k€ + variable + BSPCE.",
+  "title_hint": "Head of Sales (H/F)",
+  "company_hint": "Quartzline",
+  "lines": [
+   {
+    "id": "h1",
+    "text": "Head of Sales",
+    "fact_ids": [
+     "target.roles"
+    ]
+   },
+   {
+    "id": "s1",
+    "text": "Expériences en commerce, retail et digital.",
+    "fact_ids": [
+     "profile.domains"
+    ]
+   },
+   {
+    "id": "s2",
+    "text": "Portefeuille B2B 250 K€/mois (Alpha Services).",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b1",
+    "text": "CRM HubSpot, LinkedIn Sales Navigator",
+    "fact_ids": [
+     "exp.alpha.t3"
+    ]
+   },
+   {
+    "id": "e.alpha.b2",
+    "text": "Portefeuille B2B 250 K€/mois",
+    "fact_ids": [
+     "exp.alpha.r1"
+    ]
+   },
+   {
+    "id": "e.alpha.b3",
+    "text": "Prospection B2B et cycle commercial complet",
+    "fact_ids": [
+     "exp.alpha.t1"
+    ]
+   },
+   {
+    "id": "e.alpha.b4",
+    "text": "Négociation directe avec décideurs",
+    "fact_ids": [
+     "exp.alpha.t2"
+    ]
+   },
+   {
+    "id": "e.beta.b1",
+    "text": "+12 % vs objectif mensuel",
+    "fact_ids": [
+     "exp.beta.r1"
+    ]
+   },
+   {
+    "id": "e.beta.b2",
+    "text": "Clientèle internationale premium",
+    "fact_ids": [
+     "exp.beta.r2"
+    ]
+   },
+   {
+    "id": "e.beta.b3",
+    "text": "Vente conseil en environnement premium",
+    "fact_ids": [
+     "exp.beta.t1"
+    ]
+   },
+   {
+    "id": "e.gamma.b1",
+    "text": "Participation à la refonte du site client",
+    "fact_ids": [
+     "exp.gamma.t1"
+    ]
+   },
+   {
+    "id": "k.commercial.1",
+    "text": "Prospection B2B",
+    "fact_ids": [
+     "skill.prospection_b2b"
+    ]
+   },
+   {
+    "id": "k.tools.1",
+    "text": "HubSpot",
+    "fact_ids": [
+     "tool.hubspot"
+    ]
+   },
+   {
+    "id": "d1",
+    "text": "Bachelor Commerce",
+    "fact_ids": [
+     "edu.bachelor"
+    ]
+   },
+   {
+    "id": "l1",
+    "text": "Français (natif) · Anglais (courant, TOEIC 905/990)",
+    "fact_ids": [
+     "lang.fr",
+     "lang.en",
+     "cert.toeic"
+    ]
+   },
+   {
+    "id": "x1",
+    "text": "Disponibilité immédiate · Mobilité Île-de-France",
+    "fact_ids": [
+     "avail.immediate",
+     "mobility.idf"
+    ]
+   }
+  ]
+ }
+]

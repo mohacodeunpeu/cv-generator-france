@@ -1,0 +1,22 @@
+# ATS Hybrid — une colonne, intitulés de section standard, aucun tableau pour le texte : lecture ATS maximale, présentation soignée.
+id: ats_hybrid
+name: ATS Hybrid
+family: ats_hybrid
+version: 1
+ats_safe: true
+ats_level: high
+layout: single_column
+header: band
+photo_modes: [OFF, HEADER]
+photo_default: OFF
+density: balanced
+palettes: [petrol, navy, graphite, forest]
+palette_default: petrol
+fonts: {display: "Fira Sans", body: "Fira Sans"}
+pitch: "Une colonne, sections standard, texte 100 % extractible : pensé pour les logiciels de recrutement."
+colors: {ink: "#16202A", muted: "#55606B", accent: "#1C5D7A", accent2: "#9A6A2F", rule: "#D5DBE0", band: "#EEF2F5"}
+sizes_pt: {name: 22, headline: 12, section: 8.8, body: 9.5, meta: 8.5}
+margins_mm: {top: 11, right: 14, bottom: 11, left: 14}
+bullet: "▪"
+max_bullets_featured: 4
+max_bullets_other: 2

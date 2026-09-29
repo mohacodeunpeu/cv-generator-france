@@ -1,0 +1,24 @@
+id: hospitality_evenementiel
+name: Hospitality / événementiel
+version: 1
+detect:
+  title_keywords: [chargé d'événementiel, chargée d'événementiel, event manager, chef de projet événementiel, hôte, hôtesse, réceptionniste, guest relations, concierge, commercial hôtellerie, sales manager hotel, coordinateur événementiel]
+  text_keywords: [événement, événementiel, hôtel, hôtellerie, séminaire, salon, accueil, guest experience, banquet, réception, traiteur]
+vocabulary: [expérience invité, coordination d'événements, prestataires, accueil, service premium, logistique]
+priorities: [sens de l'accueil, coordination et logistique, gestion du stress, langues]
+signals_positive: [clientèle internationale, premium, organisation, langues]
+expectations: [horaires variables (si l'offre le dit), présentation, réactivité]
+dominant_skills: [relation client, organisation, langues, gestion de projet, communication]
+formality: 3
+cv_style:
+  ats_mode: HUMAN_FIRST
+  design: human_premium
+  photo: optional
+  emphasis: [clientèle internationale, coordination, langues]
+  summary_angle: "accueil premium et coordination, multilingue"
+letter_style:
+  tone: chaleureux, professionnel
+  length_words: [180, 280]
+  must: ["un exemple d'accueil ou de coordination"]
+common_mistakes: [ton trop familier, absence de langues, oublier la logistique]
+useful_proofs: [clientèle internationale premium, gestion de projet, langues]

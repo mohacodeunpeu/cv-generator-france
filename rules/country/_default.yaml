@@ -1,0 +1,14 @@
+# Règles par défaut quand le pays de l'offre est inconnu (prudence maximale).
+code: DEFAULT
+name: Par défaut
+language: fr
+paper: A4
+photo: never          # optional | common | discouraged | never
+age: never
+family_status: never
+nationality: never
+address: city_only
+max_pages: 1
+date_format: "MM/YYYY"
+notes:
+  - "Pays inconnu : pas de photo, pas d'âge, pas de situation familiale."

@@ -1,0 +1,22 @@
+# Minimal Executive — beaucoup d'air, titres de section en marge, filets fins, un seul accent. Postes seniors, direction, luxe discret.
+id: minimal_executive
+name: Minimal Executive
+family: minimal_executive
+version: 1
+ats_safe: true
+ats_level: high
+layout: single_column
+header: plain
+photo_modes: [OFF, HEADER]
+photo_default: OFF
+density: airy
+palettes: [graphite, navy, bordeaux]
+palette_default: graphite
+fonts: {display: "Source Serif 4", body: "Fira Sans"}
+pitch: "Sobriété maximale : serif, filets fins, titres en marge, aucun aplat. L'expérience parle d'elle-même."
+colors: {ink: "#17191B", muted: "#62676C", accent: "#2B3035", accent2: "#8C6D2C", rule: "#DADBD7", band: "#F4F4F1"}
+sizes_pt: {name: 28, headline: 12, section: 7.8, body: 9.4, meta: 8.2}
+margins_mm: {top: 17, right: 18, bottom: 14, left: 18}
+bullet: "–"
+max_bullets_featured: 4
+max_bullets_other: 2

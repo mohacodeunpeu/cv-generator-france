@@ -1,0 +1,12 @@
+code: ES
+name: Espagne
+language: es
+paper: A4
+photo: optional
+age: never
+family_status: never
+nationality: never
+address: city_only
+max_pages: 1
+date_format: "MM/YYYY"
+notes: ["Documents en espagnol seulement si l'offre est en espagnol ; sinon anglais."]

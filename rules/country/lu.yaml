@@ -1,0 +1,12 @@
+code: LU
+name: Luxembourg
+language: fr
+paper: A4
+photo: optional
+age: never
+family_status: never
+nationality: never
+address: city_only
+max_pages: 1
+date_format: "MM/YYYY"
+notes: ["Multilinguisme valorisé (FR/EN/DE)."]

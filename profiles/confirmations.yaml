@@ -1,0 +1,46 @@
+# Déclarations CONFIRMÉES par l'utilisateur (priorité de vérité n°1).
+# Source : directive « PAI — Master Build Directive V Ultime », transmise le 2026-09-27.
+# Aucune coordonnée personnelle ici : elles restent hors Git (data/ est ignoré).
+source: "user:directive_v_ultime"
+confirmed_at: "2026-09-27"
+
+facts:
+  - id: id.name
+    kind: identity
+    text: "Amine Ben Mansour"
+    data: {full_name: "Amine Ben Mansour"}
+  - id: edu.bachelor_rem
+    kind: education
+    text: "Bachelor REM"
+    data: {title: "Bachelor REM", school: null, start: null, end: null}
+    note: "Intitulé complet, école et dates à compléter."
+  - id: edu.bts_ntc
+    kind: education
+    text: "BTS NTC"
+    data: {title: "BTS NTC", school: null, start: null, end: null}
+    note: "École et dates à compléter."
+  - id: cert.toeic
+    kind: certification
+    text: "TOEIC 915/990"
+    data: {name: "TOEIC", score: "915/990", date: null}
+    note: "Date de passage à compléter."
+  - id: avail.immediate
+    kind: availability
+    text: "Disponibilité immédiate"
+  - id: mobility.idf
+    kind: mobility
+    text: "Mobilité Île-de-France"
+  - id: target.roles
+    kind: target
+    text: "Postes visés : Business Developer, Account Manager, commercial, VIE"
+    data: {roles: ["Business Developer", "Account Manager", "Commercial", "VIE"]}
+  - id: profile.domains
+    kind: summary
+    text: "Expériences en commerce, recrutement, retail, digital et projets ; compétences web"
+
+forbidden:
+  - id: edu.mba
+    kind: education
+    text: "MBA (toute mention, en cours ou obtenu)"
+    terms: ["mba", "master of business administration", "manager de business unit"]
+    reason: "Confirmé par l'utilisateur : PAS DE MBA."

@@ -1,0 +1,24 @@
+id: relation_client
+name: Relation client
+version: 1
+detect:
+  title_keywords: [conseiller clientèle, conseillère clientèle, chargé de relation client, chargée de relation client, customer service, service client, téléconseiller, téléconseillère, customer care, conseiller relation client, client relations, client relationship, customer relations, client services, client service executive]
+  text_keywords: [relation client, satisfaction, réclamations, appels entrants, écoute, fidélisation, qualité de service, omnicanal, point of contact, client requests, client records, service mindset, long-term relationships]
+vocabulary: [satisfaction client, écoute active, traitement des demandes, fidélisation, qualité de service, omnicanal]
+priorities: [qualité de service, gestion des situations délicates, rigueur de suivi, aisance orale]
+signals_positive: [clientèle exigeante, langues, fidélisation, volumes traités]
+expectations: [ponctualité, patience, respect des process]
+dominant_skills: [relation client, écoute, fidélisation, communication, organisation]
+formality: 3
+cv_style:
+  ats_mode: ATS_FIRST
+  design: ats_classic
+  photo: optional
+  emphasis: [contextes clients exigeants, langues, volumes]
+  summary_angle: "relation client exigeante, multilingue, orientée satisfaction"
+letter_style:
+  tone: chaleureux, fiable
+  length_words: [180, 280]
+  must: ["un exemple de relation client exigeante"]
+common_mistakes: [phrases creuses sur le sens du service, absence d'exemple]
+useful_proofs: [clientèle internationale premium, langues, fidélisation]

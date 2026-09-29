@@ -1,0 +1,69 @@
+# Intégration continue PAI : tests Python (SQLite + PostgreSQL 16), migrations Alembic, tests JS (parité),
+# e2e navigateur (PAI Studio + serveur), audit des dépendances, validation Docker Compose.
+# Aucune donnée personnelle : profil fictif « Camille Test » et offres SYNTHETIC uniquement.
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pai
+          POSTGRES_PASSWORD: pai_ci_password
+          POSTGRES_DB: pai_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pai -d pai_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PAI_TEST_PG_URL: postgresql+psycopg://pai:pai_ci_password@127.0.0.1:5432/pai_test
+      PAI_AI_PROVIDER: "null"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Dépendances
+        run: |
+          pip install -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+      - name: Migrations Alembic sur PostgreSQL 16 (upgrade, check, downgrade)
+        env:
+          DB_URL: ${{ env.PAI_TEST_PG_URL }}
+        run: |
+          alembic upgrade head
+          alembic check
+          alembic downgrade base
+      - name: Tests Python (SQLite + PostgreSQL, e2e navigateur)
+        run: python -m pytest tests -q -W ignore::DeprecationWarning
+      - name: Tests JS (moteur PAI Studio, parité avec Python)
+        run: |
+          python web/build_studio.py --data-json tests/js/.data.json
+          node --test tests/js/*.test.js
+      - name: Audit des dépendances
+        run: pip-audit -r requirements.txt
+      - name: Validation Docker Compose
+        run: |
+          printf 'PAI_DB_PASSWORD=ci\nPAI_DOMAIN=ci.example.org\n' > .env
+          docker compose config --quiet
+          docker compose --profile caddy config --quiet

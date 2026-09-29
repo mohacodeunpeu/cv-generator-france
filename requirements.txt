@@ -1,13 +1,30 @@
-fastapi
-uvicorn[standard]
-reportlab
-pydantic
-pydantic-settings
-python-dotenv
-jinja2
-python-multipart
-anthropic
-
-
-# Legacy compatibility retained for existing flows.
-# PAI is now structured as a dedicated autonomous product.
+# PAI — dépendances d'exécution (versions figées, vérifiées par pip-audit).
+# Installation : pip install -r requirements.txt && python -m playwright install chromium
+fastapi==0.141.1
+starlette==1.7.0
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+python-multipart==0.0.32
+python-dotenv==1.2.3
+Jinja2==3.1.6
+itsdangerous==2.2.0
+argon2-cffi==25.1.0
+# Chiffrement au repos des clés d'API saisies dans l'interface (Fernet, clé dérivée de SECRET_KEY)
+cryptography==50.0.1
+SQLAlchemy==2.1.1
+alembic==1.20.0
+psycopg[binary]==3.3.6
+httpx==0.28.1
+beautifulsoup4==4.15.0
+PyYAML==6.0.3
+# PDF : rendu (Chromium headless), extraction ATS et contrôle visuel
+playwright==1.56.0
+pdfplumber==0.11.10
+pymupdf==1.28.2
+# Fournisseur IA Claude (optionnel : sans clé, PAI fonctionne en mode dégradé déterministe)
+anthropic==1.8.0
+# Ancien générateur (legacy/), conservé pour le benchmark « ancien vs nouveau »
+fpdf2==2.8.8
+qrcode==8.2
+pillow==12.3.0

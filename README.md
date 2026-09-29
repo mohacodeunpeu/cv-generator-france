@@ -1,265 +1,88 @@
 # PAI — Personal Application Intelligence
 
-PAI est un produit autonome de préparation de candidatures, pensé pour générer un CV, une lettre, une analyse d'offre et un Application Pack à partir d'un profil candidat et d'une offre réelle.
+PAI transforme une offre d'emploi en **Application Pack** prêt à relire : analyse de l'offre, matching,
+stratégie de positionnement, CV PDF d'une page, lettre, réponses aux questions, risques et prochaine action.
 
-Il est conçu pour être séparé du JobAgent, sans dépendance directe à son code, ses ports, ses secrets ni sa base de données.
+**Règle d'or : aucune affirmation sans preuve.** Chaque ligne du CV et de la lettre est liée aux faits du
+Master Profile qui la prouvent. Un validateur déterministe rejette tout le reste : chiffres, diplômes, outils,
+langues, noms propres ou responsabilités non prouvés, termes interdits. S'y ajoute un juge IA de factualité.
+**PAI ne postule jamais et n'envoie rien** : il prépare, vous relisez et vous postulez vous-même.
 
-## Mission
+## Deux façons de l'utiliser
 
-- comprendre l'offre, l'entreprise, le poste et le contexte recruteur
-- analyser le profil candidat et ses faits vérifiables
-- positionner le candidat sur le bon angle de candidature
-- produire un CV PDF, une lettre et un pack d'application
-- garder un niveau de vérité strict, sans invention
-- préparer le chemin vers le benchmark, les feedbacks et l'apprentissage
+| | PAI Studio (URL claude.ai) | Serveur PAI (auto-hébergé) |
+|---|---|---|
+| Accès | page privée sur claude.ai, connexion = votre compte Claude | votre serveur (Oracle Cloud, etc.), identifiant + mot de passe |
+| IA | votre compte Claude (aucune clé API) | Claude, OpenAI, modèle local (Ollama) ou aucun (mode dégradé) |
+| Données | base privée de la page (vous seul) | PostgreSQL 16 sur votre serveur |
+| Interface | PAI Studio | **la même** PAI Studio, servie par le serveur |
+| API | — | `/v1` pour le futur JobAgent (clés d'API à droits limités) |
 
-## Périmètre actuel (Lot A)
+Les deux surfaces partagent les mêmes règles, prompts, profils de secteur et de design. Le moteur est écrit
+en Python (serveur) et en JavaScript (PAI Studio) ; la parité est vérifiée par des tests communs
+(`tests/golden/`).
 
-Le dépôt contient désormais le cœur du Lot A :
+## Ce que fait le pipeline
 
-- Master profile versionné
-- Analyse d'offre
-- Matching / stratégie de positionnement
-- Génération de CV PDF
-- Génération de lettre PDF
-- Pack ZIP exportable
-- API versionnée de base
-- Dashboard de test local
-- Documentation d'architecture et de reprise
+1. **Offre** : texte collé, URL publique ou PDF ; texte figé et haché (doublons). Aucune collecte derrière un login.
+2. **Analyse** : contrat, lieu, pays, langue, salaire, séniorité, exigences REQUIRED/IMPORTANT/NICE, secteur (11 profils).
+3. **Matching** : 12 sous-scores, MATCH / QUALITY / RISK, couverture des mots-clés par des faits prouvés.
+4. **Stratégie** : positionnements A/B/C, garde-fous (photo selon le pays, mode ATS, design).
+5. **CV** : contenu lié aux faits → validateur → réécriture ciblée (2 essais) ou suppression → critique → rendu PDF → contrôle qualité du PDF (pages, marges, contraste, extraction ATS).
+6. **Lettre** et **réponses** : phrases typées, citations exactes de l'offre, questions sans preuve marquées BLOCKED (le salaire n'est jamais inventé).
+7. **Pack** figé et versionné (offre, profil, CV, lettre, réponses, moteur, prompts, règles) : PDF + ZIP + JSON.
 
-## Séparation stricte JobAgent / PAI
+Tant que le Master Profile n'est pas validé, chaque document porte « BROUILLON — PROFIL NON VALIDÉ » et
+ne peut pas passer en FINAL.
 
-PAI ne doit pas dépendre du JobAgent.
+## Résultats mesurés
 
-Les règles de séparation sont les suivantes :
+Benchmark déterministe sur 13 offres **SYNTHETIC** (fictives, marquées comme telles), même instrument pour
+l'ancien générateur et PAI (texte extrait du PDF, comme un ATS) :
 
-- projet Docker séparé
-- réseau séparé
-- ports séparés
-- base PostgreSQL séparée
-- volumes séparés
-- secrets séparés
-- logs séparés
-- aucun accès en écriture au JobAgent
-- aucun redémarrage ou modification de ses services
+| Critère | Ancien générateur | PAI |
+|---|---:|---:|
+| Score global | 54,6 | **92,9** |
+| Factualité du CV | 0 (MBA dans 13/13 CV, 9 lignes non prouvées par CV) | **100** (0 ligne non prouvée) |
+| Factualité de la lettre | 13,6 | **100** |
+| Couverture honnête des mots-clés (ceux que le profil prouve) | 91,0 | **97,4** |
+| Qualité PDF | 70 | **100** |
+| Couverture brute des mots-clés | **76,4** | 71,7 |
 
-Le dépôt contient des fichiers de documentation pour préserver cette séparation :
-
-- ARCHITECTURE.md
-- DECISIONS.md
-- PROGRESS.md
-- RUNBOOK.md
-
-## Stack
-
-- Python 3.12
-- FastAPI
-- Pydantic / Pydantic Settings
-- Jinja2
-- ReportLab
-- Anthropic API (optionnel selon le fournisseur actif)
-- SQLite local pour le bootstrapping
-
-## Structure du projet
-
-```text
-.
-├── app.py
-├── ARCHITECTURE.md
-├── DECISIONS.md
-├── PROGRESS.md
-├── RUNBOOK.md
-├── .env.example
-├── .gitignore
-├── requirements.txt
-├── templates/
-│   └── pai_dashboard.html
-├── pai/
-│   ├── __init__.py
-│   ├── __init__.py
-│   ├── analyzer.py
-│   ├── config.py
-│   ├── models.py
-│   ├── pdf_renderer.py
-│   ├── profile.py
-│   └── strategy.py
-├── amine_profile.py
-├── cv_gen_france.py
-├── cover_letter_france.py
-├── modes.py
-└── README.md
-```
+L'ancien générateur n'a l'avantage que sur la couverture brute, qu'il obtient en partie avec des mots-clés
+non prouvés (bourrage), ce que PAI refuse. Détails et limites : `python -m pai benchmark`, `DECISIONS.md`.
+PAI a été mesuré sans IA, c'est-à-dire à son niveau minimum.
 
 ## Démarrage rapide
 
-### 1. Installer les dépendances
-
 ```bash
-pip install -r requirements.txt
+# Local (Python 3.12)
+python -m venv .venv && . .venv/bin/activate
+pip install -r requirements-dev.txt && python -m playwright install chromium
+python -m pai bootstrap-profile           # Master Profile v1 (hors Git, dans data/)
+python -m pai generate benchmark/offers/01_bd_saas_paris.yaml --provider null
+python -m pai build-studio --server && python -m pai create-user moi
+uvicorn app:app                            # http://localhost:8000
+
+# Serveur (Docker) : voir RUNBOOK.md
+cp .env.example .env && docker compose up -d --build
 ```
 
-### 2. Configurer les variables d'environnement
+## Documentation
 
-Copier le fichier exemple :
+- `RUNBOOK.md` : installation Oracle Cloud, démarrage, mise à jour, sauvegarde et restauration chiffrées, changement de fournisseur IA ou de mot de passe, clés d'API.
+- `docs/api.md` : API `/v1` et contrat JobAgent ↔ PAI.
+- `ARCHITECTURE.md` : surfaces, pipeline, modules, données, sécurité.
+- `DECISIONS.md` : choix faits, alternatives écartées et pourquoi.
+- `PROGRESS.md` : état d'avancement, preuves, ce qu'il reste à fournir.
 
-```bash
-cp .env.example .env
-```
+## Sécurité et données personnelles
 
-Editer le fichier `.env` :
+- Secrets uniquement dans `.env` (ignoré par Git) ; aucun mot de passe, jeton ou cookie dans les journaux.
+- Le Master Profile et tout fichier généré vivent dans `data/` (ignoré par Git) ou en base privée.
+- Mots de passe argon2, cookies HttpOnly/Secure/SameSite=strict, CSRF, limitation des tentatives,
+  révocation des sessions, CSP à nonce, liens de fichiers signés de courte durée, `noindex` partout.
+- JobAgent n'est jamais modifié : projet Docker, réseau, base, ports et secrets séparés.
 
-```env
-ANTHROPIC_API_KEY=changeme
-APP_NAME=PAI
-ENVIRONMENT=development
-DB_URL=sqlite:///./pai.db
-```
-
-### 3. Lancer le serveur
-
-```bash
-uvicorn app:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### 4. Vérifier
-
-```bash
-curl http://localhost:8000/health
-```
-
-## Routes principales
-
-### Health
-
-```http
-GET /health
-```
-
-### Profil
-
-```http
-GET /api/v1/profile
-```
-
-### Analyse d'offre
-
-```http
-POST /api/v1/analyze-job
-```
-
-Payload attendu :
-
-```json
-{
-  "job_title": "Business Developer",
-  "company": "Entreprise test",
-  "offer_text": "Nous recherchons un profil commercial orienté prospection, relation client et portefeuille.",
-  "offer_url": "https://example.com/job"
-}
-```
-
-### Stratégie
-
-```http
-POST /api/v1/generate-strategy
-```
-
-### CV PDF
-
-```http
-POST /api/v1/generate-cv
-```
-
-### Pack ZIP
-
-```http
-POST /api/v1/generate-pack
-```
-
-### Compatibilité legacy
-
-Le produit garde aussi les routes historiques suivantes pour sécuriser la transition :
-
-- `POST /generate`
-- `POST /cv`
-- `POST /lettre`
-- `POST /best`
-- `POST /chat`
-
-## Dashboard
-
-Le dashboard local est disponible via :
-
-```text
-http://localhost:8000/
-```
-
-Il permet :
-
-- d'analyser une offre
-- de générer un pack PDF / ZIP
-- de tester le cœur du moteur sans passer par un autre service
-
-## Objectifs du Lot A
-
-Le Lot A couvre :
-
-- profil candidat
-- compréhension de l'offre
-- matching / positionnement
-- génération de CV et de lettre
-- export pack
-- architecture documentaire claire
-- préparation au benchmark et à l'apprentissage
-
-## Points de vigilance
-
-- la vérité des faits est prioritaire
-- l'invention est interdite
-- les données personnelles doivent rester hors Git et hors logs
-- l'IA doit utiliser ses propres clés et son environnement
-- le JobAgent reste intact et non modifié
-
-## Prochaines étapes
-
-### Lot B
-
-- feedback utilisateur
-- scoring
-- benchmark sur offres réelles
-- Blind Arena
-- comparaison avec JobAgent de manière honnête
-
-### Lot C
-
-- interface premium et responsive
-- meilleur UX pour analyse, versioning et feedback
-- apprentissage par règles validées
-- déploiement réel sur serveur 24/7 avec URL stable
-
-## Contribution / reprise
-
-Pour reprendre la session plus tard, le point de départ est :
-
-- PROGRESS.md
-- DECISIONS.md
-- RUNBOOK.md
-
-Cela permet de reprendre le projet sans perdre la progression ni refaire des étapes déjà validées.
-
-## Sécurité
-
-- les secrets sont dans `.env` et hors Git
-- pas de mot de passe ni de token dans les logs
-- les données sensibles doivent rester dans les fichiers locaux / secrets du serveur
-- l'application ne doit pas exposer de données sensibles dans les URLs
-
-## Résumé
-
-PAI est une base autonome de préparation de candidatures, pensée pour être plus sérieux, plus traçable, plus robuste et plus séparé du JobAgent que le projet initial.
-
-C'est une base de produit, pas une simple maquette.
-
----
-
-Version du projet : 0.1.0 (Lot A)
+⚠️ Ce dépôt est **public** et l'historique Git contient déjà des coordonnées personnelles
+(`legacy/amine_profile.py`). Recommandation : passer le dépôt en privé (voir `PROGRESS.md`).

@@ -1,0 +1,21 @@
+# Design par défaut : une colonne (ordre de lecture ATS garanti), bandeau d'en-tête sobre.
+id: hybrid_modern
+name: Hybride moderne
+version: 2
+ats_safe: true
+layout: single_column          # single_column | two_column
+header: band                   # band | plain
+photo_modes: [OFF, HEADER]
+colors:
+  ink: "#16202A"
+  muted: "#55606B"
+  accent: "#1C5D7A"
+  accent2: "#9A6A2F"
+  rule: "#D5DBE0"
+  band: "#EEF2F5"
+fonts: {body: "Fira Sans", display: "Fira Sans"}
+sizes_pt: {name: 22, headline: 12, section: 8.6, body: 9.5, meta: 8.5}
+margins_mm: {top: 11, right: 14, bottom: 11, left: 14}
+bullet: "▪"
+max_bullets_featured: 4
+max_bullets_other: 2

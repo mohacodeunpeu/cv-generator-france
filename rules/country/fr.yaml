@@ -1,0 +1,15 @@
+code: FR
+name: France
+language: fr
+paper: A4
+photo: optional       # d'usage mais jamais obligatoire ; OFF en mode ATS_FIRST
+age: never            # non discriminant : on ne l'indique pas
+family_status: never
+nationality: never
+address: city_only
+max_pages: 1          # profil junior (< 5 ans d'expérience)
+date_format: "MM/YYYY"
+section_names: {summary: "Profil", experience: "Expérience professionnelle", education: "Formation", skills: "Compétences", languages: "Langues", certifications: "Certifications"}
+notes:
+  - "Titre du CV = intitulé du poste visé."
+  - "Lettre de motivation attendue pour la plupart des postes commerciaux et VIE."

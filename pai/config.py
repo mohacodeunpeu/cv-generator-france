@@ -1,5 +1,65 @@
-"""PAI package."""
+"""Configuration (variables d'environnement / .env). Aucun secret dans le code."""
 
-from .config import settings
+from __future__ import annotations
 
-__all__ = ["settings"]
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Modèles par défaut des fournisseurs compatibles OpenAI qui en ont un (surchargeables : env ou Réglages → IA).
+GEMINI_DEFAULT_MODEL = "gemini-2.5-flash"
+MISTRAL_DEFAULT_MODEL = "mistral-large-latest"
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore", env_prefix="")
+
+    app_name: str = "PAI"
+    environment: str = "development"          # development | production | test
+    base_url: str = "http://localhost:8000"
+
+    # Base de données : PostgreSQL 16 en production, SQLite accepté en local et en test.
+    db_url: str = "sqlite:///./data/pai.db"
+
+    # Fournisseur IA : claude | gemini | mistral | openai | local | null (mode dégradé, sans IA).
+    # Les réglages enregistrés depuis l'interface (Réglages → IA, clés chiffrées en base) priment sur ces variables.
+    pai_ai_provider: str = ""
+    anthropic_api_key: str = ""
+    gemini_api_key: str = ""
+    gemini_model: str = GEMINI_DEFAULT_MODEL
+    mistral_api_key: str = ""
+    mistral_model: str = MISTRAL_DEFAULT_MODEL
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = ""
+    local_base_url: str = "http://localhost:11434/v1"
+    local_model: str = ""
+    pai_ai_cache: str = "on"                  # on | off | replay_only (tests hors ligne)
+
+    # Sécurité
+    secret_key: str = ""                       # signe les sessions et les URL de fichiers
+    session_ttl_hours: int = 12
+    file_url_ttl_seconds: int = 300
+    login_rate_limit: int = 5                  # tentatives par fenêtre
+    login_rate_window_seconds: int = 300
+    cookie_secure: bool = True
+
+    # Garde-fous
+    cost_cap_eur_per_pack: float = 0.80
+    cost_cap_eur_per_day: float = 6.00
+
+    # Rendu PDF (Chromium headless via Playwright)
+    chromium_executable: str = ""              # vide = chemin Playwright par défaut
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()
+
+
+def reset_settings_cache() -> None:
+    get_settings.cache_clear()

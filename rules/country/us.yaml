@@ -1,0 +1,12 @@
+code: US
+name: États-Unis
+language: en
+paper: Letter
+photo: never
+age: never
+family_status: never
+nationality: never
+address: city_only
+max_pages: 1
+date_format: "MMM YYYY"
+notes: ["Resume : ni photo, ni âge, ni situation familiale."]

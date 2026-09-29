@@ -1,0 +1,12 @@
+code: DE
+name: Allemagne
+language: en
+paper: A4
+photo: optional
+age: never
+family_status: never
+nationality: never
+address: city_only
+max_pages: 2
+date_format: "MM/YYYY"
+notes: ["Lebenslauf : format chronologique inversé, sobre."]

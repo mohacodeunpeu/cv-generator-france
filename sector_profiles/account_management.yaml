@@ -1,0 +1,28 @@
+id: account_management
+name: Account management
+version: 1
+detect:
+  title_keywords: [account manager, key account manager, kam, chargé de comptes, chargée de comptes, gestionnaire de comptes, responsable grands comptes, account executive, client partner]
+  text_keywords: [portefeuille, comptes clés, upsell, cross-sell, renouvellement, fidélisation, grands comptes, business review, plan de compte, croissance des comptes]
+vocabulary: [portefeuille de comptes, développement des comptes, upsell, fidélisation, plan de compte, business review, satisfaction client, renouvellement]
+priorities:
+  - gestion et croissance d'un portefeuille existant
+  - relation de confiance durable avec les décideurs
+  - suivi d'indicateurs (CA par compte, rétention)
+  - coordination interne pour servir le client
+signals_positive: [portefeuille chiffré, fidélisation, clients B2B, CRM, reporting]
+expectations: [rigueur de suivi, écoute, capacité à négocier des renouvellements]
+dominant_skills: [gestion de portefeuille, relation client, négociation, crm, reporting]
+formality: 3
+cv_style:
+  ats_mode: HYBRID
+  design: hybrid_modern
+  photo: optional
+  emphasis: [taille du portefeuille, fidélisation, outils CRM]
+  summary_angle: "gestion et développement de portefeuille B2B, relation de confiance"
+letter_style:
+  tone: posé, orienté relation et croissance
+  length_words: [220, 320]
+  must: ["taille ou nature du portefeuille", "exemple de fidélisation"]
+common_mistakes: [se présenter comme pur chasseur, oublier la dimension long terme, absence de KPI de suivi]
+useful_proofs: [portefeuille géré, partenariats long terme, suivi KPI, reporting direction]

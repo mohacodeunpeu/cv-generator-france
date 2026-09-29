@@ -1,0 +1,24 @@
+id: administration_commerciale
+name: Administration commerciale / ADV
+version: 1
+detect:
+  title_keywords: [assistant commercial, assistante commerciale, administration des ventes, adv, gestionnaire adv, assistant adv, assistante adv, sales assistant, sales operations, assistant administratif et commercial]
+  text_keywords: [devis, commandes, facturation, suivi administratif, adv, erp, excel, relances, tableaux de bord, saisie]
+vocabulary: [administration des ventes, suivi des commandes, devis, facturation, tableaux de bord, relances, reporting]
+priorities: [rigueur administrative, maîtrise d'Excel et des outils, coordination commerciaux / clients, fiabilité]
+signals_positive: [Excel avancé, reporting, suivi KPI, CRM]
+expectations: [précision, organisation, respect des délais]
+dominant_skills: [excel, reporting, organisation, crm, relation client]
+formality: 3
+cv_style:
+  ats_mode: ATS_FIRST
+  design: ats_classic
+  photo: optional
+  emphasis: [outils, reporting, fiabilité]
+  summary_angle: "support commercial rigoureux, outils et reporting"
+letter_style:
+  tone: sobre, précis
+  length_words: [180, 260]
+  must: ["un outil maîtrisé", "un exemple de suivi rigoureux"]
+common_mistakes: [survendre la dimension commerciale, oublier les outils]
+useful_proofs: [Excel avancé, suivi KPIs et reporting direction, CRM HubSpot]

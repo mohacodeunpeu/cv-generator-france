@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="{{ cv.language }}">
+<head>
+<meta charset="utf-8">
+<title>CV — {{ cv.name }}</title>
+<style>
+{{ font_css | safe }}
+@page { size: {{ 'Letter' if cv.paper == 'Letter' else 'A4' }}; margin: 0; }
+:root {
+  --ink: {{ d.colors.ink }}; --muted: {{ d.colors.muted }}; --accent: {{ d.colors.accent }};
+  --accent2: {{ d.colors.accent2 }}; --rule: {{ d.colors.rule }}; --band: {{ d.colors.band }};
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "PAI Sans", "Fira Sans", "DejaVu Sans", sans-serif; color: var(--ink);
+       font-size: {{ d.sizes_pt.body }}pt; line-height: 1.36; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { width: {{ '215.9mm' if cv.paper == 'Letter' else '210mm' }}; min-height: {{ '279.4mm' if cv.paper == 'Letter' else '297mm' }};
+        padding: {{ d.margins_mm.top }}mm {{ d.margins_mm.right }}mm {{ d.margins_mm.bottom }}mm {{ d.margins_mm.left }}mm; position: relative; }
+header { position: relative; }
+header.band { background: var(--band); margin: -{{ d.margins_mm.top }}mm -{{ d.margins_mm.right }}mm 0 -{{ d.margins_mm.left }}mm;
+              padding: {{ d.margins_mm.top - 1 }}mm {{ d.margins_mm.right }}mm 5mm {{ d.margins_mm.left }}mm; border-bottom: 2.2pt solid var(--accent); }
+header.plain { padding-bottom: 3mm; border-bottom: 1.2pt solid var(--accent); }
+.name { font-size: {{ d.sizes_pt.name }}pt; font-weight: 600; letter-spacing: .25pt; margin: 0; line-height: 1.1; }
+.headline { font-size: {{ d.sizes_pt.headline }}pt; font-weight: 500; color: var(--accent); margin-top: 1.4mm; }
+.contact { font-size: {{ d.sizes_pt.meta }}pt; color: var(--muted); margin-top: 1.8mm; }
+.extras { font-size: {{ d.sizes_pt.meta }}pt; color: var(--accent2); font-weight: 500; margin-top: .8mm; }
+.photo { position: absolute; right: 0; top: 0; width: 26mm; height: 32mm; object-fit: cover; border-radius: 1.5mm; }
+.badge { z-index: 5; position: absolute; right: {{ d.margins_mm.right }}mm; top: 3.2mm; font-size: 7.6pt; font-weight: 600; letter-spacing: .8pt;
+         color: #8A2B12; border: .8pt solid #8A2B12; padding: .6mm 1.6mm; border-radius: 1mm; background: #FFF; }
+section { margin-top: 3.9mm; }
+h2 { font-size: {{ d.sizes_pt.section }}pt; font-weight: 600; letter-spacing: 1.3pt; text-transform: uppercase; color: var(--accent);
+     margin: 0 0 1.5mm; padding-bottom: .9mm; border-bottom: .6pt solid var(--rule); }
+p { margin: 0; }
+.exp { margin-bottom: 2.3mm; break-inside: avoid; }
+.exp-head { display: flex; justify-content: space-between; align-items: baseline; gap: 4mm; }
+.exp-title { font-weight: 600; font-size: {{ d.sizes_pt.body + 0.6 }}pt; }
+.exp-company { font-weight: 500; color: var(--ink); }
+.exp-period { font-size: {{ d.sizes_pt.meta }}pt; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.exp-meta { font-size: {{ d.sizes_pt.meta }}pt; color: var(--muted); }
+ul { margin: .9mm 0 0; padding-left: 3.6mm; list-style: none; }
+li { margin: .45mm 0; position: relative; }
+li::before { content: ""; position: absolute; left: -3.2mm; top: .52em; width: 1.25mm; height: 1.25mm;
+             background: var(--accent); {% if d.bullet == '•' %}border-radius: 50%;{% elif d.bullet == '–' %}height: .35mm; top: .68em;{% endif %} }
+.skills .row { display: grid; grid-template-columns: 22mm 1fr; gap: 2.5mm; margin-bottom: .7mm; }
+.skills .label { font-weight: 600; }
+.item { margin-bottom: .5mm; }
+.grid2 { display: grid; grid-template-columns: 1fr 64mm; gap: 7mm; }
+aside section:first-child { margin-top: 3.9mm; }
+</style>
+</head>
+<body>
+<div class="page">
+  {% if cv.draft %}<div class="badge">{{ draft_label }}</div>{% endif %}
+  <header class="{{ 'band' if d.header == 'band' else 'plain' }}">
+    {% if photo_uri %}<img class="photo" src="{{ photo_uri }}" alt="">{% endif %}
+    <h1 class="name">{{ cv.name }}</h1>
+    {% for ln in headline %}<div class="headline">{{ ln.text }}</div>{% endfor %}
+    <div class="contact">{{ cv.contact | join("  ·  ") }}</div>
+    {% for ln in extras %}<div class="extras">{{ ln.text }}</div>{% endfor %}
+  </header>
+
+  {% macro main_sections() %}
+  {% if summary %}
+  <section class="summary"><h2>{{ titles.summary }}</h2><p>{% for ln in summary %}{{ ln.text }}{% if not loop.last %} {% endif %}{% endfor %}</p></section>
+  {% endif %}
+  <section class="experience"><h2>{{ titles.experience }}</h2>
+    {% for block in experiences %}
+    <div class="exp">
+      <div class="exp-head"><div class="exp-title">{{ block.title }}</div><div class="exp-period">{{ block.period }}</div></div>
+      <div class="exp-meta"><span class="exp-company">{{ block.company }}</span>{% if block.city %} · {{ block.city }}{% endif %}</div>
+      {% if block.bullets %}<ul>{% for ln in block.bullets %}<li>{{ ln.text }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    {% endfor %}
+  </section>
+  {% endmacro %}
+
+  {% macro side_sections() %}
+  {% if skills %}
+  <section class="skills"><h2>{{ titles.skills }}</h2>
+    {% for group, items in skills %}<div class="row"><span class="label">{{ group }}</span><span>{{ items | join(", ") }}</span></div>{% endfor %}
+  </section>
+  {% endif %}
+  {% if education %}<section><h2>{{ titles.education }}</h2>{% for ln in education %}<div class="item">{{ ln.text }}</div>{% endfor %}</section>{% endif %}
+  {% if certifications %}<section><h2>{{ titles.certifications }}</h2>{% for ln in certifications %}<div class="item">{{ ln.text }}</div>{% endfor %}</section>{% endif %}
+  {% if languages %}<section><h2>{{ titles.languages }}</h2>{% for ln in languages %}<p>{{ ln.text }}</p>{% endfor %}</section>{% endif %}
+  {% endmacro %}
+
+  {% if d.layout == 'two_column' %}
+  <div class="grid2"><main>{{ main_sections() }}</main><aside>{{ side_sections() }}</aside></div>
+  {% else %}
+  {{ main_sections() }}
+  {{ side_sections() }}
+  {% endif %}
+</div>
+</body>
+</html>

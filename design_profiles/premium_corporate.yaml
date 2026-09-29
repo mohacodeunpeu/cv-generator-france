@@ -1,0 +1,22 @@
+# Premium Corporate — bandeau plein cadre, nom en serif, filets champagne. Grands groupes, conseil, luxe, international.
+id: premium_corporate
+name: Premium Corporate
+family: premium_corporate      # gabarit PAI Studio (web/studio/designs.js)
+version: 1
+ats_safe: true
+ats_level: high                # une colonne de texte : ordre de lecture ATS conservé
+layout: single_column          # repli du rendu serveur (pai/templates/cv.html.j2)
+header: band
+photo_modes: [OFF, HEADER]
+photo_default: HEADER
+density: balanced
+palettes: [navy, petrol, graphite, bordeaux]
+palette_default: navy
+fonts: {display: "Source Serif 4", body: "Fira Sans"}
+pitch: "Bandeau sombre plein cadre, nom en serif, filets champagne : sérieux, institutionnel, haut de gamme."
+colors: {ink: "#15202A", muted: "#56616B", accent: "#1B3A5C", accent2: "#A8864A", rule: "#D9DDE2", band: "#EEF1F4"}
+sizes_pt: {name: 25, headline: 11.5, section: 12, body: 9.4, meta: 8.4}
+margins_mm: {top: 12, right: 15, bottom: 12, left: 15}
+bullet: "▪"
+max_bullets_featured: 4
+max_bullets_other: 2

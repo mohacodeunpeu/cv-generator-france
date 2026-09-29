@@ -1,0 +1,22 @@
+# Jamais dans l'image : secrets, données personnelles, fichiers générés, environnements locaux.
+.env
+.env.*
+!.env.example
+data/
+backups/
+*.pdf
+*.zip
+*.age
+.venv/
+venv/
+node_modules/
+web/dist/
+web/vendor/
+proofs/private/
+**/__pycache__/
+.pytest_cache/
+.git/
+docs/proofs/
+tests/
+.pai-branch
+.pai-failed
