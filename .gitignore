@@ -26,3 +26,7 @@ tests/js/.data.json
 # Espace local de Claude Code (worktrees temporaires, réglages locaux)
 .claude/worktrees/
 .claude/settings.local.json
+
+# Déploiement : branche suivie par deploy/update.sh sur le serveur
+.pai-branch
+.pai-failed

@@ -78,6 +78,12 @@ PAI est alors disponible en HTTPS sur `https://<machine>.<tailnet>.ts.net`, pour
 
 ## 3. Mise à jour
 
+Recommandé : `cd /opt/pai && deploy/update.sh`, qui fait sauvegarde chiffrée → nouveau code → reconstruction →
+santé → test de fumée, avec retour arrière automatique en cas d'échec. Première fois, mise à jour automatique
+(minuteur systemd) et bouton GitHub Actions : `docs/DEPLOIEMENT_AUTO.md`.
+
+À la main :
+
 ```bash
 cd /opt/pai && deploy/backup.sh          # toujours sauvegarder avant
 git pull

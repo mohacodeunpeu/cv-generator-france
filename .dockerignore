@@ -18,3 +18,5 @@ proofs/private/
 .git/
 docs/proofs/
 tests/
+.pai-branch
+.pai-failed

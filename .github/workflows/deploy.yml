@@ -1,0 +1,68 @@
+# Déploiement manuel de PAI sur le serveur (Oracle) : Actions → « Déploiement PAI » → Run workflow.
+# Se connecte en SSH (clé dédiée, empreinte du serveur épinglée) et lance deploy/update.sh sur le serveur :
+# sauvegarde chiffrée, nouveau code, reconstruction, santé, test de fumée, retour arrière si échec.
+# Secrets à créer (Settings → Secrets and variables → Actions) : voir docs/DEPLOIEMENT_AUTO.md.
+name: Déploiement PAI
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branche à déployer"
+        required: true
+        default: "claude/elegant-dirac-vhi4np"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-pai
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Secrets présents ?
+        env:
+          HOST: ${{ secrets.PAI_DEPLOY_HOST }}
+          USER_: ${{ secrets.PAI_DEPLOY_USER }}
+          KEY: ${{ secrets.PAI_DEPLOY_SSH_KEY }}
+          KNOWN: ${{ secrets.PAI_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          missing=""
+          [ -n "$HOST" ] || missing="$missing PAI_DEPLOY_HOST"
+          [ -n "$USER_" ] || missing="$missing PAI_DEPLOY_USER"
+          [ -n "$KEY" ] || missing="$missing PAI_DEPLOY_SSH_KEY"
+          [ -n "$KNOWN" ] || missing="$missing PAI_DEPLOY_KNOWN_HOSTS"
+          if [ -n "$missing" ]; then echo "::error::ACTION_REQUIRED : secrets manquants :$missing (voir docs/DEPLOIEMENT_AUTO.md)"; exit 1; fi
+      - name: Déployer (deploy/update.sh sur le serveur)
+        env:
+          HOST: ${{ secrets.PAI_DEPLOY_HOST }}
+          USER_: ${{ secrets.PAI_DEPLOY_USER }}
+          KEY: ${{ secrets.PAI_DEPLOY_SSH_KEY }}
+          KNOWN: ${{ secrets.PAI_DEPLOY_KNOWN_HOSTS }}
+          DIR: ${{ secrets.PAI_DEPLOY_PATH }}
+          REF: ${{ inputs.ref }}
+        run: |
+          case "$REF" in *[!A-Za-z0-9._/-]*|"") echo "::error::Nom de branche refusé : $REF"; exit 1;; esac
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/pai_deploy && chmod 600 ~/.ssh/pai_deploy
+          printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+          # Le déploiement tourne DÉTACHÉ sur le serveur (setsid) : une coupure de la connexion SSH ne peut pas
+          # l'interrompre au milieu de Compose (leçon JobAgent du 25/09). La CI relit ensuite journal et code de sortie.
+          S="ssh -i $HOME/.ssh/pai_deploy -o StrictHostKeyChecking=yes -o BatchMode=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=10 $USER_@$HOST"
+          $S "rm -f /tmp/pai_update.rc; cd '${DIR:-/opt/pai}' && setsid nohup bash -c \"PAI_BRANCH='$REF' ./deploy/update.sh > /tmp/pai_update.log 2>&1; echo \\\$? > /tmp/pai_update.rc\" > /dev/null 2>&1 < /dev/null &"
+          for i in $(seq 1 120); do sleep 15; if $S 'test -f /tmp/pai_update.rc'; then break; fi; done
+          $S 'cat /tmp/pai_update.log; exit $(cat /tmp/pai_update.rc 2>/dev/null || echo 99)'
+      - name: Effacer la clé du runner
+        if: always()
+        run: rm -f ~/.ssh/pai_deploy
+      - name: URL publique
+        env:
+          URL: ${{ secrets.PAI_PUBLIC_URL }}
+        run: |
+          [ -n "$URL" ] || { echo "PAI_PUBLIC_URL non défini : contrôle ignoré."; exit 0; }
+          for i in $(seq 1 20); do curl -fsS "$URL/health" && exit 0; sleep 6; done
+          echo "::error::$URL/health ne répond pas"; exit 1
