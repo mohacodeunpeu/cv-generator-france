@@ -165,8 +165,10 @@ const AI = {
     const t0 = performance.now();
     const rec = { task, tier, at: nowIso(), ms: 0, ok: false, code: '' };
     try {
-      const res = await S.caps.sample.json(prompt, { modelTier: tier, signal: opts.signal, images: opts.images,
-        onText: opts.onText ? ({ text }) => opts.onText(text) : undefined, cache: opts.cache === undefined ? { gcTime: 600000 } : opts.cache });
+      const o = { modelTier: tier, signal: opts.signal, images: opts.images,
+        onText: opts.onText ? ({ text }) => opts.onText(text) : undefined, cache: opts.cache === undefined ? { gcTime: 600000 } : opts.cache };
+      if (SERVER) o.task = task; // le routeur du serveur décide : aucune IA, IA locale ou IA externe
+      const res = await S.caps.sample.json(prompt, o);
       rec.ok = true; S.ai = 'ready';
       return res;
     } catch (e) {

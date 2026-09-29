@@ -84,6 +84,10 @@ def process(job: Job) -> dict[str, Any]:
         from .v1 import run_pack_job
 
         return run_pack_job(job.payload, progress=_progress(job.id))
+    if job.type == "ai_complete":
+        from .v1 import run_ai_complete_job
+
+        return run_ai_complete_job(job.payload)
     if job.type == "benchmark":
         from ..benchmark import run_benchmark
 
@@ -108,6 +112,8 @@ def run_once() -> bool:
         row = s.get(Job, job.id)
         if row is not None:
             row.status, row.result, row.error, row.finished_at, row.locked_by = status, result, error, utcnow(), None
+            if row.type == "ai_complete":  # le prompt (extraits du profil) n'est pas conservé une fois l'appel fait
+                row.payload = {k: v for k, v in (row.payload or {}).items() if k in ("task", "tier", "json")}
     return True
 
 

@@ -35,7 +35,10 @@ class CachedProvider(AIProvider):
         return self.inner.model_for(task)
 
     def key(self, task: str, prompt_text: str) -> str:
-        return stable_hash([self.inner.name, self.model_for(task), task, prompt_text], 24)
+        """Hash de l'entrée complète : fournisseur, modèle, tâche, prompt rendu (versionné, contient l'offre et le
+        profil utiles) et paramètres de génération. Changer l'un d'eux = nouvelle clé = nouvel appel."""
+        fp = getattr(self.inner, "config_fingerprint", None)
+        return stable_hash([self.inner.name, self.model_for(task), task, prompt_text, fp(task) if callable(fp) else ""], 24)
 
     def complete(self, task: str, prompt_text: str, prompt_tag: str = "", images: list[bytes] | None = None) -> ProviderResult:
         self._current_tag = prompt_tag

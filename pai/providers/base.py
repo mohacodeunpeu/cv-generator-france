@@ -45,6 +45,7 @@ class CallRecord:
     cached: bool = False
     ok: bool = True
     error: str = ""
+    tier: str = ""          # small | large | external (routeur)
 
 
 @dataclass

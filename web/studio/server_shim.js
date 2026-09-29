@@ -42,11 +42,26 @@
     add: async (d) => { const r = docRef(`${path}/${Math.random().toString(36).slice(2)}`); await r.set(d); return r; } });
   const db = { doc: docRef, collection: (p) => collRef(p) };
   const toB64 = async (blob) => { const b = new Uint8Array(await blob.arrayBuffer()); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+  // Appel IA en job : chaque requête HTTP reste courte (IA locale lente sur CPU, coupure Cloudflare à 100 s).
+  const poll = async (jobId, json, signal) => {
+    const t0 = Date.now();
+    for (let i = 0; Date.now() - t0 < 15 * 60 * 1000; i++) {
+      if (signal && signal.aborted) throw { code: 'cancelled', message: 'Annulé' };
+      await sleep(i < 10 ? 1000 : 2000);
+      const j = await api('GET', `/v1/jobs/${encodeURIComponent(jobId)}`);
+      if (j.status === 'DONE') return json ? j.result.json : j.result.text;
+      if (j.status === 'FAILED') { const m = String(j.error || ''); const code = (m.match(/^(?:RuntimeError: )?([a-z_]+):/) || [])[1] || 'upstream_error'; throw { code, message: m.replace(/^(?:RuntimeError: )?[a-z_]+:\s*/, '') }; }
+    }
+    throw { code: 'upstream_error', message: "L'IA n'a pas répondu à temps" };
+  };
   const call = async (input, opts, json) => {
-    const body = { tier: opts.modelTier || 'default', json };
+    const body = { tier: opts.modelTier || 'default', json, async: true };
+    if (opts.task) body.task = opts.task;
     if (typeof input === 'string') body.prompt = input; else body.turns = input;
     if (opts.images) body.images = await Promise.all([].concat(opts.images).map(toB64));
     const r = await api('POST', '/v1/ai/complete', body);
+    if (r.job_id) return poll(r.job_id, json, opts.signal);
     return json ? r.json : r.text;
   };
   const sample = async (input, opts = {}) => { const text = await call(input, opts, false); if (opts.onText) opts.onText({ text, delta: text }); return { text, truncated: false, modelTierApplied: opts.modelTier || 'default' }; };

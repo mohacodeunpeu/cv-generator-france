@@ -17,12 +17,12 @@ from pai.api.security import secret_key
 from pai.config import Settings, reset_settings_cache
 from pai.db.models import AppSetting, AuditLog, LlmCall
 from pai.db.session import session_scope
-from pai.providers import (PROVIDER_IDS, ClaudeProvider, NullProvider, OpenAICompatProvider, active_provider_id, ai_mode,
+from pai.providers import (PROVIDER_IDS, ClaudeProvider, NullProvider, OllamaProvider, OpenAICompatProvider, active_provider_id, ai_mode,
                            build_provider, get_provider, provider_config)
 from pai.providers.openai_compat import GEMINI_BASE_URL, MISTRAL_BASE_URL
 from pai.providers.store import (StoredAiSettings, StoredProvider, decode_settings, decrypt_secret, encrypt_secret, key_hint,
                                  read_stored_settings)
-from tests.conftest import TEST_OFFER
+from tests.conftest import TEST_OFFER, fake_ollama_state
 from tests.fake_provider import FakeProvider
 from tests.test_api import api_key, client, login, session_csrf  # noqa: F401 — fixture partagée (SQLite + PostgreSQL)
 
@@ -89,15 +89,19 @@ def test_key_hint_masks_everything_but_last_four():
 
 # ── Résolution et construction des fournisseurs ─────────────────────────────
 def test_every_provider_id_is_buildable():
-    settings = Settings(_env_file=None, anthropic_api_key=CLAUDE_KEY, gemini_api_key=GEMINI_KEY, mistral_api_key=MISTRAL_KEY,
-                        openai_api_key=OPENAI_KEY, openai_model="gpt-test", local_model="llama-test")
+    settings = Settings(_env_file=None, ai_provider="", anthropic_api_key=CLAUDE_KEY, gemini_api_key=GEMINI_KEY, mistral_api_key=MISTRAL_KEY,
+                        openai_api_key=OPENAI_KEY, openai_model="gpt-test", local_model="llama-test",
+                        local_base_url="http://localhost:11434/v1")
     built = {pid: build_provider(pid, settings) for pid in PROVIDER_IDS}
     assert isinstance(built["claude"], ClaudeProvider) and isinstance(built["null"], NullProvider)
-    assert all(isinstance(built[p], OpenAICompatProvider) for p in ("gemini", "mistral", "openai", "local"))
+    assert all(isinstance(built[p], OpenAICompatProvider) for p in ("gemini", "mistral", "openai"))
+    local = built["local"]  # Ollama natif ; l'ancienne URL compatible OpenAI (…/v1) est acceptée et normalisée
+    assert isinstance(local, OllamaProvider) and local.base_url == "http://localhost:11434" and local.model == "llama-test"
     assert {p: b.name for p, b in built.items()} == {p: p for p in PROVIDER_IDS}
     assert built["gemini"].base_url == GEMINI_BASE_URL and built["gemini"].model == "gemini-2.5-flash"
     assert built["mistral"].base_url == MISTRAL_BASE_URL and built["mistral"].model == "mistral-large-latest"
-    assert all(built[p].available for p in ("claude", "gemini", "mistral", "openai", "local")) and not built["null"].available
+    assert all(built[p].available for p in ("claude", "gemini", "mistral", "openai")) and not built["null"].available
+    assert not local.available  # Ollama injoignable (sonde simulée) : jamais d'erreur, seulement « sans IA »
     assert build_provider("inconnu", settings).name == "null"
     custom = Settings(_env_file=None, gemini_api_key=GEMINI_KEY, gemini_model="gemini-2.5-pro", mistral_model="")
     assert build_provider("gemini", custom).model == "gemini-2.5-pro" and build_provider("mistral", custom).model == "mistral-large-latest"
@@ -105,11 +109,16 @@ def test_every_provider_id_is_buildable():
 
 
 def test_active_provider_resolution_order():
-    env = Settings(_env_file=None, pai_ai_provider="mistral")
+    env = Settings(_env_file=None, ai_provider="mistral")
     assert active_provider_id(env, StoredAiSettings(active="gemini")) == "gemini"      # 1. base
-    assert active_provider_id(env, StoredAiSettings()) == "mistral"                    # 2. environnement
-    assert active_provider_id(Settings(_env_file=None, pai_ai_provider=""), StoredAiSettings()) == "claude"  # 3. models.yaml
-    assert active_provider_id(Settings(_env_file=None, pai_ai_provider="inconnu")) == "null"  # identifiant inconnu → null
+    assert active_provider_id(env, StoredAiSettings()) == "mistral"                    # 2. environnement (AI_PROVIDER)
+    legacy = Settings(_env_file=None, ai_provider="", pai_ai_provider="gemini")
+    assert active_provider_id(legacy, StoredAiSettings()) == "gemini"                  # ancien nom PAI_AI_PROVIDER
+    default = Settings(_env_file=None, ai_provider="", pai_ai_provider="")
+    assert active_provider_id(default, StoredAiSettings()) == "local"                  # 3. models.yaml : gratuit par défaut
+    assert active_provider_id(Settings(_env_file=None, ai_provider="inconnu")) == "null"  # identifiant inconnu → null
+    for alias, pid in (("none", "null"), ("anthropic", "claude"), ("openai_compatible", "openai"), ("ollama", "local")):
+        assert active_provider_id(Settings(_env_file=None, ai_provider=alias), StoredAiSettings()) == pid
 
 
 def test_provider_config_prefers_db_and_never_sends_env_key_elsewhere():
@@ -126,14 +135,14 @@ def test_provider_config_prefers_db_and_never_sends_env_key_elsewhere():
 
 
 def test_ai_mode():
-    assert [ai_mode(p, True) for p in PROVIDER_IDS] == ["REMOTE"] * 4 + ["LOCAL", "DEGRADED"]
+    assert [ai_mode(p, True) for p in PROVIDER_IDS] == ["LOCAL"] + ["REMOTE"] * 4 + ["DEGRADED"]
     assert {ai_mode(p, False) for p in PROVIDER_IDS} == {"DEGRADED"}
 
 
 def test_get_provider_falls_back_to_env_when_db_unavailable(monkeypatch, tmp_path):
     from pai.db.session import reset_engines
 
-    monkeypatch.setenv("PAI_AI_PROVIDER", "gemini")
+    monkeypatch.setenv("AI_PROVIDER", "gemini")
     monkeypatch.setenv("GEMINI_API_KEY", GEMINI_KEY)
     empty = tmp_path / "vide.db"
     empty.write_bytes(b"")  # base SQLite sans table app_settings (migration non appliquée)
@@ -144,9 +153,9 @@ def test_get_provider_falls_back_to_env_when_db_unavailable(monkeypatch, tmp_pat
             reset_settings_cache()
             reset_engines()
             assert read_stored_settings() == StoredAiSettings(), url
-            provider = get_provider(budget_eur=0.5)
-            assert provider.name == "gemini" and provider.available and provider.budget_eur == 0.5
-            assert provider.model_for("extract") == "gemini-2.5-flash"
+            provider = get_provider(budget_eur=0.5)  # routeur : l'externe sert les tâches IA, le plafond s'y applique
+            assert provider.name == "gemini" and provider.available and provider.external.budget_eur == 0.5
+            assert provider.model_for("extract") == "gemini-2.5-flash" and provider.model_for("match") == "none"
         assert not (tmp_path / "absente.db").exists()  # une simple lecture ne crée pas de base vide
     finally:
         reset_engines()
@@ -162,9 +171,11 @@ def test_get_settings_lists_all_providers_without_secrets(client, monkeypatch):
     assert data["active"] == "null" and data["mode"] == "DEGRADED"  # PAI_AI_PROVIDER=null dans la fixture
     providers = by_id(data)
     assert list(providers) == list(PROVIDER_IDS)
-    assert {p: v["label"] for p, v in providers.items()} == {"claude": "Claude", "gemini": "Gemini", "mistral": "Mistral",
-                                                            "openai": "OpenAI", "local": "Local (Ollama)", "null": "Désactivé"}
-    assert all(set(v) == {"id", "label", "configured", "key_hint", "model", "base_url", "source"} for v in providers.values())
+    assert {p: v["label"] for p, v in providers.items()} == {
+        "local": "IA locale (Ollama)", "claude": "Claude (Anthropic)", "gemini": "Gemini", "mistral": "Mistral",
+        "openai": "OpenAI / compatible", "null": "Sans IA"}
+    assert all(set(v) == {"id", "label", "configured", "key_hint", "model", "model_small", "base_url", "source"} for v in providers.values())
+    assert data["profile"] == "balanced" and data["plan"]["factuality_judge"] == "none"
     claude = providers["claude"]
     assert claude["configured"] and claude["source"] == "env" and claude["key_hint"] == "••••ABCD" and claude["model"] == "claude-sonnet-5"
     assert not providers["gemini"]["configured"] and providers["gemini"]["source"] == "none"
@@ -200,21 +211,29 @@ def test_put_stores_key_encrypted_and_returns_only_a_hint(client, caplog):
         "claude": "••••ABCD", "gemini": "••••WXYZ", "mistral": "••••QRST", "openai": "••••DDDD", "local": "", "null": ""}
 
 
-def test_put_model_base_url_clear_key_and_reset(client):
+def test_put_model_base_url_clear_key_and_reset(client, monkeypatch):
+    import pai.providers.ollama as ollama
+
+    monkeypatch.setattr(ollama, "probe", lambda base_url, ttl=30.0, timeout=2.0: fake_ollama_state("llama3.1:8b", "qwen3:1.7b"))
     assert put(client, {"provider": "claude", "model": "claude-opus-5-5"}).status_code == 200
     assert put(client, {"provider": "local", "model": "llama3.1:8b", "base_url": "http://ollama:11434/v1/"}).status_code == 200
-    data = put(client, {"active": "local"}).json()
+    data = put(client, {"active": "local", "profile": "eco"}).json()
     local = by_id(data)["local"]
-    assert data["mode"] == "LOCAL" and local["configured"] and local["base_url"] == "http://ollama:11434/v1" and local["source"] == "db"
+    assert data["mode"] == "LOCAL" and local["configured"] and local["base_url"] == "http://ollama:11434" and local["source"] == "db"
+    assert local["model_small"] == "qwen3:1.7b" and data["profile"] == "eco" and data["plan"]["strategy"] == "none"
     assert by_id(data)["claude"]["model"] == "claude-opus-5-5"
-    assert put(client, {"provider": "openai", "api_key": OPENAI_KEY, "model": "gpt-test"}).json()["providers"][3]["configured"]
+    assert by_id(put(client, {"provider": "local", "model_small": "llama3.1:8b"}).json())["local"]["model_small"] == "llama3.1:8b"
+    assert put(client, {"provider": "gemini", "model_small": "x"}).status_code == 422
+    assert put(client, {"profile": "turbo"}).status_code == 422
+    assert by_id(put(client, {"provider": "openai", "api_key": OPENAI_KEY, "model": "gpt-test"}).json())["openai"]["configured"]
     moved = by_id(put(client, {"provider": "openai", "base_url": "https://proxy.example.fr/v1"}).json())["openai"]
     assert not moved["configured"] and moved["key_hint"] == ""  # nouvelle URL : la clé enregistrée est effacée
     assert by_id(put(client, {"provider": "openai", "base_url": "", "api_key": OPENAI_KEY}).json())["openai"]["configured"]
     cleared = by_id(put(client, {"provider": "openai", "clear_key": True}).json())["openai"]
     assert not cleared["configured"] and cleared["key_hint"] == ""
-    reset = by_id(put(client, {"provider": "local", "model": "", "base_url": ""}).json())["local"]
-    assert not reset["configured"] and reset["base_url"] == "http://localhost:11434/v1" and reset["source"] == "none"
+    monkeypatch.setattr(ollama, "probe", lambda base_url, ttl=30.0, timeout=2.0: fake_ollama_state())
+    reset = by_id(put(client, {"provider": "local", "model": "", "model_small": "", "base_url": ""}).json())["local"]
+    assert not reset["configured"] and reset["base_url"] == "http://localhost:11434" and reset["source"] == "auto"
     assert put(client, {"active": "null"}).json()["mode"] == "DEGRADED"
 
 
@@ -300,7 +319,7 @@ def test_connection_test_never_500_and_handles_unconfigured(client, monkeypatch)
     assert r.status_code == 200 and r.json()["ok"] is False and CLAUDE_KEY not in r.text and "RuntimeError" in r.json()["error"]
     with session_scope() as s:
         assert CLAUDE_KEY not in s.query(LlmCall).one().error  # même le journal ne garde pas la clé
-    for pid, words in (("mistral", "Clé d'API manquante"), ("local", "Modèle local manquant"), ("null", "désactivé")):
+    for pid, words in (("mistral", "Clé d'API manquante"), ("local", "Ollama injoignable"), ("null", "désactivé")):
         result = client.post("/v1/settings/ai/test", json={"provider": pid}, headers=admin()).json()
         assert result["ok"] is False and words in result["error"] and result["latency_ms"] == 0
     assert client.post("/v1/settings/ai/test", json={"provider": "gpt"}, headers=admin()).status_code == 422
@@ -317,7 +336,7 @@ def test_connection_test_with_fake_provider_success(client, monkeypatch):
 
 
 # ── Fournisseur effectif : /v1/status, passerelle IA et pipeline ─────────────
-def test_status_modes(client):
+def test_status_modes(client, monkeypatch):
     base = client.get("/v1/status", headers=api_key("read"))
     assert base.status_code == 200
     assert base.json() == {"engine_v": base.json()["engine_v"], "ai_mode": "DEGRADED", "active_provider": "null", "db": "ok"}
@@ -327,6 +346,10 @@ def test_status_modes(client):
     assert client.get("/v1/status", headers=api_key("read")).json() | {"engine_v": ""} == {
         "engine_v": "", "ai_mode": "DEGRADED", "active_provider": "local", "db": "ok"}  # modèle local absent
     put(client, {"provider": "local", "model": "llama3.1:8b"})
+    assert client.get("/v1/status", headers=api_key("read")).json()["ai_mode"] == "DEGRADED"  # Ollama injoignable
+    import pai.providers.ollama as ollama
+
+    monkeypatch.setattr(ollama, "probe", lambda base_url, ttl=30.0, timeout=2.0: fake_ollama_state("llama3.1:8b"))
     assert client.get("/v1/status", headers=api_key("read")).json()["ai_mode"] == "LOCAL"
     assert client.get("/v1/status").status_code == 401
 
@@ -337,7 +360,9 @@ def test_db_settings_override_env_for_gateway_and_pipeline(client, fake_chat):
     put(client, {"active": "mistral", "provider": "mistral", "api_key": MISTRAL_KEY})
     replies.append(chat_response("Bonjour !"))
     r = client.post("/v1/ai/complete", json={"prompt": "Bonjour"}, headers=api_key("generate"))
-    assert r.status_code == 200 and r.json() == {"text": "Bonjour !", "model": "mistral-large-latest", "truncated": False}
+    assert r.status_code == 200 and r.json() | {"tier": "", "cached": False} == {"text": "Bonjour !", "model": "mistral-large-latest",
+                                                                             "truncated": False, "tier": "", "cached": False}
+    assert r.json()["tier"] == "external"
     assert calls[-1]["url"] == f"{MISTRAL_BASE_URL}/chat/completions" and calls[-1]["headers"]["Authorization"] == f"Bearer {MISTRAL_KEY}"
     replies.extend([chat_response("{}"), chat_response("{}")])
     analysis = client.post("/v1/analyze-job", json={"offer_text": TEST_OFFER}, headers=api_key("analyze"))

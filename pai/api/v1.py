@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Any, Callable
 
 from fastapi import APIRouter, Header, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select, text
 
@@ -325,49 +325,84 @@ class CompleteIn(BaseModel):
     prompt: str = ""
     turns: list[dict[str, str]] = Field(default_factory=list, max_length=40)
     tier: str = Field("default", pattern="^(quick|default|complex)$")
+    task: str = Field("", max_length=40, pattern=r"^[a-z_]{0,40}$")   # tâche PAI Studio (le routeur choisit l'IA)
     json_mode: bool = Field(False, alias="json")
     images: list[str] = Field(default_factory=list, max_length=4)
+    run_async: bool = Field(False, alias="async")                     # job + interrogation (IA locale lente, Cloudflare 100 s)
 
     model_config = {"populate_by_name": True}
 
 
-TIER_TASK = {"quick": "extract", "default": "cv_content", "complex": "strategy"}
+TIER_TASK = {"quick": "studio_quick", "default": "studio_default", "complex": "studio_complex"}
+
+
+class AiGatewayError(Exception):
+    def __init__(self, status: int, code: str, message: str):
+        super().__init__(message)
+        self.status, self.code, self.message = status, code, message
+
+
+def ai_complete_core(task: str, prompt: str, json_mode: bool, images_b64: list[str]) -> dict[str, Any]:
+    """Appel IA de la passerelle (synchrone ou dans un job). Lève AiGatewayError (code stable pour l'interface)."""
+    remaining = _remaining_budget()
+    if remaining <= 0:
+        raise AiGatewayError(429, "rate_limited", "Plafond de coût IA journalier atteint")
+    provider = get_provider(budget_eur=remaining)
+    if not provider.available:
+        raise AiGatewayError(503, "not_granted", "Aucune IA disponible : mode sans IA (voies déterministes)")
+    try:
+        images = [base64.b64decode(i, validate=True) for i in images_b64]
+    except (binascii.Error, ValueError) as exc:
+        raise AiGatewayError(400, "invalid_argument", "Image invalide") from exc
+    try:
+        result = provider.complete(task, prompt, prompt_tag=f"studio:{task}", images=images or None)
+    except BudgetExceeded as exc:
+        raise AiGatewayError(429, "rate_limited", str(exc)) from exc
+    except DegradedMode as exc:
+        raise AiGatewayError(503, "not_granted", str(exc)) from exc
+    except ProviderError as exc:
+        raise AiGatewayError(502, "upstream_error", str(exc)) from exc
+    finally:
+        with session_scope() as s:
+            record_calls(s, provider.calls)
+    route = getattr(provider, "last_route", {}) or {}
+    meta = {"model": result.model, "tier": route.get("tier", ""), "cached": bool(result.cached)}
+    if json_mode:
+        try:
+            return {"json": extract_json(result.text)} | meta
+        except ValueError as exc:
+            raise AiGatewayError(422, "invalid_json", "Réponse sans JSON valide") from exc
+    return {"text": result.text, "truncated": False} | meta
+
+
+def run_ai_complete_job(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return ai_complete_core(payload["task"], payload["prompt"], bool(payload.get("json")), payload.get("images") or [])
+    except AiGatewayError as exc:
+        raise RuntimeError(f"{exc.code}: {exc.message}") from exc
 
 
 @router.post("/ai/complete")
-def ai_complete(body: CompleteIn, _: Principal = require("generate")) -> dict[str, Any]:
-    remaining = _remaining_budget()
-    if remaining <= 0:
-        raise HTTPException(status_code=429, detail={"code": "rate_limited", "message": "Plafond de coût IA journalier atteint"})
-    provider = get_provider(budget_eur=remaining)
-    if not provider.available:
-        raise HTTPException(status_code=503, detail={"code": "not_granted", "message": "Aucun fournisseur IA configuré (mode dégradé)"})
+def ai_complete(body: CompleteIn, _: Principal = require("generate")) -> Any:
+    """Passerelle IA de PAI Studio. Le routeur décide : une tâche prévue sans IA répond tout de suite 503 not_granted
+    (l'interface garde sa voie déterministe) ; `async` met l'appel dans la file de jobs (202 + job_id)."""
+    task = body.task or TIER_TASK[body.tier]
     prompt = body.prompt or "\n\n".join(f"{t.get('role', 'user').upper()}: {t.get('content', '')}" for t in body.turns)
     if not prompt.strip():
         raise HTTPException(status_code=400, detail={"code": "invalid_argument", "message": "Entrée vide"})
     if len(prompt.encode("utf-8")) > 65536:
         raise HTTPException(status_code=413, detail={"code": "prompt_too_large", "message": "Entrée > 64 Kio"})
+    if body.run_async:
+        provider = get_provider()
+        level, chosen = provider.route(task) if hasattr(provider, "route") else ("large", provider)
+        if chosen is None:
+            raise HTTPException(status_code=503, detail={"code": "not_granted", "message": f"{task} : traité sans IA (voie déterministe)"})
+        job = jobs.enqueue("ai_complete", {"task": task, "prompt": prompt, "json": body.json_mode, "images": body.images, "tier": level})
+        return JSONResponse(status_code=202, content={"job_id": job.id, "task": task, "tier": level})
     try:
-        images = [base64.b64decode(i, validate=True) for i in body.images]
-    except (binascii.Error, ValueError) as exc:
-        raise HTTPException(status_code=400, detail={"code": "invalid_argument", "message": "Image invalide"}) from exc
-    try:
-        result = provider.complete(TIER_TASK[body.tier], prompt, prompt_tag=f"studio:{body.tier}", images=images or None)
-    except BudgetExceeded as exc:
-        raise HTTPException(status_code=429, detail={"code": "rate_limited", "message": str(exc)}) from exc
-    except DegradedMode as exc:
-        raise HTTPException(status_code=503, detail={"code": "not_granted", "message": str(exc)}) from exc
-    except ProviderError as exc:
-        raise HTTPException(status_code=502, detail={"code": "upstream_error", "message": str(exc)}) from exc
-    finally:
-        with session_scope() as s:
-            record_calls(s, provider.calls)
-    if body.json_mode:
-        try:
-            return {"json": extract_json(result.text), "model": result.model}
-        except ValueError as exc:
-            raise HTTPException(status_code=422, detail={"code": "invalid_json", "message": "Réponse sans JSON valide"}) from exc
-    return {"text": result.text, "model": result.model, "truncated": False}
+        return ai_complete_core(task, prompt, body.json_mode, body.images)
+    except AiGatewayError as exc:
+        raise HTTPException(status_code=exc.status, detail={"code": exc.code, "message": exc.message}) from exc
 
 
 # Magasin de documents de l'interface (équivalent serveur du `db` des artefacts claude.ai).
