@@ -1,0 +1,22 @@
+# Modern Commercial — barre d'accent, chiffres clés mis en avant, colonne compétences. Business development, vente, account management.
+id: modern_commercial
+name: Modern Commercial
+family: modern_commercial
+version: 1
+ats_safe: true
+ats_level: medium              # deux colonnes : lecture recruteur prioritaire, extraction ATS correcte mais moins linéaire
+layout: two_column
+header: plain
+photo_modes: [OFF, HEADER]
+photo_default: HEADER
+density: balanced
+palettes: [petrol, navy, forest, graphite]
+palette_default: petrol
+fonts: {display: "Manrope", body: "Fira Sans"}
+pitch: "Barre d'accent, chiffres clés en tête, compétences en tags : dynamique et orienté résultats."
+colors: {ink: "#14202A", muted: "#56616B", accent: "#1D6E82", accent2: "#B08A4A", rule: "#D6DEE2", band: "#EEF5F7"}
+sizes_pt: {name: 24, headline: 12, section: 9, body: 9.3, meta: 8.3}
+margins_mm: {top: 12, right: 13, bottom: 11, left: 16}
+bullet: "▪"
+max_bullets_featured: 4
+max_bullets_other: 2

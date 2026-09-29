@@ -219,7 +219,7 @@ def test_every_yaml_parses_and_prompts_render():
         if ".venv" not in p.parts:
             yaml.safe_load(p.read_text(encoding="utf-8"))
     rules = load_rules()
-    assert len(rules.sectors) == 11 and len(rules.countries) >= 12 and set(rules.designs) == {"ats_classic", "hybrid_modern", "human_premium"}
+    assert len(rules.sectors) == 11 and len(rules.countries) >= 12 and set(rules.designs) == {"ats_classic", "hybrid_modern", "human_premium", "premium_corporate", "modern_commercial", "minimal_executive", "digital_creative", "ats_hybrid"}
     assert all(p.version >= 1 for p in load_prompts().values())
 
 

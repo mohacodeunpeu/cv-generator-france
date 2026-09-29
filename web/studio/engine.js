@@ -894,6 +894,59 @@
   };
   E.tierFor = (task) => (DATA.models.artifact_tiers || {})[task] || 'default';
 
+  // ─── Design automatique et fiche entreprise (couche interface, hors parité Python) ─────
+  // Choisit famille, palette, densité et mode photo à partir de faits observables (pays, secteur, séniorité,
+  // logiciel ATS cité dans l'annonce, préférence de l'utilisateur) et explique chaque choix.
+  const ATS_HINT = /\b(workday|taleo|successfactors|smartrecruiters|icims|greenhouse|lever\.co|teamtailor|jobvite|cornerstone|beetween|digitalrecruiters|recruitee|welcomekit|taleez|flatchr)\b/;
+  const SECTOR_FAMILY = { business_development: 'modern_commercial', commercial: 'modern_commercial', account_management: 'modern_commercial', customer_success: 'modern_commercial',
+    digital_web: 'digital_creative', retail_premium: 'premium_corporate', hospitality_evenementiel: 'premium_corporate', international_vie: 'premium_corporate',
+    recrutement_rh: 'ats_hybrid', relation_client: 'ats_hybrid', administration_commerciale: 'ats_hybrid' };
+  const SECTOR_PALETTE = { retail_premium: 'bordeaux', hospitality_evenementiel: 'forest', international_vie: 'navy', digital_web: 'petrol', recrutement_rh: 'navy', administration_commerciale: 'graphite' };
+  E.DESIGN_FAMILIES = ['premium_corporate', 'modern_commercial', 'minimal_executive', 'digital_creative', 'ats_hybrid'];
+  E.autoDesign = (a, strat, opts = {}) => {
+    const why = []; const c = country(a.country); const s = sector(a.sector_id); const text = E.norm(opts.offerText || '');
+    const atsTool = (text.match(ATS_HINT) || [])[1] || '';
+    const atsFirst = (strat && strat.best && strat.best.ats_mode === 'ATS_FIRST') || !!atsTool;
+    let family = SECTOR_FAMILY[a.sector_id] || 'ats_hybrid';
+    why.push({ k: 'secteur', t: `Secteur « ${s.name || a.sector_id} » → ${DATA.designs[family] ? DATA.designs[family].name : family}` });
+    if (a.seniority === 'senior') { family = 'minimal_executive'; why.push({ k: 'niveau', t: 'Poste senior → Minimal Executive : sobriété, expérience mise en avant' }); }
+    if (atsFirst) {
+      if (DATA.designs[family] && DATA.designs[family].ats_level === 'low') family = 'ats_hybrid';
+      why.push({ k: 'ats', t: atsTool ? `Logiciel de recrutement détecté dans l'annonce (${atsTool}) → mise en page lisible par les ATS` : 'Stratégie ATS_FIRST → mise en page lisible par les ATS' });
+    } else why.push({ k: 'ats', t: 'Aucun logiciel ATS cité dans l\'annonce → lecture recruteur prioritaire' });
+    const pref = opts.prefs && opts.prefs.design;
+    if (pref && E.DESIGN_FAMILIES.includes(pref) && !(atsFirst && DATA.designs[pref] && DATA.designs[pref].ats_level === 'low')) { family = pref; why.push({ k: 'préférence', t: `Votre préférence : ${DATA.designs[pref].name}` }); }
+    if (['never', 'discouraged'].includes(c.photo) && family === 'digital_creative') { family = 'modern_commercial'; why.push({ k: 'pays', t: `${c.name || a.country} : pas de photo d'usage → pas de colonne photo` }); }
+    const d = DATA.designs[family] || {};
+    const palette = (opts.prefs && opts.prefs.palette && (d.palettes || []).includes(opts.prefs.palette)) ? opts.prefs.palette : SECTOR_PALETTE[a.sector_id] && (d.palettes || []).includes(SECTOR_PALETTE[a.sector_id]) ? SECTOR_PALETTE[a.sector_id] : d.palette_default || 'petrol';
+    let photo = 'OFF';
+    const wantsPhoto = !(opts.prefs && opts.prefs.photo === 'never');
+    if (!opts.hasPhoto) why.push({ k: 'photo', t: 'Aucune photo dans le profil → sans photo' });
+    else if (['never', 'discouraged'].includes(c.photo)) why.push({ k: 'photo', t: `${c.name || a.country} : photo déconseillée ou exclue (${c.photo}) → sans photo` });
+    else if (!wantsPhoto) why.push({ k: 'photo', t: 'Votre préférence : jamais de photo' });
+    else if (atsFirst && family === 'ats_hybrid') why.push({ k: 'photo', t: 'Priorité ATS → sans photo (lecture la plus sûre)' });
+    else { photo = family === 'digital_creative' ? 'SIDEBAR' : (d.photo_default === 'OFF' && !(opts.prefs && opts.prefs.photo === 'always') ? 'OFF' : 'HEADER'); why.push({ k: 'photo', t: photo === 'OFF' ? `${d.name} : sans photo par défaut (sobriété)` : `${c.name || 'France'} : photo d'usage → ${photo === 'SIDEBAR' ? 'colonne latérale' : 'en-tête'}` }); }
+    const density = d.density || 'balanced';
+    return { design: family, palette, photo_mode: photo, density, ats_level: d.ats_level || 'high', why, pitch: d.pitch || '' };
+  };
+
+  // Fiche entreprise : UNIQUEMENT ce que dit l'annonce (aucun enrichissement non vérifié ; pas de logo non vérifié).
+  E.companyCard = (a, offer) => {
+    const text = (offer && offer.text) || ''; const company = a.company && a.company !== 'UNKNOWN' ? a.company : '';
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const about = []; const figures = [];
+    for (const l of lines.slice(0, 18)) {
+      const n = E.norm(l);
+      if (company && E.containsTerm(n, company) && l.length > 30 && !/^[-•*]/.test(l)) about.push(l.replace(/\.$/, ''));
+      for (const m of l.matchAll(/(\d[\d\s.,]*\s?(?:salariés|collaborateurs|clients|employés|pays|magasins|boutiques|agences|sites|m€|k€|millions|%))/gi)) figures.push(m[1].trim());
+    }
+    const url = (text.match(/\bhttps?:\/\/[^\s)]+/) || [])[0] || (offer && offer.source_url) || '';
+    return { name: company, sector: sector(a.sector_id).name || a.sector_id, location: a.location || '', contract: a.contract || '',
+      about: [...new Set(about)].slice(0, 2), figures: [...new Set(figures)].slice(0, 4), website: url,
+      wants: ((a.recruiter_wants || {}).explicit || []).slice(0, 4), missions: (a.missions || []).slice(0, 4),
+      logo: { status: 'non vérifié', used: false }, source: 'annonce' };
+  };
+
   // ─── Export Node ──────────────────────────────────────────────────────────
   if (typeof module !== 'undefined' && module.exports) module.exports = E;
   else root.PAIEngine = E;

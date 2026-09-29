@@ -27,7 +27,9 @@ STUDIO = ROOT / "web" / "studio"
 DIST = ROOT / "web" / "dist"
 VENDOR = ROOT / "web" / "vendor"
 PDFJS_VERSION = "3.11.174"
-FONTS = ["FiraSans-Regular.ttf", "FiraSans-Italic.ttf", "FiraSans-Medium.ttf", "FiraSans-SemiBold.ttf", "FiraSans-Bold.ttf"]
+FONTS = ["FiraSans-Regular.ttf", "FiraSans-Italic.ttf", "FiraSans-Medium.ttf", "FiraSans-SemiBold.ttf", "FiraSans-Bold.ttf",
+         "SourceSerif4-Regular.ttf", "SourceSerif4-Italic.ttf", "SourceSerif4-SemiBold.ttf", "SourceSerif4-SemiBoldItalic.ttf",
+         "Manrope-Medium.ttf", "Manrope-Bold.ttf", "Manrope-ExtraBold.ttf"]
 
 
 def example_offers() -> dict:
@@ -107,11 +109,21 @@ def build(output: Path | None = None, server: bool = False) -> str:
     html = html.replace("/*@DATA@*/", f"window.PAI_DATA = {data};")
     html = html.replace("/*@FONTS@*/", "window.PAI_FONTS = " + json.dumps(fonts, separators=(",", ":")) + ";")
     html = html.replace("/*@ENGINE@*/", (STUDIO / "engine.js").read_text(encoding="utf-8"))
-    html = html.replace("/*@APP@*/", (STUDIO / "app.js").read_text(encoding="utf-8"))
+    html = html.replace("/*@DESIGNS@*/", (STUDIO / "designs.js").read_text(encoding="utf-8"))
+    html = html.replace("/*@APP@*/", app_source())
     out = output or DIST / ("pai_studio_server.html" if server else "pai_studio.html")
     out.write_text(html, encoding="utf-8")
     size_kb = out.stat().st_size // 1024
     return f"{out} ({size_kb} Ko)"
+
+
+def app_source() -> str:
+    """L'interface est découpée en modules (web/studio/app/NN_*.js) assemblés dans une seule portée, dans l'ordre."""
+    parts = sorted((STUDIO / "app").glob("*.js"))
+    if not parts:
+        return (STUDIO / "app.js").read_text(encoding="utf-8")
+    body = "\n".join(f"// ── {p.name} ──\n{p.read_text(encoding='utf-8')}" for p in parts)
+    return f"(function () {{\n'use strict';\n{body}\n}}());\n"
 
 
 def write_data_json(path: Path) -> None:
