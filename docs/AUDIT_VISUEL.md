@@ -1,11 +1,12 @@
 # Audit visuel et refonte de l'interface (septembre 2026)
 
 Méthode : la version en production et la refonte ont été ouvertes dans un vrai navigateur (Chromium, Playwright),
-avec le même build et le même profil **fictif** « Camille Test », aux largeurs 375, 390, 430, 768, 1280, 1440
-et 1920 px, en thème sombre et clair. L'URL publique (serveur Oracle) n'est pas joignable depuis l'environnement
+avec le même profil **fictif** « Camille Test », aux largeurs 375, 390, 430, 768, 1280, 1440 et 1920 px, en thème
+sombre et clair, et (depuis le 3ᵉ passage) avec les **polices réelles** de chaque version (Instrument Serif / Sans,
+Geist Mono pour la refonte ; Fira Sans, Fraunces pour l'ancienne), servies au navigateur depuis un cache local. L'URL publique (serveur Oracle) n'est pas joignable depuis l'environnement
 de travail (proxy : 403) : l'audit porte sur le même code que celui servi par le serveur.
 
-Captures : `docs/proofs/redesign/` (avant / après, 5 designs de CV, 5 lettres, mobile, thème clair).
+Captures : `docs/proofs/redesign/` (connexion, avant / après, 5 designs de CV, 5 lettres, mobile, thème clair).
 
 ## 1. Audit de la version en production (avant)
 
@@ -63,7 +64,28 @@ Rail de 10 libellés, chaque bloc encadré, CTA en bas à gauche du champ, CV St
 | Compteurs à zéro sur l'accueil d'un nouvel utilisateur | remplacés par une promesse tant qu'il n'y a pas de pack |
 | Redondance dans la lettre (citations répétées dans « Pourquoi cette entreprise ») | seulement le paragraphe « entreprise » |
 
-## 5. Vérifications automatiques
+## 5. Troisième passage critique (polices réelles, page de connexion)
+
+Les captures des deux premiers passages bloquaient Google Fonts : elles montraient des polices de repli (Georgia,
+system-ui), pas la typographie que voit l'utilisateur. Tout a été recapturé avec les vraies polices et rejugé
+« comme un utilisateur qui découvre le produit ». Défauts trouvés et corrigés :
+
+| Défaut observé (rendu réel) | Correction |
+| --- | --- |
+| **Page de connexion** (première chose vue sur l'URL publique) restée dans l'ancien style : carte grise, accent cyan, Georgia | refaite dans le langage « Atelier » : aurore, monogramme, promesse, champ en verre, CTA pétrole ; clair et sombre ; aucun script |
+| Le *I* italique champagne se lisait « PA/ » | *I* droit en champagne (accueil, rail, mobile, connexion) |
+| Libellé du rail coupé « Analy ser » (arrondi de l'espacement de lettres à 10,5 px) | 11 px, espacement nul (10,5 px pour le groupe secondaire) |
+| Détails des étapes en jargon : « MATCH 87 · QUALITY 100 · RISK 7 », « REQUIRED », « retirée(s) » | français naturel avec accord (« 1 retirée », « 3 lignes »), plus aucun « (s) » dans l'interface |
+| « % » ou « » » rejetés seuls en début de ligne | espaces insécables avant les unités et dans les guillemets ; virgule décimale (« 7,2 pt ») |
+| Identifiant interne affiché dans « Pourquoi ce CV ? » (« exp.alpha.r2 ») | le fait lui-même est cité |
+| « Mots-clés prouvés : 100 » sur le pack alors que l'analyse dit 4/5 : le chiffre était la part des exigences obligatoires prouvées | libellé exact : « Exigences prouvées 100 % » |
+| CV d'un profil court rempli à 59 % : bas de page vide | étalement automatique (espacements, texte +10 % au plus) jusqu'à remplir la page, **jamais au-delà d'une page** ; aucune ligne ajoutée ni retirée ; désactivé si la densité est choisie à la main → 76-78 % sur le profil fictif |
+| Sévérité brute en anglais (« low ») dans les contrôles de la lettre et du profil | « Mineur », « À revoir », « Bloquant », « À vérifier » |
+| Emoji de vote en couleur, criards sur la palette | en gris tant qu'on n'a pas voté ; couleur au survol et sur le vote choisi |
+| Halo du thème clair en tache grise | pétrole clair et champagne |
+| Section « Reprendre » de l'accueil sur toute la largeur, décalée de la colonne centrale | alignée sur la colonne de 880 px du champ d'analyse |
+
+## 6. Vérifications automatiques
 
 - `tests/e2e/test_studio_e2e.py` : parcours complet, galerie des 5 designs, brouillon → V2, comparaison,
   téléchargements PDF / ZIP, Training Lab (V3), conflit de profil, photo fictive + basse résolution, onboarding,

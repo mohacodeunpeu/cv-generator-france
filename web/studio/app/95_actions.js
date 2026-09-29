@@ -26,7 +26,7 @@ async function newCvVersion(label, mutate, opts = {}) {
   p.cv_index = p.cvs.length - 1;
   refreshStatus(p); const saved = await Store.savePack(p);
   S.cvIndex = saved.cv_index; S.compareWith = Math.max(0, saved.cvs.findIndex((x) => x.v === base.v)); S.studio = null;
-  toast(report.perfect ? `V${v} enregistrée · ${label}` : `V${v} : ${report.rejected_ids.length} ligne(s) sans preuve à corriger.`, report.perfect ? 'i-check' : 'i-alert');
+  toast(report.perfect ? `V${v} enregistrée · ${label}` : `V${v} : ${nb(report.rejected_ids.length, 'ligne', 'lignes')} sans preuve à corriger.`, report.perfect ? 'i-check' : 'i-alert');
   render();
   return v;
 }
@@ -232,7 +232,7 @@ const ACT = {
     const have = new Set((S.rules.proposals || []).concat(S.rules.accepted || []).map((r) => r.rule_text));
     const props = deterministicProposals().filter((r) => !have.has(r.rule_text)).map((r) => Object.assign({ id: uid('rule'), status: 'proposed', created_at: nowIso() }, r));
     if (!props.length) { toast(`Pas de motif négatif répété au-dessus du seuil : INSUFFICIENT DATA.`, 'i-info'); return; }
-    await Store.saveRules(Object.assign({}, S.rules, { proposals: (S.rules.proposals || []).concat(props) })); toast(`${props.length} règle(s) proposée(s) : à toi de décider.`, 'i-bulb');
+    await Store.saveRules(Object.assign({}, S.rules, { proposals: (S.rules.proposals || []).concat(props) })); toast(`${nb(props.length, 'règle proposée', 'règles proposées')} : à toi de décider.`, 'i-bulb');
   },
   'propose-rules': async () => {
     toast('Analyse de tes avis…', 'i-spark');
@@ -242,7 +242,7 @@ const ACT = {
         existing_rules: (S.rules.accepted || []).map((r) => r.rule_text).join('\n') || 'aucune', min_feedback: String(min) }, { cache: false });
       const props = (out.proposals || []).filter((r) => Number(r.n_cases) >= min).map((r) => Object.assign({ id: uid('rule'), status: 'proposed', created_at: nowIso(), source: 'IA' }, r));
       await Store.saveRules(Object.assign({}, S.rules, { proposals: (S.rules.proposals || []).concat(props) }));
-      toast(props.length ? `${props.length} règle(s) proposée(s).` : `Pas assez d'avis concordants (${min} minimum par contexte) : INSUFFICIENT DATA.`, 'i-bulb');
+      toast(props.length ? `${nb(props.length, 'règle proposée', 'règles proposées')}.` : `Pas assez d'avis concordants (${min} minimum par contexte) : INSUFFICIENT DATA.`, 'i-bulb');
     } catch (e) { toast(AI.message(e), 'i-alert'); }
   },
   'rule-accept': async (el) => { const r = (S.rules.proposals || []).find((x) => x.id === el.dataset.arg); if (!r) return; r.status = 'accepted'; r.accepted_at = nowIso(); await Store.saveRules(Object.assign({}, S.rules, { accepted: (S.rules.accepted || []).concat([r]), rules_version: (S.rules.rules_version || 0) + 1 })); toast('Règle acceptée : nouvelle version des règles.', 'i-check'); },
@@ -253,7 +253,7 @@ const ACT = {
     const src = imp.origin === 'document' ? 'document' : 'jobagent';
     await mutateProfile((p) => { picked.forEach((it, i) => { const id = `${src === 'document' ? 'doc' : 'ja'}.${imp.hash}.${i + 1}`; if (p.facts.some((f) => f.id === id)) return;
       p.facts.push({ id, kind: it.kind, text: it.text, data: {}, status: 'UNVERIFIED', source: `${src}:${imp.name}`, provenance: `${imp.name}#${it.path} (sha:${imp.hash})`, confidence: 0.5, parent: null, terms: [], needs_confirmation: true, approved: false, note: `Importé (${src === 'document' ? 'ancien document' : 'JobAgent'}) : à confirmer`, created_at: nowIso(), updated_at: nowIso() });
-      p.review_queue = (p.review_queue || []).concat([{ fact_id: id, reason: `Import ${src === 'document' ? 'd\'un ancien document' : 'JobAgent'} : confirmer ou écarter`, severity: 'warning' }]); }); }, `${src}_import`, `${picked.length} élément(s) de ${imp.name}`);
+      p.review_queue = (p.review_queue || []).concat([{ fact_id: id, reason: `Import ${src === 'document' ? 'd\'un ancien document' : 'JobAgent'} : confirmer ou écarter`, severity: 'warning' }]); }); }, `${src}_import`, `${nb(picked.length, 'élément', 'éléments')} de ${imp.name}`);
     if (src === 'jobagent') await Store.addDoc('jobagent', { id: uid('ja'), name: imp.name, hash: imp.hash, total: imp.items.length, accepted: picked.length, created_at: nowIso() });
     S.jobImport = null; render();
   },

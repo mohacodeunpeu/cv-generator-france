@@ -120,7 +120,7 @@ async function validateAndCritique(cv, P, a, m, offer, cycles) {
     const targets = {}; for (const [id, t] of Object.entries(per)) if (E.lineById(cv, id)) targets[id] = t;
     if (!Object.keys(targets).length && general.length) for (const l of E.sectionLines(cv, 'summary').slice(0, 1).concat(E.sectionLines(cv, 'experience').slice(0, 2))) targets[l.id] = general.join(' ; ');
     if (!Object.keys(targets).length) break;
-    setStep('cv', 'run', `Critique, cycle ${cycle + 1} : ${Object.keys(targets).length} ligne(s) à corriger`);
+    setStep('cv', 'run', `Critique, cycle ${cycle + 1} : ${nb(Object.keys(targets).length, 'ligne', 'lignes')} à corriger`);
     r = await fixLoop(cv.lines, validator, P, a, { instructions: targets, general, step: 'cv' });
     cv.lines = r.lines; cv.removed_lines = cv.removed_lines.concat(r.removed); E.syncBlocks(cv); report = r.report;
   }
@@ -229,12 +229,12 @@ async function runPipeline(input) {
     // 3. COMPANY (uniquement ce que dit l'annonce ; logo jamais utilisé s'il n'est pas vérifié)
     setStep('company', 'run');
     R.company = E.companyCard(a, offer);
-    setStep('company', 'done', R.company.name ? `${R.company.name}${R.company.figures.length ? ` · ${R.company.figures.length} chiffre(s) cité(s)` : ''} · source : l'annonce` : "Entreprise non nommée dans l'annonce");
+    setStep('company', 'done', R.company.name ? `${R.company.name}${R.company.figures.length ? ` · ${nb(R.company.figures.length, 'chiffre cité', 'chiffres cités')}` : ''} · source : l'annonce` : "Entreprise non nommée dans l'annonce");
 
     // 4. MATCH
     setStep('match', 'run');
     const m = E.computeMatch(P, a); R.match = m;
-    setStep('match', 'done', `MATCH ${pct(m.match)} · QUALITY ${pct(m.quality)} · RISK ${pct(m.risk)}`);
+    setStep('match', 'done', `Correspondance ${pct(m.match)}\u00a0/\u00a0100 · qualité ${pct(m.quality)} · risque\u00a0${pct(m.risk)}`);
 
     // 5. STRATEGY (+ design automatique expliqué)
     setStep('strategy', 'run', 'Comparaison des positionnements');
@@ -282,17 +282,17 @@ async function runPipeline(input) {
     }
     const c0 = cvs[0];
     R.cv = { lines: c0.cv.lines.length, traced: c0.report.traced, total: c0.report.total, removed: (c0.cv.removed_lines || []).length, source: c0.cv.source, judges: c0.critique.ai && c0.critique.ai.scores ? Object.keys(c0.critique.ai.scores).length : 0 };
-    setStep('cv', 'done', `${c0.report.traced}/${c0.report.total} lignes tracées · factualité ${pct(c0.report.factuality)} %${R.cv.removed ? ` · ${R.cv.removed} retirée(s) faute de preuve` : ''}`);
+    setStep('cv', 'done', `${c0.report.traced}/${c0.report.total} lignes tracées · factualité ${pct(c0.report.factuality)}\u00a0%${R.cv.removed ? ` · ${nb(R.cv.removed, 'retirée', 'retirées')} faute de preuve` : ''}`);
     const L = await letterPromise; L.letter.layout = auto.design;
     R.letter = { refs: L.letter.lines.filter((l) => l.kind === 'offer_ref').length, traced: L.report.traced, total: L.report.total, checks: L.checks };
-    setStep('letter', 'done', `${L.report.traced}/${L.report.total} phrases tracées · ${R.letter.refs} élément(s) propres à l'annonce`);
+    setStep('letter', 'done', `${L.report.traced}/${L.report.total} phrases tracées · ${nb(R.letter.refs, 'élément propre', 'éléments propres')} à l'annonce`);
 
     // 8. PACK
     setStep('pack', 'run', 'Questions du formulaire, scores, versions');
     pack.answers = await buildAnswers(input.questions, P, a);
     pack.cvs = cvs.map((e, i) => ({ v: i + 1, label: e.label, created_at: nowIso(), source: e.cv.source, doc: e.cv, report: e.report, critique: e.critique, qa: null, change: i === 0 ? 'Première version' : 'Variante de design' }));
     pack.letters = [{ v: 1, label: 'V1', created_at: nowIso(), source: L.letter.source, doc: L.letter, report: L.report, checks: L.checks }];
-    setStep('pack', 'done', `${pack.answers.length ? `${pack.answers.length} réponse(s) · ${pack.answers.filter((x) => x.confidence === 'BLOCKED').length} à compléter` : 'aucune question'} · ${pack.cvs.length} CV · 1 lettre`);
+    setStep('pack', 'done', `${pack.answers.length ? `${nb(pack.answers.length, 'réponse', 'réponses')} · ${pack.answers.filter((x) => x.confidence === 'BLOCKED').length} à compléter` : 'aucune question'} · ${pack.cvs.length} CV · 1 lettre`);
 
     // 9. QA (PDF réel)
     setStep('qa', 'run', 'pdfmake → PDF texte, relu par pdf.js');
@@ -314,7 +314,7 @@ async function runPipeline(input) {
       pack.cv_index = pack.cvs.indexOf(best.qa && best.qa.ok ? best : first);
     }
     const q0 = pack.cvs[pack.cv_index].qa; R.qa = q0;
-    setStep('qa', q0.ok ? 'done' : 'fail', `${q0.pages} page · police min. ${q0.min_font_pt || '—'} pt · mots-clés REQUIRED ${q0.required_found}${q0.issues.length ? ` · ${q0.issues.map((x) => x.detail).join(', ')}` : ' · aucun défaut'}`);
+    setStep('qa', q0.ok ? 'done' : 'fail', `${nb(q0.pages, 'page', 'pages')} · police min. ${num(q0.min_font_pt)}\u00a0pt · mots-clés requis ${q0.required_found}${q0.issues.length ? ` · ${q0.issues.map((x) => x.detail).join(', ')}` : ' · aucun défaut'}`);
     return await finishPack(pack);
   } catch (e) {
     const cancelled = e && (e.code === 'cancelled' || e.name === 'AbortError');

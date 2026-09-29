@@ -13,10 +13,13 @@ const PDF = {
     const pal = over.palette || doc.palette || d.palette_default || 'petrol';
     const accent = over.accent !== undefined ? over.accent : (doc.colors && doc.colors.accent);
     const mode = over.photo_mode || doc.photo_mode || 'OFF';
-    const A = S.photoAssets;
-    return { palette: DS.palette(pal, accent), density: over.density || doc.density || d.density || 'balanced',
+    const A = S.photoAssets; const density = over.density || doc.density || d.density || 'balanced';
+    // L'étalement n'est valable que pour la mise en page où il a été mesuré (design, densité, photo).
+    const spread = over.spread !== undefined ? over.spread : (doc.spread && !doc.density_locked && doc.spread_key === PDF.spreadKey(fam, density, A ? mode : 'OFF') ? doc.spread : 1);
+    return { palette: DS.palette(pal, accent), density, spread,
       photo: A ? { circle: A.circle, square: A.square, scale: (S.photo && S.photo.scale) || 1 } : null, photoMode: A ? mode : 'OFF' };
   },
+  spreadKey(fam, density, mode) { return `${fam}|${density}|${mode}`; },
   cvDef(doc, over) { return DS.cv(E, doc, PDF.ctx(doc, over)); },
   letterDef(letterDoc, cvDoc, P, over = {}) {
     const base = cvDoc || { design_profile: 'ats_hybrid' };
@@ -64,19 +67,30 @@ const PDF = {
     return text.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   },
   // Mise à la page : d'abord la densité (sans rien retirer), puis retrait des lignes les moins utiles (jamais d'ajout),
-  // et à l'inverse on aère une page trop vide. Une densité choisie à la main n'est pas modifiée.
+  // et à l'inverse on aère une page trop vide, puis on l'étale (profil court) sans jamais dépasser la page.
+  // Une densité choisie à la main n'est pas modifiée. Le contenu (lignes et preuves) n'est jamais touché ici.
   async cvFitted(cv, maxPages) {
     const fam = DS.familyOf(cv.design_profile); let density = cv.density || (D.designs[fam] || {}).density || 'balanced';
     const locked = !!cv.density_locked;
-    let doc = cv; let bytes = await this.build(this.cvDef(doc, { density })); let info = await this.inspect(bytes);
-    if (info.pages > maxPages && !locked && density !== 'compact') { density = 'compact'; bytes = await this.build(this.cvDef(doc, { density })); info = await this.inspect(bytes); }
+    let doc = cv; let bytes = await this.build(this.cvDef(doc, { density, spread: 1 })); let info = await this.inspect(bytes);
+    if (info.pages > maxPages && !locked && density !== 'compact') { density = 'compact'; bytes = await this.build(this.cvDef(doc, { density, spread: 1 })); info = await this.inspect(bytes); }
     let step = 0;
-    while (info.pages > maxPages && step < 3) { step++; doc = E.trimForSpace(doc, step); bytes = await this.build(this.cvDef(doc, { density })); info = await this.inspect(bytes); }
+    while (info.pages > maxPages && step < 3) { step++; doc = E.trimForSpace(doc, step); bytes = await this.build(this.cvDef(doc, { density, spread: 1 })); info = await this.inspect(bytes); }
     if (!locked && info.pages <= maxPages && info.fill < 0.78 && density !== 'airy') {
-      const b2 = await this.build(this.cvDef(doc, { density: 'airy' })); const i2 = await this.inspect(b2);
+      const b2 = await this.build(this.cvDef(doc, { density: 'airy', spread: 1 })); const i2 = await this.inspect(b2);
       if (i2.pages <= maxPages) { density = 'airy'; bytes = b2; info = i2; }
     }
-    doc = Object.assign({}, doc, { density });
+    let spread = 1;
+    if (!locked && info.pages <= maxPages && info.fill < 0.8) {
+      let lo = 1; let hi = 2;
+      for (let i = 0; i < 4; i++) {
+        const k = Math.round(((lo + hi) / 2) * 100) / 100;
+        const b3 = await this.build(this.cvDef(doc, { density, spread: k })); const i3 = await this.inspect(b3);
+        if (i3.pages <= maxPages && !i3.overflow && i3.fill <= 0.96) { lo = k; if (i3.fill > info.fill + 0.02) { spread = k; bytes = b3; info = i3; } } else hi = k;
+      }
+    }
+    const mode = S.photoAssets ? (doc.photo_mode || 'OFF') : 'OFF';
+    doc = Object.assign({}, doc, { density, spread, spread_key: PDF.spreadKey(fam, density, mode) });
     return { doc, bytes, info, trimSteps: step };
   },
   qa(info, cv, requiredTerms, maxPages) {
@@ -87,7 +101,7 @@ const PDF = {
     for (const m of [cv.name, cv.section_titles.experience, cv.section_titles.education]) { const pos = tn.indexOf(E.norm(m), cursor); if (pos < 0) { orderOk = false; break; } cursor = pos + 1; }
     if (!orderOk) issues.push({ severity: 'high', check: 'ordre_lecture', detail: 'ordre de lecture ATS incohérent' });
     if (info.minSize !== null && info.minSize < 6.4) issues.push({ severity: 'medium', check: 'taille', detail: `police minimale ${info.minSize} pt` });
-    if (info.overflow) issues.push({ severity: 'high', check: 'debordement', detail: `${info.overflow} segment(s) hors page` });
+    if (info.overflow) issues.push({ severity: 'high', check: 'debordement', detail: `${nb(info.overflow, 'segment', 'segments')} hors page` });
     if (info.pages === 1 && info.fill < 0.6) issues.push({ severity: 'low', check: 'remplissage', detail: `page remplie à ${Math.round(info.fill * 100)} %` });
     const found = requiredTerms.filter((t) => E.supportedBy(t, tn));
     return { ok: !issues.some((i) => i.severity === 'high'), issues, pages: info.pages, min_font_pt: info.minSize, fill: info.fill, required_found: `${found.length}/${requiredTerms.length}`,
@@ -100,7 +114,7 @@ const PDF = {
 
   // ── Aperçus réels (image de la page 1, mise en cache par empreinte du rendu) ──
   key(kind, doc, extra) {
-    return `${kind}-${E.hash([doc.lines, doc.experiences, doc.design_profile, doc.palette, doc.colors, doc.density, doc.photo_mode, doc.draft, doc.layout, doc.subject, extra || '', S.photoAssets ? S.photoAssets.id : 'nophoto'])}`;
+    return `${kind}-${E.hash([doc.lines, doc.experiences, doc.design_profile, doc.palette, doc.colors, doc.density, doc.spread, doc.spread_key, doc.photo_mode, doc.draft, doc.layout, doc.subject, extra || '', S.photoAssets ? S.photoAssets.id : 'nophoto'])}`;
   },
   invalidate() { PDF.cache.clear(); },
   want(key, defFn, width = 880) {

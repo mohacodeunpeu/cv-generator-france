@@ -17,6 +17,9 @@ const uid = (p) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).
 const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return iso || ''; } };
 const fmtTime = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return iso || ''; } };
 const pct = (v) => (v === null || v === undefined || Number.isNaN(v) ? '—' : `${Math.round(v)}`);
+// Accord en nombre (0 et 1 au singulier) avec espace insécable : « 1 ligne », « 3 lignes » (jamais « ligne(s) »).
+const nb = (n, one, many) => `${n}\u00a0${n > 1 ? many : one}`;
+const num = (v) => (v === null || v === undefined || v === '' ? '—' : String(v).replace('.', ','));  // 7.2 → « 7,2 »
 const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, Number(v) || 0));
 const lsGet = (k, d) => { try { const v = localStorage.getItem(`pai.${k}`); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(`pai.${k}`, JSON.stringify(v)); } catch (e) { /* stockage navigateur indisponible */ } };

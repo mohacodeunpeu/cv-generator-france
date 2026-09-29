@@ -130,7 +130,11 @@
     return { title: `${kind} — ${cv.name}`, author: cv.name, subject: heads.map((l) => l.text).join(' '), keywords: (cv.keywords_covered || []).join(', '), creator: 'PAI — Personal Application Intelligence' };
   }
 
-  function ctxScale(ctx) { const d = DENSITY[ctx.density] || DENSITY.balanced; return { fs: d.fs, g: d.gap }; }
+  // spread (1 → 2) : page trop vide (profil court) → les espacements s'ouvrent et le texte grandit un peu (+10 % au plus).
+  function ctxScale(ctx) {
+    const d = DENSITY[ctx.density] || DENSITY.balanced; const k = Math.min(2, Math.max(1, ctx.spread || 1));
+    return { fs: d.fs * (1 + (k - 1) * 0.1), g: d.gap * k };
+  }
 
   // ── 1. Premium Corporate ─────────────────────────────────────────────────────
   function premiumCorporate(E, cv, ctx) {

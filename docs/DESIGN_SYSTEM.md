@@ -26,7 +26,7 @@ de bord d'administration. Trois règles guident chaque écran :
 | Texte ivoire / graphite | `#EDE9DE` | `#15191D` | `--ink` (puis `--ink-2`, `--muted`, `--faint`) |
 | Bleu pétrole (action) | `#1C6272` / `#2E8292` / `#79B7C3` | `#175868` / `#1C6272` | `--petrol`, `--petrol-2`, `--petrol-3` |
 | Bleu profond (profondeur, aurore) | `#12264A` / `#1D3B69` | idem | `--deep`, `--deep-2` |
-| Champagne (très léger) | `#D9C9A2` | `#8E7440` | `--champ` : le *I* de PAI, les surtitres, un filet actif |
+| Champagne (très léger) | `#D9C9A2` | `#8E7440` | `--champ` : le I (droit) de PAI, les surtitres, un filet actif |
 | Filets | ivoire à 7 / 12 / 20 % | graphite à 8 / 13 / 22 % | `--hair`, `--hair-2`, `--hair-3` |
 | États | vert, ambre, rouge doux | versions foncées | `--good`, `--warn`, `--bad` (+ `-soft`) |
 
@@ -47,6 +47,10 @@ Réglages → Apparence pose `data-theme` sur la racine).
 
 Titres en `text-wrap: balance`, paragraphes limités à ~62 caractères. Les titres de section sont en
 casse normale (`h3.h3`, 14 px, 600) : les capitales espacées sont réservées aux surtitres.
+
+Typographie française : accord en nombre avec `nb(n, 'ligne', 'lignes')` (jamais « ligne(s) »), espace insécable
+avant les unités et le signe %, et à l'intérieur des guillemets « », virgule décimale (`num()`). Aucun identifiant
+interne (id de fait, code de sévérité) n'est montré comme texte : on affiche le fait ou un libellé français.
 
 ## Espace
 
@@ -73,6 +77,11 @@ accueil centré sur 880 px.
   pilule « brouillon » flottante (« Enregistrer en V3 · Annuler »).
 - **Scores** (`.score`) : chiffre en serif, barre fine, pourquoi, preuve dépliable.
 
+## Page de connexion (serveur)
+
+`pai/templates/login.html.j2` reprend les mêmes jetons : aurore, monogramme, promesse, champ en verre, CTA
+pétrole ; thèmes clair et sombre ; aucun script (CSP stricte).
+
 ## Mouvement
 
 Durées 0,2 → 0,9 s, courbe `--ease-out` (cubic-bezier .16, 1, .3, 1). Uniquement `transform` et `opacity`
@@ -92,6 +101,10 @@ chacune avec sa lettre assortie (même palette, mêmes polices, même en-tête) 
 | Minimal Executive | serif, colonne de titres, beaucoup d'air | élevée |
 | Digital Creative | colonne latérale sombre, photo ronde, niveaux de langue | faible |
 | ATS Hybrid | une colonne, filets fins, lecture ATS maximale | élevée |
+
+Un profil court ne laisse pas la page à moitié vide : après la densité « Aérée », la mise en page s'étale
+(espacements, texte +10 % au plus) tant que le CV tient sur une page (`PDF.cvFitted`, paramètre `spread`), sauf si
+la densité a été choisie à la main.
 
 Un gabarit ne fait QUE la mise en page : le texte vient des lignes validées (claim → evidence) ; les tests
 vérifient que chaque ligne est présente dans les 5 PDF, sur 1 page, avec polices embarquées et ordre de lecture

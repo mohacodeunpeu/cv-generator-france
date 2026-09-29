@@ -114,6 +114,13 @@ def test_login_sets_hardened_cookie_and_serves_studio_with_nonce(client):
     assert page.headers["Cache-Control"] == "no-store"
 
 
+def test_login_page_carries_the_pai_identity_without_scripts(client):
+    html = client.get("/login").text
+    assert "PA<em>I</em>" in html and "Personal Application Intelligence" in html and "candidature personnalisée" in html
+    assert "<script" not in html  # CSP stricte : aucun script sur la page de connexion
+    assert 'id="u"' in html and 'id="p"' in html and 'name="csrf"' in html
+
+
 def test_login_form_requires_its_csrf_token(client):
     client.get("/login")
     r = client.post("/login", data={"username": "camille", "password": PASSWORD, "csrf": "forge"}, follow_redirects=False)

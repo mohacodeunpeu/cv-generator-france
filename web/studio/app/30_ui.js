@@ -1,6 +1,7 @@
 // ─── Composants partagés ─────────────────────────────────────────────────────
 const icon = (id, cls) => `<svg class="ico${cls ? ` ${cls}` : ''}" aria-hidden="true"><use href="#${id}"/></svg>`;
 const chip = (text, t = '') => `<span class="chip ${t}">${esc(text)}</span>`;
+const SEVERITY_LABEL = { high: 'Bloquant', medium: 'À revoir', low: 'Mineur', warning: 'À vérifier', warn: 'À vérifier', info: 'Info', conflict: 'Conflit' };
 const statusChip = (s) => `<span class="chip ${STATUS_TONE[s] || ''}"><span class="dot"></span>${esc(STATUS_LABEL[s] || s)}</span>`;
 const fids = (ids) => (ids || []).map((id) => `<span class="fid" data-fact="${esc(id)}">${esc(id)}</span>`).join(' ');
 const CIRC = 2 * Math.PI * 15.5;
@@ -63,12 +64,12 @@ function cvScores(p, e, doc) {
   const role = js('MATCH') !== null ? Math.round((js('MATCH') + m.scores.role) / 2) : m.scores.role;
   const ai0 = Object.keys(ai).length > 0;
   return [
-    { k: 'ROLE FIT', v: role, why: jw('MATCH') || `Rôle ${pct(m.scores.role)} · secteur ${pct(m.scores.sector)} · ${m.coverage.filter((c) => c.covered && c.priority === 'REQUIRED').length} exigence(s) REQUIRED prouvée(s)`, proof: `Correspondance faits ↔ exigences${ai0 ? ' + juge MATCH' : ' (calcul déterministe)'}` },
+    { k: 'ROLE FIT', v: role, why: jw('MATCH') || `Rôle ${pct(m.scores.role)} · secteur ${pct(m.scores.sector)} · ${nb(m.coverage.filter((c) => c.covered && c.priority === 'REQUIRED').length, 'exigence prouvée', 'exigences prouvées')}`, proof: `Correspondance faits ↔ exigences${ai0 ? ' + juge MATCH' : ' (calcul déterministe)'}` },
     { k: 'ATS FIT', v: ats, why: `${present.length}/${wanted.length} mots-clés prouvés présents · mise en page ${dd.ats_level === 'low' ? 'à colonne latérale (lecture ATS moins sûre)' : 'lisible par les ATS'}`, proof: qa ? `Texte relu par pdf.js : REQUIRED ${qa.required_found}, ordre de lecture ${qa.issues.some((i) => i.check === 'ordre_lecture') ? 'à vérifier' : 'OK'}` : 'PDF non encore contrôlé' },
     { k: 'PERSONALIZATION', v: pers, why: `${mirrored}/${offerTerms.length} termes de l'offre repris, seulement quand un fait le prouve`, proof: `Titre ${titleOk ? 'aligné' : 'non aligné'} sur l'intitulé « ${a.job_title} »` },
     { k: 'READABILITY', v: clamp(read), why: jw('RECRUITER') || `${bullets.length} puces de ${Math.round(avgLen)} caractères en moyenne`, proof: qa ? `Police min. ${qa.min_font_pt || '—'} pt · page remplie à ${Math.round((qa.fill || 0) * 100)} %` : 'Estimation sur le texte' },
     { k: 'DESIGN', v: clamp(design), why: jw('DESIGN') || `${DESIGN_NAME(fam)} · ${paletteLabel(cv.palette || dd.palette_default || 'petrol')} : ${dd.pitch || ''}`, proof: `Photo ${cv.photo_mode === 'OFF' || !cv.photo_mode ? 'non' : 'oui'} (usage pays : ${country.photo || '—'}) · lecture ATS ${dd.ats_level || '—'}` },
-    { k: 'FACTUALITY', v: e.report.factuality, why: `${e.report.traced}/${e.report.total} lignes tracées vers tes faits · ${(cv.removed_lines || []).length} retirée(s) faute de preuve`, proof: 'Validateur claim → evidence (déterministe, sans IA)' },
+    { k: 'FACTUALITY', v: e.report.factuality, why: `${e.report.traced}/${e.report.total} lignes tracées vers tes faits · ${nb((cv.removed_lines || []).length, 'retirée', 'retirées')} faute de preuve`, proof: 'Validateur claim → evidence (déterministe, sans IA)' },
   ];
 }
 function scoreCard(s, i) {
@@ -80,12 +81,15 @@ function scoreCard(s, i) {
 // ── Pourquoi ce CV ? (tout vient des données du pack : rien d'inventé) ──
 function whyThisCv(p, doc) {
   const s = p.strategy.best; const m = p.match; const P = Pp(); const out = [];
-  out.push(`Titre « ${(E.sectionLines(doc, 'headline')[0] || {}).text || s.title} » : aligné sur l'intitulé de l'offre (${p.analysis.job_title}).`);
+  out.push(`Titre «\u00a0${(E.sectionLines(doc, 'headline')[0] || {}).text || s.title}\u00a0» : aligné sur l'intitulé de l'offre (${p.analysis.job_title}).`);
   const up = (s.experiences_up || []).map((id) => P && P.fact(id)).filter(Boolean);
   if (up.length) out.push(`Mis en avant : ${up.map((f) => `${f.data.title || f.text} chez ${f.data.company || '—'}`).join(' puis ')}, parce que ces expériences prouvent le plus d'exigences.`);
   const req = m.coverage.filter((c) => c.covered && c.priority === 'REQUIRED');
   if (req.length) out.push(`Exigences prouvées et reprises : ${req.slice(0, 6).map((c) => c.term).join(', ')}.`);
-  if (s.hook) out.push(`Accroche : ta preuve la plus forte pour cette offre (${s.hook_fact_ids && s.hook_fact_ids[0] ? s.hook_fact_ids[0] : 'fait lié'}).`);
+  if (s.hook) {
+    const hf = P && s.hook_fact_ids && s.hook_fact_ids[0] ? P.fact(s.hook_fact_ids[0]) : null; const ht = hf ? String(hf.text || '').trim() : '';
+    out.push(`Accroche : ta preuve la plus forte pour cette offre${ht ? ` («\u00a0${ht.length > 80 ? `${ht.slice(0, 78).trimEnd()}…` : ht}\u00a0»)` : ''}.`);
+  }
   const miss = m.missing.filter((x) => x.priority === 'MUST').map((x) => x.requirement);
   if (miss.length) out.push(`Non écrit car non prouvé : ${miss.slice(0, 4).join(', ')} (à préparer pour l'entretien).`);
   out.push(`Angle ${s.ats_mode === 'ATS_FIRST' ? 'ATS d\'abord' : s.ats_mode === 'HUMAN_FIRST' ? 'recruteur d\'abord' : 'hybride'} : ${s.why || p.strategy.comparison || 'choix du profil secteur'}.`);
@@ -105,9 +109,9 @@ function compareDocs(A, B) {
   const ea = ex(A); const eb = ex(B);
   const added = [...eb.keys()].filter((k) => !ea.has(k)).length; const removed = [...ea.keys()].filter((k) => !eb.has(k)).length;
   const modified = [...eb.keys()].filter((k) => ea.has(k) && ea.get(k) !== eb.get(k)).length;
-  if (added) out.push({ cls: 'add', area: 'Expériences', t: `${added} puce(s) ajoutée(s)` });
-  if (removed) out.push({ cls: 'del', area: 'Expériences', t: `${removed} puce(s) retirée(s)` });
-  if (modified) out.push({ cls: 'mod', area: 'Expériences', t: `${modified} puce(s) reformulée(s)` });
+  if (added) out.push({ cls: 'add', area: 'Expériences', t: nb(added, 'puce ajoutée', 'puces ajoutées') });
+  if (removed) out.push({ cls: 'del', area: 'Expériences', t: nb(removed, 'puce retirée', 'puces retirées') });
+  if (modified) out.push({ cls: 'mod', area: 'Expériences', t: nb(modified, 'puce reformulée', 'puces reformulées') });
   const sk = (d) => new Set(E.sectionLines(d, 'skills').map((l) => E.norm(l.text)));
   const sa = sk(A); const sb = sk(B);
   const skAdd = E.sectionLines(B, 'skills').filter((l) => !sa.has(E.norm(l.text))).map((l) => l.text);
@@ -128,7 +132,7 @@ function changesSinceProfile(p, doc) {
   const used = new Set(doc.lines.flatMap((l) => l.fact_ids || []));
   const usable = P.usableFacts().filter((f) => !['identity', 'contact', 'preference', 'media'].includes(f.kind));
   const out = [{ cls: 'add', area: 'Sélection', t: `${usable.filter((f) => used.has(f.id)).length} faits retenus sur ${usable.length} utilisables, choisis pour cette offre` }];
-  if ((doc.removed_lines || []).length) out.push({ cls: 'del', area: 'Vérité', t: `${doc.removed_lines.length} ligne(s) retirée(s) : non prouvée(s) ou manque de place` });
+  if ((doc.removed_lines || []).length) out.push({ cls: 'del', area: 'Vérité', t: `${nb(doc.removed_lines.length, 'ligne retirée : non prouvée', 'lignes retirées : non prouvées')} ou manque de place` });
   out.push({ cls: 'lay', area: 'Design', t: `${DESIGN_NAME(doc.design_profile)} · ${paletteLabel(doc.palette || 'petrol')} · ${DENSITY_LABEL[doc.density || 'balanced']} · ${PHOTO_LABEL[doc.photo_mode || 'OFF']}` });
   return out;
 }
@@ -238,7 +242,7 @@ function feedbackBox(p, doc, idx, opts = {}) {
 function nextAction() {
   const p = S.profile;
   if (!p) return { t: 'Importe ton Master Profile pour commencer : PAI ne peut rien écrire sans tes faits.', act: 'go', arg: 'onboarding', cta: 'Configurer PAI' };
-  if (conflicts(p).length) return { t: `Tranche ${conflicts(p).length} conflit(s) dans ton profil : PAI ne choisit jamais à ta place.`, act: 'go', arg: 'profil', cta: 'Résoudre' };
+  if (conflicts(p).length) return { t: `Tranche ${nb(conflicts(p).length, 'conflit', 'conflits')} dans ton profil : PAI ne choisit jamais à ta place.`, act: 'go', arg: 'profil', cta: 'Résoudre' };
   if (!p.validated) return { t: 'Valide ton profil : tes documents passeront de BROUILLON à FINAL.', act: 'go', arg: 'onboarding', cta: 'Valider' };
   if (!S.packs.length) return { t: 'Colle ta première vraie offre ci-dessus : PAI prépare CV, lettre et réponses en quelques minutes.', act: 'focus-cmd', arg: '', cta: 'Coller une offre' };
   const last = S.packs[0];
@@ -257,7 +261,7 @@ function packCover(p, i = 0) {
 function packRow(p) {
   const a = p.analysis || {};
   return `<button class="item" data-act="open-pack" data-arg="${esc(p.id)}"><span class="grow"><span class="t">${esc(a.job_title || '—')} · ${esc(disp(a.company, 'company'))}</span>
-    <span class="s">${fmtDate(p.created_at)} · ${esc(MODE_INFO[p.mode] ? MODE_INFO[p.mode][0] : p.mode)} · MATCH ${pct(p.match && p.match.match)}${p.offer && p.offer.synthetic ? ' · SYNTHETIC' : ''}</span></span>${chip(p.status, p.status === 'FINAL' ? 'good' : 'warn')}</button>`;
+    <span class="s">${fmtDate(p.created_at)} · ${esc(MODE_INFO[p.mode] ? MODE_INFO[p.mode][0] : p.mode)} · correspondance ${pct(p.match && p.match.match)}${p.offer && p.offer.synthetic ? ' · SYNTHETIC' : ''}</span></span>${chip(p.status, p.status === 'FINAL' ? 'good' : 'warn')}</button>`;
 }
 function emptyState(ic, title, text, cta) {
   return `<div class="card empty">${icon(ic)}<b style="color:var(--ink)">${esc(title)}</b><span>${esc(text)}</span>${cta ? `<button class="btn primary" data-act="${cta[0]}" data-arg="${esc(cta[1] || '')}">${esc(cta[2])}</button>` : ''}</div>`;

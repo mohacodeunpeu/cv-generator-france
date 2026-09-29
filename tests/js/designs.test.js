@@ -88,3 +88,18 @@ test('photo : placée seulement si demandée, jamais sur la lettre', () => {
   const L = JSON.stringify(DS.letter(E, letter, { palette: DS.palette('navy'), density: 'balanced', photo, photoMode: 'HEADER', designId: 'premium_corporate', name: 'Camille Test', contact: [], headline: 'Business Developer' }));
   assert.ok(!L.includes('"image"'), 'la lettre ne porte jamais de photo');
 });
+
+test('étalement d\'une page trop vide : mêmes textes, texte +10 % au plus, plafonné', () => {
+  const { a, m, s } = setup(); const cv = E.buildCvDeterministic(P, a, m, s, false);
+  const base = { palette: DS.palette('petrol'), density: 'airy', photo: null, photoMode: 'OFF' };
+  const layoutFree = (def) => JSON.stringify(def.content, (k, v) => (['fontSize', 'margin', 'lineHeight'].includes(k) ? undefined : v));
+  for (const fam of DS.FAMILIES) {
+    cv.design_profile = fam;
+    const d1 = DS.cv(E, cv, Object.assign({}, base, { spread: 1 }));
+    const d2 = DS.cv(E, cv, Object.assign({}, base, { spread: 2 }));
+    const d9 = DS.cv(E, cv, Object.assign({}, base, { spread: 9 }));
+    assert.equal(layoutFree(d2), layoutFree(d1), `${fam} : l'étalement ne change que la mise en page`);
+    assert.equal(JSON.stringify(d9), JSON.stringify(d2), `${fam} : étalement plafonné à 2`);
+    assert.ok(d2.defaultStyle.fontSize > d1.defaultStyle.fontSize && d2.defaultStyle.fontSize <= d1.defaultStyle.fontSize * 1.1 + 1e-9, fam);
+  }
+});

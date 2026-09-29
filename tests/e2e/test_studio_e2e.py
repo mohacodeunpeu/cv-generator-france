@@ -146,6 +146,16 @@ def test_full_flow_desktop(studio_url, profile):
         assert pack["company"]["logo"]["used"] is False
         assert pack["status"] == "DRAFT"  # profil non validé
         assert cv["qa"]["pages"] == 1 and cv["qa"]["ok"], cv["qa"]
+        # Profil court : la page est étalée (jamais au-delà d'une page) au lieu de rester à moitié vide.
+        assert cv["doc"]["spread"] >= 1 and cv["doc"]["spread_key"].startswith(cv["doc"]["design_profile"] + "|"), cv["doc"].get("spread_key")
+        assert cv["qa"]["fill"] >= 0.65, cv["qa"]
+        spread = page.evaluate("""() => { const { PDF } = window.__PAI_DEBUG__;
+          const d = { design_profile: 'modern_commercial', density: 'airy', spread: 1.5, spread_key: 'modern_commercial|airy|OFF' };
+          return [PDF.ctx(d).spread, PDF.ctx(Object.assign({}, d, { density_locked: true })).spread, PDF.ctx(Object.assign({}, d, { design_profile: 'ats_hybrid' })).spread]; }""")
+        assert spread == [1.5, 1, 1], f"étalement : mesuré pour une mise en page, ignoré si la densité est choisie à la main {spread}"
+        # Libellés en français : ni « (s) » ni jargon anglais dans le déroulé de l'analyse.
+        run_text = page.locator("#run-panel").inner_text()
+        assert "(s)" not in run_text and "REQUIRED" not in run_text and "QUALITY" not in run_text, run_text
 
         page.locator("#run-side button[data-act=open-pack]").click()
         for tab in ["Aperçu", "Offre", "Stratégie", "CV", "Lettre", "Questions", "Risques", "Versions"]:

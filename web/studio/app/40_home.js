@@ -57,7 +57,7 @@ V.accueil = () => {
     ${S.ai === 'denied' ? `<div class="notice warn" style="width:min(880px,100%);margin:0 auto">${icon('i-info')}<span>L'IA n'est pas autorisée pour cette page : PAI fonctionne sans IA (CV et lettre tirés de tes faits, sans rédaction).</span></div>` : ''}
     ${packs.length ? `<section class="shelf"><div class="shelf-head"><h2 class="h2">Reprendre</h2><button class="btn sm ghost" data-act="go" data-arg="packs">Tous les packs ${icon('i-arrow')}</button></div>
       <div class="covers">${packs.slice(0, 5).map(packCover).join('')}</div></section>` : ''}
-    ${packs.length ? `<p class="quiet"><b>${packs.length}</b> pack${packs.length > 1 ? 's' : ''} · factualité moyenne <b>${fact === null ? '—' : `${Math.round(fact)} %`}</b> · <b>${S.feedback.length}</b> avis · <b>${(S.rules.accepted || []).length}</b> règle(s) apprise(s), validées par toi · rien n'est jamais envoyé à ta place</p>` : '<p class="quiet">Rien n\'est jamais inventé ni envoyé à ta place : chaque ligne est prouvée par tes faits.</p>'}
+    ${packs.length ? `<p class="quiet"><b>${packs.length}</b> pack${packs.length > 1 ? 's' : ''} · factualité moyenne <b>${fact === null ? '—' : `${Math.round(fact)}\u00a0%`}</b> · <b>${S.feedback.length}</b> avis · <b>${(S.rules.accepted || []).length}</b> ${(S.rules.accepted || []).length > 1 ? 'règles apprises' : 'règle apprise'} · rien n'est jamais envoyé à ta place</p>` : '<p class="quiet">Rien n\'est jamais inventé ni envoyé à ta place : chaque ligne est prouvée par tes faits.</p>'}
   </div>`;
 };
 
@@ -92,7 +92,7 @@ function runChip() {
 function runFoot() {
   const r = S.run;
   return `${r.error ? `<div class="notice ${r.fallback ? 'warn' : 'bad'}">${icon('i-alert')}<div class="stack tight"><span>${esc(r.error)}</span>${r.fallback ? `<div class="row"><button class="btn sm" data-act="cmd-text-go">${icon('i-text')} Coller le texte</button><label class="btn sm" for="f-offer-pdf2">${icon('i-file')} Importer le PDF</label><input id="f-offer-pdf2" type="file" accept="application/pdf" class="sr" data-change="offer-pdf"></div>` : ''}</div></div>` : ''}
-    ${r.status === 'done' ? `<p class="hint" style="margin:6px 0 0">${r.calls.length ? `${r.calls.length} appel(s) à ${esc(AI.short())}` : 'Aucun appel IA'} · rien n'est envoyé à ta place.</p>` : ''}`;
+    ${r.status === 'done' ? `<p class="hint" style="margin:6px 0 0">${r.calls.length ? `${nb(r.calls.length, 'appel', 'appels')} à ${esc(AI.short())}` : 'Aucun appel IA'} · rien n'est envoyé à ta place.</p>` : ''}`;
 }
 function runSideItems() {
   const r = S.run; if (!r) return [];

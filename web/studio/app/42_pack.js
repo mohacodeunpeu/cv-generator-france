@@ -29,7 +29,7 @@ V.pack = () => {
 function packOverview(p) {
   const e = p.cvs.length ? p.cvs[p.cv_index] : null; const L = p.letters.length ? p.letters[p.letter_index] : null; const m = p.match;
   const fam = e ? e.doc.design_profile : p.design ? p.design.design : 'ats_hybrid';
-  const glance = [['Correspondance', m.match, ''], ['Mots-clés prouvés', m.quality, ''], ['Risque de rejet', m.risk, ''], ['Factualité', e ? p.scores.factuality_cv : null, ' %']];
+  const glance = [['Correspondance', m.match, ''], ['Exigences prouvées', m.quality, ' %'], ['Risque de rejet', m.risk, ''], ['Factualité', e ? p.scores.factuality_cv : null, ' %']];
   return `<div class="overview">
     <div class="stack loose">${e ? `<div class="desk" style="padding:52px 40px 60px"><div class="doc-stack"><div class="front">${cvPaper(e.doc, { width: 680 })}</div>${L ? `<div class="back">${letterPaper(L.doc, e.doc, { width: 560 })}</div>` : ''}</div></div>
       <div class="row"><button class="cta" data-act="pack-tab" data-arg="cv">${icon('i-layout')} Ouvrir dans CV Studio</button><button class="btn lg" data-act="pack-tab" data-arg="letter">Letter Studio</button><button class="btn lg ghost" data-act="open-lab" data-arg="${esc(p.id)}">${icon('i-flask')} Donner mon avis</button></div>`
@@ -137,7 +137,7 @@ function studio(p) {
       </div>
       ${gallery}
       <div class="canvas-wrap">${S.previewMode === 'proof' ? sheetHTML(doc, { rejected: e.report.rejected_ids || [] }) : cvPaper(doc, { width: 900 })}</div>
-      <p class="desk-note">${S.previewMode === 'proof' ? 'Survole une ligne : les faits qui la prouvent s\'affichent.' : `Vrai PDF, texte sélectionnable · ${qa.pages ? `${qa.pages} page · police min. ${qa.min_font_pt || '—'} pt · mots-clés REQUIRED ${qa.required_found}` : 'contrôle à la prochaine version'}${pending ? ' · aperçu non enregistré' : ''}`}</p>
+      <p class="desk-note">${S.previewMode === 'proof' ? 'Survole une ligne : les faits qui la prouvent s\'affichent.' : `Vrai PDF, texte sélectionnable · ${qa.pages ? `${nb(qa.pages, 'page', 'pages')} · police min. ${num(qa.min_font_pt)}\u00a0pt · mots-clés requis ${qa.required_found}` : 'contrôle à la prochaine version'}${pending ? ' · aperçu non enregistré' : ''}`}</p>
       ${pending ? `<div class="draft-pill">${icon('i-palette')}<span>${esc(Object.keys(draft).filter((k) => !['design_why', 'density_locked', 'colors'].includes(k)).map((k) => ({ design_profile: DESIGN_NAME(draft.design_profile), palette: paletteLabel(draft.palette), density: DENSITY_LABEL[draft.density], photo_mode: PHOTO_LABEL[draft.photo_mode] })[k] || k).join(' · '))}</span>
         <button class="btn sm primary" data-act="studio-save">Enregistrer en V${Math.max(...p.cvs.map((x) => x.v || 0)) + 1}</button><button class="btn sm ghost" data-act="studio-reset">Annuler</button></div>` : ''}
     </div></section>
@@ -173,7 +173,7 @@ function letterStudio(p) {
     </div></section>
     <aside class="col right panel">
       <section><div class="score" style="border:0;padding:0"><span class="nb ${t}">${pct(L.report.factuality)}</span><div class="stack tight"><span class="k">Factualité</span>${bar(L.report.factuality, t)}<span class="why">${L.report.traced}/${L.report.total} phrases tracées vers tes faits ou citées de l'annonce</span></div></div></section>
-      <section><h3 class="h3">Contrôles</h3>${checks.length ? `<div class="list">${checks.map((c) => `<div class="item"><span class="grow small">${esc(c.detail)}</span>${chip(c.severity, c.severity === 'high' ? 'bad' : c.severity === 'medium' ? 'warn' : '')}</div>`).join('')}</div>` : `<p class="small" style="margin:0">${icon('i-check')} Entreprise et intitulé présents, au moins 2 éléments propres à l'annonce, aucune phrase creuse.</p>`}</section>
+      <section><h3 class="h3">Contrôles</h3>${checks.length ? `<div class="list">${checks.map((c) => `<div class="item"><span class="grow small">${esc(c.detail)}</span>${chip(SEVERITY_LABEL[c.severity] || c.severity, c.severity === 'high' ? 'bad' : c.severity === 'medium' ? 'warn' : '')}</div>`).join('')}</div>` : `<p class="small" style="margin:0">${icon('i-check')} Entreprise et intitulé présents, au moins 2 éléments propres à l'annonce, aucune phrase creuse.</p>`}</section>
       <section><details class="more"><summary>Phrases et preuves (${L.doc.lines.length})</summary><div class="list">${L.doc.lines.map((l) => `<div class="item" style="align-items:flex-start"><span class="grow small">${esc(l.text)}</span><span class="row" style="gap:4px">${chip(l.kind)}${fids(l.fact_ids)}</span></div>`).join('')}</div></details></section>
       <section>${feedbackBox(p, 'letter', p.letter_index)}</section>
     </aside></div>`;
@@ -187,7 +187,7 @@ function packVersions(p) {
     ${n > 1 ? compareView(p, A, B) : `<div class="card"><p style="margin:0">Une seule version pour l'instant. Donne ton avis puis génère une V2 : la comparaison visuelle apparaîtra ici.</p></div>`}
     <div class="split"><div class="card"><h3 class="h3">Versions du CV</h3><div class="list">${p.cvs.map((x, i) => `<div class="item"><span class="grow"><span class="t">${esc(x.label || `V${x.v}`)}${i === p.cv_index ? ' · retenue' : ''}</span><span class="s">${fmtTime(x.created_at)} · ${esc(DESIGN_NAME(x.doc.design_profile))} · factualité ${pct(x.report.factuality)} %${x.change ? ` · ${esc(x.change)}` : ''}</span></span>
       <span class="row" style="gap:4px">${i !== p.cv_index ? `<button class="btn sm" data-act="cv-keep" data-arg="${i}">Retenir</button>` : chip('Retenue', 'good')}<button class="btn sm ghost" data-act="cv-version-open" data-arg="${i}">Ouvrir</button></span></div>`).join('')}</div></div>
-    <div class="card"><h3 class="h3">Empreintes figées</h3><div class="table-wrap"><table class="t"><tbody>${Object.entries(v).map(([k, x]) => `<tr><th>${esc(k)}</th><td class="mono">${esc(x || '—')}</td></tr>`).join('')}<tr><th>created_at</th><td class="mono">${esc(p.created_at)}</td></tr><tr><th>IA</th><td>${esc(p.provider)} · ${(p.calls || []).length} appel(s)</td></tr></tbody></table></div></div></div></div>`;
+    <div class="card"><h3 class="h3">Empreintes figées</h3><div class="table-wrap"><table class="t"><tbody>${Object.entries(v).map(([k, x]) => `<tr><th>${esc(k)}</th><td class="mono">${esc(x || '—')}</td></tr>`).join('')}<tr><th>created_at</th><td class="mono">${esc(p.created_at)}</td></tr><tr><th>IA</th><td>${esc(p.provider)} · ${nb((p.calls || []).length, 'appel', 'appels')}</td></tr></tbody></table></div></div></div></div>`;
 }
 function compareView(p, ia, ib) {
   const A = p.cvs[ia]; const B = p.cvs[ib]; const ch = compareDocs(A.doc, B.doc);
