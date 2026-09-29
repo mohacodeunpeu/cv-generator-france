@@ -103,14 +103,14 @@
   };
   const calls = [];
   const sample = async (input, opts = {}) => {
-    const text = 'Préparez trois exemples chiffrés de prospection B2B et la manière dont vous suivez votre pipeline.';
+    const text = input === 'Réponds uniquement par OK.' ? 'OK' : 'Préparez trois exemples chiffrés de prospection B2B et la manière dont vous suivez votre pipeline.';
     calls.push({ task: 'chat' }); if (opts.onText) opts.onText({ text, delta: text }); return { text, truncated: false, modelTierApplied: opts.modelTier || 'default' };
   };
   sample.json = async (input, opts = {}) => {
     const prompt = typeof input === 'string' ? input : input.map((t) => t.content).join('\n');
     calls.push({ task: prompt.slice(0, 40), tier: opts.modelTier, images: !!opts.images });
     const out = respond(prompt);
-    await new Promise((r) => setTimeout(r, 25));
+    await new Promise((r) => setTimeout(r, window.__PAI_MOCK_DELAY__ || 25));
     if (opts.onText) opts.onText({ text: JSON.stringify(out), delta: '' });
     return copy(out);
   };

@@ -22,3 +22,7 @@ web/vendor/
 
 # Données de test générées (python web/build_studio.py --data-json tests/js/.data.json)
 tests/js/.data.json
+
+# Espace local de Claude Code (worktrees temporaires, réglages locaux)
+.claude/worktrees/
+.claude/settings.local.json

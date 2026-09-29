@@ -87,10 +87,11 @@ def test_server_studio_login_generate_persist(server):
         page.get_by_role("button", name="Se connecter").click()
         page.get_by_text("Bonjour Camille").wait_for(timeout=20000)
 
-        page.locator("#nav button[data-arg=nouvelle]").click()
-        page.fill("#f-offer", OFFER)
-        page.get_by_role("button", name="Analyser et générer").click()
-        page.get_by_role("button", name="Ouvrir le pack").wait_for(timeout=120000)
+        page.fill("#cmd-input", OFFER)
+        page.locator("#command button[data-act=analyze]").click()
+        page.locator("#run-side button[data-act=open-pack]").wait_for(timeout=120000)
+        assert page.locator("#run-panel li.stage.done").count() == 9
+        assert "DEGRADED" in page.locator(".mode-badge").first.inner_text()  # fournisseur « null » : sans IA, voies déterministes
 
         cookies = {c["name"]: c["value"] for c in ctx.cookies()}
         with httpx.Client(base_url=server, cookies={"pai_session": cookies["pai_session"]}) as api:

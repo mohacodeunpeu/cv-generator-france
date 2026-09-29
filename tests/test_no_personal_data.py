@@ -14,7 +14,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z.]{2,}")
-ALLOWED_EMAIL = re.compile(r"@example\.(org|com|fr)$|^noreply@anthropic\.com$")
+ALLOWED_EMAIL = re.compile(r"@([a-z0-9-]+\.)*example\.(org|com|fr|net)$|^noreply@anthropic\.com$")  # domaines réservés (RFC 2606) et sous-domaines
 PHONE = re.compile(r"(?<![\d.])(\+33 ?|0)[67]([ .]?[0-9]{2}){4}(?![\d])")
 FICTIONAL_PHONE = re.compile(r"(\+33 ?|0)6([ .]?00){4}")
 LINKEDIN = re.compile(r"linkedin\.com/in/[A-Za-z0-9-]+", re.I)

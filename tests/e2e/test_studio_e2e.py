@@ -1,13 +1,16 @@
-"""Test e2e de PAI Studio : vrai Chromium, doublure de window.claude (tests/e2e/claude_mock.js).
+"""Tests e2e de l'interface PAI : vrai Chromium, doublure de window.claude (tests/e2e/claude_mock.js).
 
-Parcours : tableau de bord → nouvelle candidature (STANDARD) → pack → CV Studio → lettre → export PDF/ZIP →
-profil → mobile. Vérifie aussi que les pièges de la doublure IA (MBA, faux chiffre, fait UNVERIFIED,
-salaire inventé) n'atteignent jamais le document final. Captures d'écran → data/proofs/studio/ (hors Git),
-ou docs/proofs/studio/ pour régénérer les preuves : PAI_PROOFS_DIR=docs/proofs/studio (profil FICTIF « Camille Test »).
+Parcours : accueil → analyse en 9 étapes → pack (8 onglets) → CV Studio (design, brouillon, V2) → lettre →
+téléchargements → Training Lab (avis → V2 → comparaison) → profil (conflit Source A / Source B, validation) →
+photo FICTIVE (dégradé, jamais une vraie photo) → onboarding → réglages (test de connexion) → largeurs mobiles.
+Vérifie aussi que les pièges de la doublure IA (MBA, faux chiffre, fait UNVERIFIED, salaire inventé) n'atteignent
+jamais un document. Captures → data/proofs/studio/ (hors Git), ou PAI_PROOFS_DIR=docs/proofs/studio pour régénérer
+les preuves versionnées (profil FICTIF « Camille Test »).
 """
 
 from __future__ import annotations
 
+import copy
 import functools
 import http.server
 import json
@@ -21,10 +24,10 @@ ROOT = Path(__file__).resolve().parents[2]
 PROOFS = Path(os.environ.get("PAI_PROOFS_DIR") or ROOT / "data" / "proofs" / "studio")
 if not PROOFS.is_absolute():
     PROOFS = ROOT / PROOFS
-PROOFS.mkdir(parents=True, exist_ok=True)
 OFFER = ("Business Developer Junior (H/F) — CDI — Paris\nAcme SaaS édite un logiciel pour les PME françaises depuis 2015.\n\n"
          "Vos missions\n- Prospecter de nouveaux clients PME par téléphone et LinkedIn.\n- Suivre votre pipeline dans HubSpot.\n\n"
          "Votre profil\n- Anglais courant requis.\n- Maîtrise d'un CRM indispensable.")
+WIDTHS = [375, 390, 430, 768, 1280, 1440, 1920]
 
 pw = pytest.importorskip("playwright.sync_api")
 
@@ -52,8 +55,13 @@ def studio_url():
     server.shutdown()
 
 
-def _page(browser, url, width, height, seed):
-    ctx = browser.new_context(viewport={"width": width, "height": height}, device_scale_factor=1)
+@pytest.fixture(scope="module")
+def profile():
+    return json.loads((ROOT / "tests" / "fixtures" / "profile_test.json").read_text(encoding="utf-8"))
+
+
+def _page(browser, url, width, height, seed, scheme="dark"):
+    ctx = browser.new_context(viewport={"width": width, "height": height}, device_scale_factor=1, color_scheme=scheme)
     page = ctx.new_page()
     vendor = ROOT / "web" / "vendor"
     page.route("https://cdn.jsdelivr.net/npm/**", lambda r: r.fulfill(path=str(vendor / r.request.url.rsplit("/", 1)[-1]), content_type="application/javascript"))
@@ -67,83 +75,243 @@ def _page(browser, url, width, height, seed):
     return ctx, page, errors
 
 
-def test_studio_full_flow(studio_url):
+def _shot(page, name):
     PROOFS.mkdir(parents=True, exist_ok=True)
-    profile = json.loads((ROOT / "tests" / "fixtures" / "profile_test.json").read_text(encoding="utf-8"))
-    seed = {"pai/profile": profile}
+    page.wait_for_timeout(350)
+    page.screenshot(path=str(PROOFS / f"{name}.png"), full_page=True)
+
+
+def _store(page, prefix):
+    return page.evaluate("(p) => { const out = []; for (const [k, v] of window.__PAI_MOCK__.store) if (k.startsWith(p)) out.push(v); return out; }", prefix)
+
+
+def _analyze(page, text=OFFER, questions=""):
+    page.locator("#cmd-input").fill(text)
+    if questions:
+        page.locator(".more-opts > summary").click()
+        page.locator("#f-questions").fill(questions)
+    page.locator("#command button[data-act=analyze]").click()
+    page.locator("#run-side button[data-act=open-pack]").wait_for(timeout=90000)
+
+
+def _fake_photo(size=420):
+    """Photo FACTICE (aplats de couleur) : jamais une vraie personne."""
+    pymupdf = pytest.importorskip("pymupdf")
+    pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, size, size), False)
+    pix.set_rect(pix.irect, (159, 184, 192))
+    pix.set_rect(pymupdf.IRect(int(size * .32), int(size * .16), int(size * .68), int(size * .58)), (62, 90, 100))
+    pix.set_rect(pymupdf.IRect(int(size * .16), int(size * .62), int(size * .84), size), (243, 241, 234))
+    return pix.tobytes("png")
+
+
+def test_full_flow_desktop(studio_url, profile):
     with pw.sync_playwright() as p:
         browser = p.chromium.launch()
-        ctx, page, errors = _page(browser, studio_url, 1360, 900, seed)
+        ctx, page, errors = _page(browser, studio_url, 1440, 900, {"pai/profile": profile})
         page.get_by_text("Bonjour Camille").wait_for(timeout=15000)
-        page.screenshot(path=str(PROOFS / "desktop_1_dashboard.png"), full_page=True)
+        assert page.locator(".hero-mark").inner_text().replace("\n", "") == "PAI"
+        assert page.get_by_text("Transforme n'importe quelle offre en candidature personnalisée.").is_visible()
+        assert page.locator("#cmd-input").get_attribute("placeholder") == "Colle l'URL de l'offre ici..."
+        _shot(page, "desktop_1_accueil")
 
-        page.locator("#nav button[data-arg=nouvelle]").click()
-        page.fill("#f-offer", OFFER)
-        page.fill("#f-questions", "Quelle est votre disponibilité ?\nQuelles sont vos prétentions salariales ?")
-        page.get_by_role("button", name="Analyser et générer").click()
-        page.get_by_role("button", name="Ouvrir le pack").wait_for(timeout=90000)
-        page.screenshot(path=str(PROOFS / "desktop_2_generation.png"), full_page=True)
+        # Un lien dans claude.ai : échec honnête + repli texte / PDF, aucune analyse lancée.
+        page.locator("#cmd-input").fill("https://www.example.com/offre/123")
+        page.locator("#command button[data-act=analyze]").click()
+        page.locator("#command .notice").wait_for()
+        assert "colle le texte" in page.locator("#command .notice").inner_text().lower()
+        assert page.locator("#command .notice button[data-act=cmd-text]").is_visible()
+        page.locator("#command button[data-act=cmd-clear]").click()
 
-        page.get_by_role("button", name="Ouvrir le pack").click()
-        page.get_by_role("tab", name="Synthèse").wait_for()
-        page.screenshot(path=str(PROOFS / "desktop_3_pack_synthese.png"), full_page=True)
+        _analyze(page, questions="Quelle est votre disponibilité ?\nQuelles sont vos prétentions salariales ?")
+        stages = page.locator("#run-panel li.stage")
+        assert stages.count() == 9
+        assert page.locator("#run-panel li.stage.done").count() == 9, page.locator("#run-panel").inner_text()
+        page.locator("#run-side .paper img.pv").first.wait_for(timeout=30000)
+        _shot(page, "desktop_2_analyse")
 
-        pack = page.evaluate("() => { const s = window.__PAI_MOCK__.store; for (const [k, v] of s) if (k.startsWith('packs/')) return v; return null; }")
-        cv = pack["cvs"][0]
+        pack = _store(page, "packs/")[0]
+        cv = pack["cvs"][pack["cv_index"]]
         texts = " ".join(line["text"] for line in cv["doc"]["lines"])
         assert "MBA" not in texts, "le piège MBA a atteint le CV"
         assert "40+" not in texts, "le faux chiffre a atteint le CV"
         assert "Licence de gestion" not in texts, "un fait UNVERIFIED a atteint le CV"
         assert cv["report"]["factuality"] == 100.0
-        assert any("MBA" in r["text"] for r in cv["doc"]["removed_lines"])
         assert pack["letters"][0]["report"]["factuality"] == 100.0
+        assert len([ln for ln in pack["letters"][0]["doc"]["lines"] if ln["kind"] == "offer_ref"]) >= 2
         salary = next(a for a in pack["answers"] if "salari" in a["question"])
         assert salary["confidence"] == "BLOCKED" and not salary["answer"], "salaire inventé non bloqué"
-        assert pack["strategy"]["best"]["photo_mode"] == "OFF"
+        assert cv["doc"]["design_profile"] in {"premium_corporate", "modern_commercial", "minimal_executive", "digital_creative", "ats_hybrid"}
+        assert cv["doc"]["photo_mode"] == "OFF"  # aucune photo dans le profil
+        assert pack["design"]["why"], "le design automatique doit s'expliquer"
+        assert pack["company"]["logo"]["used"] is False
         assert pack["status"] == "DRAFT"  # profil non validé
         assert cv["qa"]["pages"] == 1 and cv["qa"]["ok"], cv["qa"]
 
-        page.get_by_role("tab", name="CV Studio").click()
-        page.locator("#cv-sheet .sheet").wait_for()
-        page.screenshot(path=str(PROOFS / "desktop_4_cv_studio.png"), full_page=True)
-        page.get_by_role("tab", name="Letter Studio").click()
-        page.screenshot(path=str(PROOFS / "desktop_5_letter_studio.png"), full_page=True)
+        page.locator("#run-side button[data-act=open-pack]").click()
+        for tab in ["Aperçu", "Offre", "Stratégie", "CV", "Lettre", "Questions", "Risques", "Versions"]:
+            page.get_by_role("tab", name=tab, exact=True).click()
+            page.wait_for_timeout(200)
+            if tab in ("Aperçu", "CV", "Lettre"):
+                page.locator(".paper img.pv").first.wait_for(timeout=30000)
+                _shot(page, f"desktop_3_pack_{tab.lower().replace('ç', 'c')}")
 
-        page.get_by_role("tab", name="Export").click()
-        page.get_by_role("button", name="CV (PDF)").click()
-        page.get_by_role("button", name="Pack complet (ZIP)").click()
+        # CV Studio : 6 scores avec preuve, brouillon de design puis V2.
+        page.get_by_role("tab", name="CV", exact=True).click()
+        page.locator(".studio .score").first.wait_for()
+        assert page.locator(".studio .score").count() == 6
+        for k in ["ROLE FIT", "ATS FIT", "PERSONALIZATION", "READABILITY", "DESIGN", "FACTUALITY"]:
+            assert page.locator(".studio .score .k", has_text=k).count() == 1, k
+        assert page.get_by_text("Pourquoi ce CV ?").is_visible() and page.get_by_text("Ce qui a changé").is_visible()
+        page.locator(".toolbar [data-act=toggle-gallery]").click()
+        page.locator(".gallery .designs button").nth(4).wait_for()
+        assert page.locator(".gallery .designs button").count() == 5, "5 designs réels attendus"
+        page.locator(".gallery .designs .paper img.pv").nth(4).wait_for(timeout=45000)
+        _shot(page, "desktop_4a_cv_studio_5_designs")
+        page.locator(".gallery button[data-arg=minimal_executive]").click()
+        page.locator(".draft-pill").wait_for()
+        page.locator(".canvas-wrap .paper img.pv").wait_for(timeout=30000)
+        page.locator(".draft-pill button[data-act=studio-save]").click()
+        page.wait_for_function("() => { for (const [k, v] of window.__PAI_MOCK__.store) if (k.startsWith('packs/')) return v.cvs.length === 2; return false; }", timeout=30000)
+        pack = _store(page, "packs/")[0]
+        assert pack["cvs"][1]["doc"]["design_profile"] == "minimal_executive" and pack["cv_index"] == 1
+        assert pack["cvs"][0]["doc"]["design_profile"] != "minimal_executive", "V1 doit rester intacte"
+        _shot(page, "desktop_4_cv_studio")
+
+        page.get_by_role("tab", name="Versions", exact=True).click()
+        page.locator("table.cmp").wait_for()
+        cmp = page.locator("table.cmp").inner_text().lower()
+        assert "modern commercial → minimal executive" in cmp or "→ minimal executive" in cmp, cmp
+        _shot(page, "desktop_5_versions_comparaison")
+
+        page.locator(".cover-head button[data-act=dl-cv]").click()
+        page.locator(".cover-head button[data-act=dl-zip]").click()
         page.wait_for_function("() => window.__PAI_MOCK__.saved.length >= 2", timeout=30000)
         saved = page.evaluate("() => window.__PAI_MOCK__.saved")
         assert saved[0]["head"] == "%PDF-" and saved[0]["size"] > 20000, saved
         assert saved[1]["head"].startswith("PK") and saved[1]["filename"].endswith(".zip"), saved
 
-        page.locator("#nav button[data-arg=profil]").click()
-        page.get_by_role("button", name="Valider le profil v3").click()
-        page.get_by_text("validé").first.wait_for()
-        page.screenshot(path=str(PROOFS / "desktop_6_profil.png"), full_page=True)
-        for view, name in (("arene", "7_arene"), ("apprentissage", "8_apprentissage"), ("jobagent", "9_jobagent"),
-                           ("versions", "10_versions"), ("reglages", "11_reglages"), ("lab", "12_training_lab")):
+        # Training Lab : verdict + raisons → V3 → comparaison visuelle.
+        page.locator("#nav button[data-arg=lab]").click()
+        page.locator("button[data-act=lab-rate][data-arg='-1']").click()
+        page.locator("button[data-act=lab-reason][data-arg=Couleur]").click()
+        page.locator("button[data-act=lab-reason][data-arg=Photo]").click()
+        page.locator("button[data-act=lab-generate]").click()
+        page.wait_for_function("() => { for (const [k, v] of window.__PAI_MOCK__.store) if (k.startsWith('packs/')) return v.cvs.length === 3; return false; }", timeout=30000)
+        page.locator("table.cmp").wait_for()
+        pack = _store(page, "packs/")[0]
+        assert pack["cvs"][2]["doc"]["palette"] != pack["cvs"][1]["doc"].get("palette")
+        fb = _store(page, "feedback/")
+        assert fb and fb[0]["reasons"] == ["Couleur", "Photo"] and fb[0]["rating"] == -1
+        _shot(page, "desktop_6_training_lab")
+
+        for view in ["learning", "benchmark", "versions", "packs"]:
             page.locator(f"#nav button[data-arg={view}]").click()
-            page.wait_for_timeout(150)
-            page.screenshot(path=str(PROOFS / f"desktop_{name}.png"), full_page=True)
+            page.wait_for_timeout(300)
+            _shot(page, f"desktop_7_{view}")
+
+        page.locator("#nav button[data-arg=reglages]").click()
+        page.locator("button[data-act=ai-test]").click()
+        page.locator(".chip.good", has_text="OK ·").wait_for(timeout=10000)
+        assert "REMOTE" in page.locator(".mode-badge").first.inner_text()
+        _shot(page, "desktop_8_reglages")
         assert not errors, errors
         ctx.close()
+        browser.close()
 
-        mctx, mpage, merrors = _page(browser, studio_url, 390, 844, seed)
-        mpage.get_by_text("Bonjour Camille").wait_for(timeout=15000)
-        mpage.screenshot(path=str(PROOFS / "mobile_1_dashboard.png"), full_page=True)
-        mpage.locator("#tabbar button[data-arg=nouvelle]").click()
-        mpage.fill("#f-offer", OFFER)
-        mpage.get_by_role("button", name="Analyser et générer").click()
-        mpage.get_by_role("button", name="Ouvrir le pack").wait_for(timeout=90000)
-        mpage.get_by_role("button", name="Ouvrir le pack").click()
-        mpage.get_by_role("tab", name="CV Studio").click()
-        mpage.locator("#cv-sheet .sheet").wait_for()
-        mpage.screenshot(path=str(PROOFS / "mobile_2_cv_studio.png"), full_page=True)
-        mpage.locator("#tabbar button[data-arg=profil]").click()
-        mpage.screenshot(path=str(PROOFS / "mobile_3_profil.png"), full_page=True)
-        width = mpage.evaluate("() => document.documentElement.scrollWidth")
-        assert width <= 390, f"défilement horizontal sur mobile ({width}px)"
-        assert not merrors, merrors
-        mctx.close()
+
+def test_profile_conflict_photo_onboarding(studio_url, profile):
+    prof = copy.deepcopy(profile)
+    prof["facts"].append({"id": "edu.legacy_bachelor", "kind": "education", "text": "Bachelor Commerce International — École Y (2019-2022)",
+                          "status": "UNVERIFIED", "source": "legacy:ancien_cv", "data": {}})
+    prof["review_queue"] = [{"fact_id": "edu.legacy_bachelor", "severity": "conflict",
+                             "reason": "Deux intitulés proches : « Bachelor Commerce International — École Y » (ancien CV) et « Bachelor Commerce » (confirmé). Même diplôme ?"}]
+    with pw.sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx, page, errors = _page(browser, studio_url, 1280, 860, {"pai/profile": prof})
+        page.get_by_text("Bonjour Camille").wait_for(timeout=15000)
+        page.locator("#nav button[data-arg=profil]").click()
+        card = page.locator(".conflict-card")
+        card.wait_for()
+        assert card.locator(".side").count() == 2
+        assert "edu.bachelor" in card.inner_text() and "edu.legacy_bachelor" in card.inner_text()
+        assert page.locator("button[data-act=profile-validate]").is_disabled(), "un conflit ouvert doit bloquer la validation"
+        _shot(page, "desktop_9_profil_conflit")
+        card.locator("button[data-act=conflict-pick][data-arg='0:B']").click()
+        page.wait_for_function("() => (window.__PAI_MOCK__.store.get('pai/profile').review_queue || []).length === 0", timeout=10000)
+        saved = page.evaluate("() => window.__PAI_MOCK__.store.get('pai/profile')")
+        legacy = next(f for f in saved["facts"] if f["id"] == "edu.legacy_bachelor")
+        assert legacy["status"] == "UNVERIFIED" and "edu.bachelor" in legacy["note"]
+        assert saved["version"] == prof["version"] + 1 and not saved["validated"]
+
+        # Photo FICTIVE : import, recadrage, alerte basse résolution (image de 180 px).
+        page.set_input_files("#f-photo", files=[{"name": "photo.png", "mimeType": "image/png", "buffer": _fake_photo(180)}])
+        page.locator("#photo-frame img").wait_for(timeout=10000)
+        page.locator("#photo-card .notice.warn").wait_for(timeout=10000)
+        assert "basse résolution" in page.locator("#photo-card").inner_text().lower()
+        box = page.locator("#photo-frame").bounding_box()
+        page.mouse.move(box["x"] + 75, box["y"] + 75)
+        page.mouse.down()
+        page.mouse.move(box["x"] + 95, box["y"] + 90, steps=4)
+        page.mouse.up()
+        page.locator("#photo-card button[data-act=photo-mode][data-arg=HEADER]").click()
+        page.wait_for_function("() => (window.__PAI_MOCK__.store.get('pai/prefs') || {}).photo_mode === 'HEADER'", timeout=10000)
+        photo = page.evaluate("() => window.__PAI_MOCK__.store.get('pai/photo')")
+        assert photo and photo["data"].startswith("data:image/jpeg") and len(photo["data"]) < 180000
+        _shot(page, "desktop_10_profil_photo")
+
+        page.locator("button[data-act=profile-validate]").click()
+        page.wait_for_function("() => window.__PAI_MOCK__.store.get('pai/profile').validated === true", timeout=10000)
+
+        # Avec photo + préférence « en-tête », le CV porte la photo ; la lettre n'en a jamais.
+        page.locator("#nav button[data-arg=accueil]").click()
+        _analyze(page)
+        pack = _store(page, "packs/")[0]
+        cv = pack["cvs"][pack["cv_index"]]["doc"]
+        assert cv["photo_mode"] in ("HEADER", "SIDEBAR"), cv["photo_mode"]
+        assert pack["status"] == "FINAL", pack["next_action"]
+        page.locator("#run-side .paper img.pv").first.wait_for(timeout=30000)
+        _shot(page, "desktop_11_analyse_avec_photo")
+
+        # Onboarding : 5 étapes, « Votre profil est prêt. »
+        page.evaluate("() => { location.hash = 'onboarding'; }")
+        for step in ["profil", "documents", "photo", "preferences", "validation"]:
+            page.locator(f"button[data-act=ob-done][data-arg={step}]").click()
+            page.wait_for_timeout(150)
+        page.get_by_text("Votre profil est prêt.").first.wait_for(timeout=10000)
+        _shot(page, "desktop_12_onboarding_pret")
+        assert not errors, errors
+        ctx.close()
+        browser.close()
+
+
+@pytest.mark.parametrize("width", WIDTHS)
+def test_widths_no_horizontal_scroll(studio_url, profile, width):
+    with pw.sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx, page, errors = _page(browser, studio_url, width, 900 if width >= 768 else 844, {"pai/profile": profile}, "light" if width in (390, 1280, 1920) else "dark")
+        page.get_by_text("Bonjour Camille").wait_for(timeout=15000)
+        _shot(page, f"w{width}_1_accueil")
+        _analyze(page)
+        page.locator("#run-side .paper img.pv").first.wait_for(timeout=30000)
+        _shot(page, f"w{width}_2_analyse")
+        page.locator("#run-side button[data-act=open-studio]").click()
+        page.locator(".canvas-wrap .paper img.pv").wait_for(timeout=30000)
+        _shot(page, f"w{width}_3_cv_studio")
+        for view in ["profil", "reglages"]:
+            page.evaluate(f"() => {{ location.hash = '{view}'; }}")
+            page.wait_for_timeout(250)
+            assert page.evaluate("() => document.documentElement.scrollWidth") <= width, f"défilement horizontal ({view}, {width}px)"
+        if width < 960:
+            page.locator("#tabbar button[data-act=open-more]").click()
+            page.locator("#more-sheet.open").wait_for()
+            _shot(page, f"w{width}_4_menu_plus")
+            page.locator("#more-sheet button[data-arg=lab]").click()
+            page.locator("#more-sheet.open").wait_for(state="hidden")
+        for view in ["accueil", "analyser", "studio", "packs", "lab"]:
+            page.evaluate(f"() => {{ location.hash = '{view}'; }}")
+            page.wait_for_timeout(250)
+            scroll = page.evaluate("() => document.documentElement.scrollWidth")
+            assert scroll <= width, f"défilement horizontal sur {view} à {width}px ({scroll}px)"
+        assert not errors, errors
+        ctx.close()
         browser.close()
