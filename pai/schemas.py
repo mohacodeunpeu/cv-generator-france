@@ -112,7 +112,7 @@ class MasterProfile(BaseModel):
 
 class Offer(BaseModel):
     id: str
-    source_type: Literal["text", "url", "pdf", "fixture"] = "text"
+    source_type: Literal["text", "url", "pdf", "html", "file", "fixture"] = "text"
     source_url: str = ""
     fetched_at: str = Field(default_factory=now_iso)
     title_hint: str = ""
@@ -317,8 +317,11 @@ class ValidationReport(BaseModel):
 
 
 class Versions(BaseModel):
+    application_id: str = ""     # même offre = même candidature (plusieurs versions possibles)
     offer_v: str
     profile_v: str
+    analysis_v: str = ""
+    template: str = ""
     cv_v: str = ""
     letter_v: str = ""
     answers_v: str = ""
@@ -346,6 +349,7 @@ class ApplicationPack(BaseModel):
     critique: dict[str, Any] = Field(default_factory=dict)
     pdf_qa: dict[str, Any] = Field(default_factory=dict)
     scores: dict[str, Any] = Field(default_factory=dict)
+    ats: dict[str, Any] = Field(default_factory=dict)      # Score PAI, dimensions, exigences prouvées, changements
     risks: list[str] = Field(default_factory=list)
     next_action: str = ""
     missing_profile_data: list[str] = Field(default_factory=list)

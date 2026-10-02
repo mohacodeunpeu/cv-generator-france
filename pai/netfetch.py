@@ -255,18 +255,36 @@ def _read_body(response: httpx.Response, max_bytes: int, deadline: float) -> byt
     return b"".join(chunks) + tail
 
 
-def _status_error(status: int) -> FetchError:
-    if status in (401, 403, 407):
-        why = "accès refusé par le site (connexion demandée ?)"
+_ANTI_BOT_HEADERS = ("cf-mitigated", "x-datadome", "x-dd-b", "x-px-block", "x-amzn-waf-action", "x-sucuri-block",
+                     "x-distil-cs", "x-iinfo")
+
+
+def is_anti_bot(status: int, headers: httpx.Headers | dict[str, str]) -> bool:
+    """Protection anti-robot reconnue à ses en-têtes (Cloudflare, DataDome, PerimeterX, AWS WAF, Sucuri, Imperva)."""
+    h = {k.lower(): str(v).lower() for k, v in dict(headers).items()}
+    if any(k in h for k in _ANTI_BOT_HEADERS):
+        return True
+    return status in (403, 503) and (h.get("server", "") in ("cloudflare", "akamaighost", "ddos-guard") or "cf-ray" in h)
+
+
+def _status_error(status: int, headers: httpx.Headers | dict[str, str] | None = None) -> FetchError:
+    """Cause précise, affichable : le serveur PAI dit pourquoi IL n'a pas pu lire la page (jamais « Claude »)."""
+    headers = headers or {}
+    if is_anti_bot(status, headers):
+        code, why = "anti_bot", "le site bloque les lectures automatiques (protection anti-robot)"
+    elif status in (401, 407):
+        code, why = "auth_required", "le site exige une connexion"
+    elif status == 403:
+        code, why = "forbidden", "le site refuse l'accès à cette page"
     elif status in (404, 410):
-        why = "page introuvable (offre retirée ?)"
+        code, why = "not_found", "page introuvable (offre retirée ?)"
     elif status == 429:
-        why = "le site limite les accès, réessayez plus tard"
+        code, why = "rate_limited", "le site limite les accès, réessayez plus tard"
     elif status >= 500:
-        why = "le site est en erreur, réessayez plus tard"
+        code, why = "unavailable", "le site est indisponible, réessayez plus tard"
     else:
-        why = "réponse inattendue du site"
-    return FetchError("http_error", f"Lecture impossible (HTTP {status}) : {why}. Sinon, {PASTE_HINT}.")
+        code, why = "http_error", "réponse inattendue du site"
+    return FetchError(code, f"Le serveur PAI n'a pas pu récupérer cette URL (HTTP {status}) : {why}. Sinon, {PASTE_HINT}.")
 
 
 # ── Lecture ─────────────────────────────────────────────────────────────────
@@ -311,7 +329,7 @@ def safe_get(url: str, *, max_bytes: int = 3_000_000, timeout: float = 15.0, max
                     current = check_url(target, resolver)
                     continue
                 if not 200 <= response.status_code < 300:
-                    raise _status_error(response.status_code)
+                    raise _status_error(response.status_code, response.headers)
                 try:
                     body = _read_body(response, max_bytes, deadline)
                 except httpx.TimeoutException as exc:

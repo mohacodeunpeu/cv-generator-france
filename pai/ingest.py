@@ -39,7 +39,8 @@ class IngestError(ValueError):
 
 class UrlIngestError(IngestError):
     """Lecture d'une URL impossible. `code` stable pour l'interface : login_walled, bad_url, blocked_address,
-    too_large, timeout, http_error, unreadable ; `message` affichable (français)."""
+    too_large, timeout, forbidden, anti_bot, auth_required, not_found, rate_limited, unavailable, js_required,
+    http_error, unreadable ; `message` affichable (français), qui dit pourquoi le serveur PAI n'a pas pu lire."""
 
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
@@ -213,6 +214,18 @@ def _page_offer(body: bytes, charset: str | None) -> tuple[str, str, str]:
     return main.get_text("\n", strip=True), title, ""
 
 
+_SPA = re.compile(rb"<div id=[\"'](?:root|app|__next|__nuxt)[\"'][^>]*>\s*</div>|<app-root|enable javascript|"
+                 rb"activer javascript|activez javascript|javascript is required|javascript est requis|javascript required",
+                 re.I)
+
+
+def needs_javascript(body: bytes) -> bool:
+    """Page d'application (SPA) : le contenu n'existe qu'après exécution de JavaScript."""
+    head = body[:200_000]
+    scripts = len(re.findall(rb"<script(?![^>]*application/ld\+json)", head, re.I))
+    return bool(_SPA.search(head)) or scripts >= 8
+
+
 def _decode(body: bytes, charset: str | None) -> str:
     try:
         return body.decode(charset or "utf-8", "replace")
@@ -245,6 +258,9 @@ def offer_from_url(url: str, timeout: float = 15.0, *, transport: httpx.BaseTran
     else:
         raise UrlIngestError("unreadable", f"Format non pris en charge ({page.mime}) : {PASTE_HINT}.")
     if len(_clean(text)) < MIN_CHARS:
+        if needs_javascript(page.body):
+            raise UrlIngestError("js_required", "Le serveur PAI n'a pas pu lire cette offre : la page ne l'affiche qu'avec "
+                                                f"JavaScript (site dynamique), que le serveur n'exécute pas. Sinon, {PASTE_HINT}.")
         raise UrlIngestError("unreadable", "Lecture de l'offre impossible : la page ne contient pas assez de texte lisible "
                                            f"(contenu chargé par script ou protégé ?). Sinon, {PASTE_HINT}.")
     return offer_from_text(text, title=title, company=company, source_url=page.final_url, source_type="url")
@@ -261,6 +277,34 @@ def offer_from_pdf(data: bytes, filename: str = "", *, source_url: str = "") -> 
     if len(text.strip()) < MIN_CHARS:
         raise IngestError("Le PDF ne contient pas de texte extractible (scan ?) : collez le texte de l'offre.")
     return offer_from_text(text, title=Path(filename).stem, source_url=source_url, source_type="pdf")
+
+
+def offer_from_file(name: str, data: bytes, content_type: str = "", *, title: str = "", company: str = "") -> Offer:
+    """Offre importée comme fichier : PDF, HTML (page enregistrée, JSON-LD JobPosting compris), DOCX ou texte."""
+    from .ats.cvimport import CvImportError, docx_text, kind_of
+
+    kind = kind_of(name, data, content_type)
+    if kind == "pdf":
+        offer = offer_from_pdf(data, name)
+    elif kind == "html":
+        text, t, c = _page_offer(data, None)
+        if len(_clean(text)) < MIN_CHARS:
+            raise IngestError(f"La page HTML ne contient pas assez de texte d'offre : {PASTE_HINT}.")
+        offer = offer_from_text(text, title=title or t, company=company or c, source_type="html")
+    elif kind == "docx":
+        try:
+            offer = offer_from_text(docx_text(data), title=title or Path(name).stem, company=company, source_type="file")
+        except CvImportError as exc:
+            raise IngestError(exc.message) from exc
+    elif kind == "text":
+        offer = offer_from_text(data.decode("utf-8", "replace"), title=title, company=company, source_type="file")
+    else:
+        raise IngestError("Format de fichier non pris en charge : PDF, HTML, DOCX ou texte.")
+    if title and not offer.title_hint:
+        offer.title_hint = title
+    if company and not offer.company_hint:
+        offer.company_hint = company
+    return offer
 
 
 def load_fixture(path: Path) -> tuple[Offer, dict]:

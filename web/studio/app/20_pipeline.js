@@ -383,7 +383,13 @@ const Ingest = {
       login_walled: 'Cette page demande une connexion (LinkedIn, Indeed connecté…) : PAI ne lit jamais derrière un compte. Copie le texte de l\'offre ou enregistre-la en PDF.',
       bad_url: 'Lien invalide.', blocked_address: 'Adresse refusée par sécurité (réseau privé ou local).', too_large: 'Page trop lourde pour être lue.',
       timeout: 'Le site met trop de temps à répondre.', http_error: 'Le site a renvoyé une erreur (page expirée ou supprimée ?).', unreadable: 'Page lue, mais aucun texte d\'offre exploitable.',
-      no_fetch_here: e && e.message, rate_limited: 'Trop de lectures en peu de temps : réessaie dans une minute.',
+      no_fetch_here: e && e.message, rate_limited: 'Le site limite les lectures : réessaie dans une minute, ou colle le texte de l\'offre.',
+      forbidden: 'Le serveur PAI n\'a pas pu lire cette page : le site en refuse l\'accès. Colle le texte de l\'offre ou importe son PDF.',
+      anti_bot: 'Le serveur PAI n\'a pas pu lire cette page : le site bloque les lectures automatiques (protection anti-robot). Colle le texte ou importe le PDF.',
+      auth_required: 'Le serveur PAI n\'a pas pu lire cette page : le site exige une connexion. Colle le texte de l\'offre ou importe son PDF.',
+      not_found: 'Le serveur PAI n\'a pas trouvé cette page (offre retirée ?). Colle le texte si tu l\'as encore.',
+      unavailable: 'Le site de l\'offre est indisponible pour l\'instant : réessaie plus tard, ou colle le texte de l\'offre.',
+      js_required: 'Le serveur PAI n\'a pas pu lire cette page : elle n\'affiche l\'offre qu\'avec JavaScript. Colle le texte de l\'offre ou importe son PDF.',
     })[code] || `Lecture impossible (${code || (e && e.message) || 'erreur'}).`;
   },
 };
