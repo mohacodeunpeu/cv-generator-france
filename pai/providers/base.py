@@ -135,8 +135,13 @@ class AIProvider:
         return result
 
     def _record(self, record: CallRecord, start: float, latency_ms: int = 0) -> None:
+        from ..obs import event, tier_var
+
         record.latency_ms = latency_ms or int((time.monotonic() - start) * 1000)
+        record.tier = record.tier or tier_var.get()
         self.calls.append(record)
+        event("ai_call", task=record.task, provider=record.provider, model=record.model, tier=record.tier,
+              cache_hit=record.cached, success=record.ok, duration_ms=record.latency_ms, error=record.error)
         if self.on_call:
             self.on_call(record)
 

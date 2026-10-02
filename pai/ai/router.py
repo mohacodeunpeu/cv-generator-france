@@ -102,9 +102,13 @@ class AIRouter(AIProvider):
             raise DegradedMode(f"{task} : {reason}")
         self.last_route = {"task": task, "tier": tier, "provider": provider.name, "model": provider.model_for(task)}
         before = len(provider.calls)
+        from ..obs import tier_var
+
+        token = tier_var.set(tier)
         try:
             return provider.complete(task, prompt_text, prompt_tag, images)
         finally:
+            tier_var.reset(token)
             for rec in provider.calls[before:]:
                 rec.tier = tier
                 self.calls.append(rec)
