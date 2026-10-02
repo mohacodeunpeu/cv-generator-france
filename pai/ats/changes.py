@@ -44,7 +44,10 @@ def explain(cv: CvDocument, profile: MasterProfile, original_text: str | None = 
             unchanged += 1
             continue
         if ln.section == "headline":
-            reason = f"Titre aligné sur le poste visé ({', '.join(ln.offer_terms) or 'intitulé de l’offre'}), dans les rôles déclarés du profil."
+            roles = [norm(r) for r in ((profile.fact("target.roles").data.get("roles", []) if profile.fact("target.roles") else []))]
+            declared = any(r and (r in norm(ln.text) or norm(ln.text) in r) for r in roles)
+            reason = ("Titre aligné sur le poste visé, qui fait partie des rôles déclarés du profil." if declared else
+                      "Titre = intitulé du poste visé par cette candidature (ce n'est pas un poste déjà occupé).")
         elif ln.offer_terms:
             reason = "Reprend les mots de l'offre : " + ", ".join(ln.offer_terms[:4]) + "."
         elif not before:

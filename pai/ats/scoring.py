@@ -216,6 +216,18 @@ def languages_dim(match: Match, reqs: list[Requirement]) -> tuple[float, list[di
     return value, details, f"{sum(r.proof.status == PROVEN for r in langs)}/{len(langs)} langue(s) prouvée(s)"
 
 
+def conditions_dim(match: Match, analysis: Analysis) -> tuple[float, list[dict[str, Any]], str]:
+    s = match.scores
+    loc, con, av = s.get("location", 60), s.get("contract", 70), s.get("availability", 60)
+    details = [crit(f"Lieu : {analysis.location if analysis.location != 'UNKNOWN' else 'non précisé'}",
+                    OK if loc >= 80 else WARNING if loc >= 50 else ERROR,
+                    "dans la mobilité déclarée" if loc >= 80 else "mobilité à confirmer" if loc >= 50 else "hors mobilité déclarée", loc),
+               crit(f"Contrat : {analysis.contract if analysis.contract != 'UNKNOWN' else 'non précisé'}",
+                    OK if con >= 75 else WARNING, "", con),
+               crit("Disponibilité", OK if av >= 80 else WARNING, "déclarée dans le profil" if av >= 80 else "non renseignée", av)]
+    return 0.5 * loc + 0.3 * con + 0.2 * av, details, "lieu, contrat, disponibilité"
+
+
 def factuality_dim(report: ValidationReport | None) -> tuple[float | None, list[dict[str, Any]], str]:
     if report is None or not report.total:
         return None, [], "mesurée sur le CV généré"

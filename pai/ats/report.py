@@ -95,6 +95,8 @@ def match_report(profile: MasterProfile, analysis: Analysis, match: Match, offer
     dims.append(sc.dimension("match", "education", v, d, s))
     v, d, s = sc.languages_dim(match, reqs)
     dims.append(sc.dimension("match", "languages", v, d, s))
+    v, d, s = sc.conditions_dim(match, analysis)
+    dims.append(sc.dimension("match", "conditions", v, d, s))
     main = ["parsing", "structure", "matching", "keywords", "experience", "factuality"]
     dims.sort(key=lambda x: main.index(x["id"]) if x["id"] in main else 99)
     strengths, improve = _strengths_and_gaps(reqs, keywords, dims)

@@ -11,7 +11,7 @@ côté navigateur, parité vérifiée par `tests/golden/ats_parity.json`).
 ```
 SCORE PAI  86 %
 Format & parsing 94 %  ·  Structure 91 %  ·  Matching offre 82 %  ·  Mots-clés 86 %  ·  Expérience 88 %  ·  Factualité 100 %
-(Formation, Langues : dans les détails)                                                        Voir les détails →
+(Formation, Langues, Conditions : dans les détails)                                                        Voir les détails →
 ```
 
 L'écran principal ne montre que des **pourcentages**. Les critères (une vingtaine) sont le moteur interne ; ils
@@ -19,14 +19,15 @@ apparaissent seulement dans le détail de chaque dimension.
 
 | Dimension | Poids (mode B) | Calcul |
 |---|---|---|
-| Matching offre | 30 % | exigences couvertes : obligatoires ×3, importantes ×2, « un plus » ×1 ; prouvé = 1, correspondance possible = 0,5 |
-| Mots-clés | 15 % | mots-clés de l'offre présents dans le CV (avant CV : prouvés par le profil) |
-| Expérience | 15 % | 40 % intitulés proches, 35 % durée, 25 % séniorité |
+| Matching offre | 28 % | exigences couvertes : obligatoires ×3, importantes ×2, « un plus » ×1 ; prouvé = 1, correspondance possible = 0,5 |
+| Mots-clés | 14 % | mots-clés de l'offre présents dans le CV (avant CV : prouvés par le profil) |
+| Expérience | 14 % | 40 % intitulés proches, 35 % durée, 25 % séniorité |
 | Format & parsing | 12 % | scanner PDF : 100 − 25 par ERREUR − 8 par AVERTISSEMENT |
 | Factualité | 10 % | lignes du CV prouvées par un fait (validateur `pai/claims.py`) |
-| Structure | 8 % | sections, expériences datées, puces utiles, coordonnées |
+| Structure | 7 % | sections, expériences datées, puces utiles, coordonnées |
 | Formation | 5 % | niveau demandé vs niveau prouvé |
 | Langues | 5 % | langues et niveaux, pondérés par classe d'exigence |
+| Conditions | 5 % | 50 % lieu (mobilité déclarée), 30 % contrat, 20 % disponibilité |
 
 Pondérations : `rules/ats_scoring.yaml` (modifiable sans code). Une dimension non mesurable (pas encore de PDF) est
 exclue ; les poids restants sont renormalisés et le score est marqué **provisoire** (la formule l'indique).

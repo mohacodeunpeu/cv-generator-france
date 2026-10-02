@@ -97,7 +97,7 @@ def test_match_report_percentages_and_honest_requirements(profile):
     assert "ATS réel" in r["score"]["disclaimer"] and "probabilité d'embauche" in r["score"]["disclaimer"]
     ids = [d["id"] for d in r["dimensions"]]
     assert ids[:6] == ["parsing", "structure", "matching", "keywords", "experience", "factuality"]
-    assert {"education", "languages"} <= set(ids)
+    assert {"education", "languages", "conditions"} <= set(ids)
     unproven = {x["text"] for x in r["requirements"]["unproven"]}
     assert "Pipeline" in unproven                                     # jamais transformé en preuve
     assert all(x["proof"]["status"] == "PROUVÉ" for x in r["requirements"]["proven"])
