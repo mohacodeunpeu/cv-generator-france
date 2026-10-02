@@ -41,9 +41,9 @@ _MUST = re.compile(r"impératif|imperatif|requis|exig|indispensable|obligatoire|
 _NICE = re.compile(r"un plus|idéalement|idealement|apprécié|apprecie|souhaité|souhaite|bonus|nice to have|serait un atout|"
                    r"est un atout|appréciée|appreciee|preferred|a plus|strong plus|advantage|un atout")
 _MISSION_HEAD = re.compile(r"^\s*(vos |les |tes )?(missions?|responsabilit|ce que vous ferez|votre r[oô]le|au quotidien|"
-                           r"what you.ll do|responsibilities|your role|le poste)", re.I)
+                           r"what you.ll do|what you will do|responsibilities|your role|le poste)", re.I)
 _PROFILE_HEAD = re.compile(r"^\s*(votre |le |ton )?(profil|compétences|competences|qualifications|requirements|"
-                           r"what we.re looking for|vous êtes|vous etes|ce que nous recherchons)", re.I)
+                           r"what we.re looking for|what we are looking for|vous êtes|vous etes|ce que nous recherchons)", re.I)
 _BULLET = re.compile(r"^\s*([-•*·▪►✓✔]|\d+[.)])\s*")
 
 

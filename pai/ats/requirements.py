@@ -42,6 +42,7 @@ _RANK = {PROVEN: 2, PLAUSIBLE: 1, UNPROVEN: 0}
 _MATCH_RANK = {"EXACT": 3, "SYNONYME": 2, "SÉMANTIQUE": 1, "": 0}
 
 # ── Classement ───────────────────────────────────────────────────────────────────────────────────
+LEAD_STRIP = re.compile(r"^[-•*·▪►✓✔\d.)\s]+")
 _CONTEXT_STRONG = re.compile(r"teletravail|\bremote\b|salaire|remuneration|\bbrut\b|package|avantages?|mutuelle|"
                              r"tickets? restaurant|\brtt\b|horaires|prise de poste|date de debut|des que possible|"
                              r"temps plein|temps partiel|jours? par semaine|poste (est )?base|base a |locaux")
@@ -73,7 +74,7 @@ def _starts_with_action(t: str) -> bool:
 
 def classify_requirement(text: str, *, section: str = "") -> str:
     """section : « profile », « mission », « company » (présentation) ou vide si inconnu."""
-    t = re.sub(r"^[-•*·▪►✓✔\d.)\s]+", "", norm(text))
+    t = LEAD_STRIP.sub("", norm(text))
     if not t:
         return "CONTEXT"
     # « Maîtrise d'un CRM (HubSpot idéalement) » : le « un plus » entre parenthèses ne vise que la parenthèse.
@@ -274,7 +275,7 @@ def extract(analysis: Analysis, offer_text: str = "") -> list[Requirement]:
     langs = {norm(x.get("name", "")): x for x in analysis.languages}
     for kw in analysis.keywords:
         lang = langs.get(norm(kw.term))
-        level = str(lang.get("level", "")) if lang else ""
+        level = str(lang.get("level") or "") if lang else ""
         term = f"{kw.term} {level}".strip() if lang and level not in ("", "UNKNOWN") else kw.term
         out.append(Requirement(f"kw.{stable_hash(norm(kw.term), 8)}", display_term(term), term, "language" if lang else "keyword",
                                KEYWORD_CLASS.get(kw.priority, "IMPORTANT"), _source(sentences, kw.term)))
@@ -331,7 +332,9 @@ def _prove_years(profile: MasterProfile, years: float) -> Proof:
     months = sum(_months(e.data.get("start"), e.data.get("end")) for e in profile.experiences())
     have = months / 12
     ids = [e.id for e in profile.experiences()][:4]
-    text = f"{have:.1f}".replace(".", ",") + f" an(s) d'expérience cumulée pour {years:g} demandé(s)"
+    shown = f"{have:.1f}".replace(".", ",")
+    text = (f"{shown} {'ans' if have >= 2 else 'an'} d'expérience cumulée pour {years:g} "
+            f"{'ans demandés' if years >= 2 else 'an demandé'}")
     if have >= years:
         return Proof(PROVEN, "EXACT", text, ids)
     if have >= 0.6 * years:

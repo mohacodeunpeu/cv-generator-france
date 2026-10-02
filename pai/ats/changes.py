@@ -7,21 +7,20 @@ PREUVE = les faits du profil qui l'autorisent. Une ligne sans preuve n'existe pa
 
 from __future__ import annotations
 
-from difflib import SequenceMatcher
 from typing import Any
 
 from ..schemas import CvDocument, MasterProfile
 from ..textnorm import norm
+from .lexicon import dice
 
 SECTIONS = {"headline": "Titre", "summary": "Profil", "experience": "Expérience", "skills": "Compétences",
             "education": "Formation", "certifications": "Certifications", "languages": "Langues", "extras": "Informations"}
 
 
 def _closest(text: str, candidates: list[str]) -> tuple[str, float]:
-    n = norm(text)
     best, score = "", 0.0
     for c in candidates:
-        r = SequenceMatcher(None, n, norm(c)).ratio()
+        r = dice(text, c)
         if r > score:
             best, score = c, r
     return best, score
@@ -37,7 +36,7 @@ def explain(cv: CvDocument, profile: MasterProfile, original_text: str | None = 
         used.update(f.id for f in facts)
         if original:
             before, sim = _closest(ln.text, original)
-            before = before if sim >= 0.45 else ""
+            before = before if sim >= 0.5 else ""
         else:
             before = facts[0].text if facts and ln.section != "headline" else ""
         if norm(before).rstrip(".") == norm(ln.text).rstrip("."):
@@ -52,6 +51,10 @@ def explain(cv: CvDocument, profile: MasterProfile, original_text: str | None = 
             reason = "Reprend les mots de l'offre : " + ", ".join(ln.offer_terms[:4]) + "."
         elif not before:
             reason = "Ajoutée depuis le profil : ce fait prouve une exigence de l'offre."
+        elif len(facts) > 1:
+            reason = f"Rassemble {len(facts)} faits du profil en une ligne (aucun ajout)."
+        elif dice(before, ln.text) >= 0.75:
+            reason = "Mise en forme (même fait, même sens)."
         else:
             reason = "Reformulée pour être plus directe (même fait, même sens)."
         changes.append({"line_id": ln.id, "section": SECTIONS.get(ln.section, ln.section), "before": before, "after": ln.text,

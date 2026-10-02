@@ -62,11 +62,11 @@ def cv_text_from_file(name: str, data: bytes, content_type: str = "") -> tuple[s
     """(texte, octets PDF si c'est un PDF). Lève CvImportError(code, message)."""
     kind = kind_of(name, data, content_type)
     if kind == "pdf":
-        from ..pdf_qa import extract_text
+        from .scanner import read_pdf
 
         try:
-            text = extract_text(data)
-        except Exception as exc:  # noqa: BLE001 — pdfplumber lève des erreurs variées
+            text = read_pdf(data)["text"]
+        except Exception as exc:  # noqa: BLE001 — pdfplumber et pymupdf lèvent des erreurs variées
             raise CvImportError("unreadable", f"PDF illisible ({exc.__class__.__name__}).") from exc
         if len(text.strip()) < 80:
             raise CvImportError("no_text", "Le PDF ne contient pas de texte lisible (CV scanné en image ?) : un ATS ne le "

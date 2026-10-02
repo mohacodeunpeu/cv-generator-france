@@ -102,10 +102,11 @@ function runSideItems() {
     out.push(['company', `<div class="note-card"><span class="kicker">Entreprise</span><div class="note-title">${esc(c.name || 'Non nommée')}</div>
       <div class="small muted">${esc(disp(c.location, 'location'))} · ${esc(disp(c.contract, 'contract'))}</div><div class="xs faint" style="margin-top:8px">D'après l'annonce · logo ${c.logo && c.logo.used ? 'vérifié' : 'non utilisé (non vérifié)'}</div></div>`]);
   }
-  if (R.match) {
-    const m = R.match; const cov = m.coverage.filter((c) => c.covered).length;
-    out.push(['match', `<div class="note-card"><span class="kicker">Correspondance</span><div class="big">${pct(m.match)}<small>/ 100</small></div>
-      ${bar(m.match)}<div class="xs muted" style="margin-top:8px">${cov}/${m.coverage.length} mots-clés prouvés · risque ${pct(m.risk)}</div></div>`]);
+  if (R.ats) {
+    const a = R.ats; const rq = a.requirements; const main = a.dimensions.filter((d) => a.main.includes(d.id));
+    out.push(['match', `<div class="note-card ps-mini"><span class="kicker">Score PAI${a.score.complete ? '' : ' · provisoire'}</span><div class="big">${a.score.value}<small>%</small></div>
+      ${bar(a.score.value, dimTone(a.score.value))}<div class="ps-mini-dims">${main.map((d) => `<span><i>${esc(d.label)}</i><b>${d.available ? `${d.value}\u00a0%` : '—'}</b></span>`).join('')}</div>
+      <div class="xs muted" style="margin-top:8px">${nb(rq.proven.length, 'exigence prouvée', 'exigences prouvées')} · ${nb(rq.plausible.length, 'possible', 'possibles')} · ${nb(rq.unproven.length, 'non prouvée', 'non prouvées')}</div></div>`]);
   }
   if (R.strategy && R.design) {
     const s = R.strategy.best; const au = R.design;
@@ -117,7 +118,7 @@ function runSideItems() {
     const e = p.cvs[p.cv_index];
     out.push(['doc', `<div class="stack loose" style="align-items:center"><div class="doc-stack"><div class="front">${cvPaper(e.doc, { width: 640 })}</div>${p.letters.length ? `<div class="back">${letterPaper(p.letters[p.letter_index].doc, e.doc, { width: 520 })}</div>` : ''}</div>
       <div class="row" style="justify-content:center"><button class="cta" data-act="open-studio" data-arg="${esc(p.id)}">${icon('i-layout')} Ouvrir dans CV Studio</button><button class="btn lg" data-act="open-pack" data-arg="${esc(p.id)}">Ouvrir le pack</button></div>
-      <p class="hint" style="margin:0;text-align:center;max-width:52ch">${chip(p.status, p.status === 'FINAL' ? 'good' : 'warn')} ${esc(p.next_action)}</p></div>`]);
+      <p class="hint" style="margin:0;text-align:center;max-width:52ch">${packChip(p.status)} ${esc(p.next_action)}</p></div>`]);
   } else if (p) {
     out.push(['doc', `<div class="stack" style="align-items:center;text-align:center"><h2 class="h2">Analyse enregistrée</h2><p class="lede">${esc(p.next_action)}</p><button class="cta" data-act="open-pack" data-arg="${esc(p.id)}">Ouvrir le pack ${icon('i-arrow')}</button></div>`]);
   } else if (r.status === 'running' && r.mode !== 'QUICK') {

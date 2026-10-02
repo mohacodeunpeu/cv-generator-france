@@ -339,6 +339,7 @@
     ['Stage', /\bstage\b|stagiaire|internship/], ['Freelance', /freelance|independant|auto-entrepreneur/], ['Intérim', /mission d'interim|contrat d'interim|\binterim\b/]];
 
   const sentences = (text) => text.split(/(?<=[.!?;])\s+|\n+/).map((s) => s.trim()).filter(Boolean);
+  E._sentences = sentences; E.MUST_RE = MUST; E.NICE_RE = NICE;
   E.detectLanguage = (text) => {
     const t = ` ${E.norm(text)} `;
     const count = (ws) => ws.reduce((n, w) => n + (t.split(` ${w} `).length - 1), 0);
@@ -514,6 +515,7 @@
     if (!a) return 0;
     return Math.max(1, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) + 1);
   };
+  E._months = months;
   E.computeMatch = (P, a) => {
     const index = E.factIndex(P); const scores = {};
     const coverage = (a.keywords || []).map((kw) => Object.assign(E.coverTerm(kw.term, index), { priority: kw.priority }));
@@ -911,11 +913,11 @@
     why.push({ k: 'secteur', t: `Secteur « ${s.name || a.sector_id} » → ${DATA.designs[family] ? DATA.designs[family].name : family}` });
     if (a.seniority === 'senior') { family = 'minimal_executive'; why.push({ k: 'niveau', t: 'Poste senior → Minimal Executive : sobriété, expérience mise en avant' }); }
     if (atsFirst) {
-      if (DATA.designs[family] && DATA.designs[family].ats_level === 'low') family = 'ats_hybrid';
+      if (DATA.designs[family] && DATA.designs[family].ats_level !== 'high') family = 'ats_hybrid';
       why.push({ k: 'ats', t: atsTool ? `Logiciel de recrutement détecté dans l'annonce (${atsTool}) → mise en page lisible par les ATS` : 'Stratégie ATS_FIRST → mise en page lisible par les ATS' });
     } else why.push({ k: 'ats', t: 'Aucun logiciel ATS cité dans l\'annonce → lecture recruteur prioritaire' });
     const pref = opts.prefs && opts.prefs.design;
-    if (pref && E.DESIGN_FAMILIES.includes(pref) && !(atsFirst && DATA.designs[pref] && DATA.designs[pref].ats_level === 'low')) { family = pref; why.push({ k: 'préférence', t: `Votre préférence : ${DATA.designs[pref].name}` }); }
+    if (pref && E.DESIGN_FAMILIES.includes(pref) && !(atsFirst && DATA.designs[pref] && DATA.designs[pref].ats_level !== 'high')) { family = pref; why.push({ k: 'préférence', t: `Votre préférence : ${DATA.designs[pref].name}` }); }
     if (['never', 'discouraged'].includes(c.photo) && family === 'digital_creative') { family = 'modern_commercial'; why.push({ k: 'pays', t: `${c.name || a.country} : pas de photo d'usage → pas de colonne photo` }); }
     const d = DATA.designs[family] || {};
     const palette = (opts.prefs && opts.prefs.palette && (d.palettes || []).includes(opts.prefs.palette)) ? opts.prefs.palette : SECTOR_PALETTE[a.sector_id] && (d.palettes || []).includes(SECTOR_PALETTE[a.sector_id]) ? SECTOR_PALETTE[a.sector_id] : d.palette_default || 'petrol';

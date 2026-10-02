@@ -8,7 +8,6 @@ donne au mieux PLAUSIBLE, jamais PROUVÉ (voir requirements.prove).
 from __future__ import annotations
 
 import re
-from difflib import SequenceMatcher
 
 from ..textnorm import norm
 
@@ -74,11 +73,39 @@ def stems(text: str) -> set[str]:
     return {stem(t) for t in content_tokens(text)}
 
 
-def fuzzy_equal(a: str, b: str, threshold: float = 0.88) -> bool:
-    """Coquille ou variante d'orthographe (mots de 6 lettres et plus seulement)."""
+def levenshtein(a: str, b: str) -> int:
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def fuzzy_equal(a: str, b: str) -> bool:
+    """Coquille ou variante d'orthographe : mots de 6 lettres et plus, une lettre d'écart (deux à partir de 10)."""
     if len(a) < 6 or len(b) < 6:
         return False
-    return SequenceMatcher(None, a, b).ratio() >= threshold
+    return levenshtein(a, b) <= (1 if max(len(a), len(b)) < 10 else 2)
+
+
+def dice(a: str, b: str) -> float:
+    """Similarité de deux phrases (bigrammes de caractères, texte normalisé) : 1 = identiques."""
+    x, y = norm(a), norm(b)
+    ba = [x[i:i + 2] for i in range(len(x) - 1)]
+    bb = [y[i:i + 2] for i in range(len(y) - 1)]
+    if not ba or not bb:
+        return 0.0
+    counts: dict[str, int] = {}
+    for g in ba:
+        counts[g] = counts.get(g, 0) + 1
+    inter = 0
+    for g in bb:
+        if counts.get(g, 0) > 0:
+            counts[g] -= 1
+            inter += 1
+    return 2 * inter / (len(ba) + len(bb))
 
 
 def stem_related(a: str, b: str) -> bool:

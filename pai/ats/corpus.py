@@ -13,7 +13,7 @@ from typing import Any, Iterable
 
 from ..analyzer import _SOFT_SKILLS, clean_title
 from ..rules import load_rules
-from ..textnorm import norm, stable_hash
+from ..textnorm import nb, norm, stable_hash
 from .scoring import config
 from .variants import select_variant
 
@@ -60,7 +60,7 @@ def build(analyses: Iterable[dict[str, Any]]) -> dict[str, Any]:
         out["families"][fid] = {
             "label": f["label"], "offers": n, "top": top,
             "note": (f"TOP {top} publié ({n} offres analysées)." if top else
-                     f"{n} offre(s) analysée(s) : il en faut au moins {min20} pour publier un TOP 20 fiable."),
+                     f"{nb(n, 'offre analysée', 'offres analysées')} : il en faut au moins {min20} pour publier un TOP 20 fiable."),
             "titles": ranked(f["titles"], 10),
             "skills": ranked(f["skills"], top) if top else [],
             "tools": ranked(f["tools"], min(top, 20)) if top else [],

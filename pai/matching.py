@@ -20,7 +20,9 @@ WEIGHTS = {"role": 0.18, "skills": 0.24, "experience": 0.12, "sector": 0.10, "de
 PRIORITY_WEIGHT = {"REQUIRED": 3.0, "MUST": 3.0, "IMPORTANT": 2.0, "NICE": 1.0, "UNKNOWN": 1.0}
 IDF_REGION = {"paris", "ile-de-france", "la defense", "boulogne-billancourt", "levallois", "neuilly", "saint-denis",
               "issy-les-moulineaux", "nanterre", "courbevoie", "puteaux", "montrouge", "clichy", "rueil-malmaison",
-              "massy", "versailles"}
+              "massy", "versailles", "montreuil", "saint-ouen", "vincennes", "pantin", "aubervilliers", "ivry", "vitry",
+              "creteil", "cergy", "marne-la-vallee", "noisy-le-grand", "roissy", "rungis", "saint-cloud", "suresnes",
+              "velizy", "guyancourt", "evry"}  # identique au moteur JS (web/studio/engine.js)
 
 
 def fact_evidence_index(profile: MasterProfile) -> list[tuple[Fact, str]]:

@@ -16,6 +16,7 @@ from . import requirements as rq
 from . import scoring as sc
 from .parser import parse_cv_text
 from .variants import select_variant
+from ..textnorm import nb
 
 ENGINE_VERSION = "ats-1"
 
@@ -33,7 +34,8 @@ def _requirements_view(reqs: list[rq.Requirement]) -> dict[str, list[dict[str, A
     return view
 
 
-def _strengths_and_gaps(reqs: list[rq.Requirement], keywords: list[dict[str, Any]], dims: list[dict[str, Any]]):
+def _strengths_and_gaps(reqs: list[rq.Requirement], keywords: list[dict[str, Any]], dims: list[dict[str, Any]],
+                        has_cv: bool = False):
     strengths, improve = [], []
     for r in reqs:
         if r.klass == "CONTEXT":
@@ -46,8 +48,8 @@ def _strengths_and_gaps(reqs: list[rq.Requirement], keywords: list[dict[str, Any
         elif r.proof.status == rq.PLAUSIBLE and r.klass == "MUST":
             improve.append(_item("interpretation", f"{r.text} : correspondance possible seulement ({r.proof.via})", note=r.proof.note))
     for k in keywords:
-        if k["status"] == rq.PROVEN and not k["in_cv"] and k["priority"] != "NICE":
-            improve.append(_item("suggestion", f"Placer « {k['term']} » dans le CV : c'est prouvé ({', '.join(k['fact_ids'][:2])})."))
+        if has_cv and k["status"] == rq.PROVEN and not k["in_cv"] and k["priority"] != "NICE":
+            improve.append(_item("suggestion", f"Placer « {k['term']} » dans le CV : c'est prouvé par tes faits.", fact_ids=k["fact_ids"][:2]))
     for d in dims:
         if d["available"] and d["value"] is not None and d["value"] < 60 and d["id"] in ("parsing", "structure"):
             bad = [c for c in d["details"] if c["status"] != "OK"][:2]
@@ -65,9 +67,7 @@ def match_report(profile: MasterProfile, analysis: Analysis, match: Match, offer
     rules = rules or load_rules()
     reqs = rq.prove_all(rq.extract(analysis, offer_text), profile, analysis, rules, embedder=embedder)
     if cv is not None and cv_text is None:
-        from ..cv_architect import cv_plain_text
-
-        cv_text = cv_plain_text(cv)
+        cv_text = sc.doc_text(cv)
     keywords = sc.keyword_entries(analysis, reqs, cv_text, rules)
     dims = []
     v, d, s = sc.matching_dim(reqs)
@@ -99,7 +99,7 @@ def match_report(profile: MasterProfile, analysis: Analysis, match: Match, offer
     dims.append(sc.dimension("match", "conditions", v, d, s))
     main = ["parsing", "structure", "matching", "keywords", "experience", "factuality"]
     dims.sort(key=lambda x: main.index(x["id"]) if x["id"] in main else 99)
-    strengths, improve = _strengths_and_gaps(reqs, keywords, dims)
+    strengths, improve = _strengths_and_gaps(reqs, keywords, dims, has_cv=cv_text is not None)
     return {
         "mode": "cv_offer" if cv is not None or cv_text else "profile_offer",
         "engine": {"version": ENGINE_VERSION, "rules": rules.version},
@@ -125,9 +125,9 @@ def cv_report(text: str | None = None, pdf: bytes | None = None, *, rules: RuleS
         from .scanner import scan_pdf
 
         scan = scan_pdf(pdf)
-        from ..pdf_qa import extract_text
+        from .scanner import read_pdf
 
-        text = extract_text(pdf)
+        text = read_pdf(pdf)["text"]
     parsed = parse_cv_text(text or "")
     dims = []
     if scan:
@@ -138,7 +138,7 @@ def cv_report(text: str | None = None, pdf: bytes | None = None, *, rules: RuleS
         checks = [sc.crit("Coordonnées", "OK" if parsed.email and parsed.phone else "ERROR" if not parsed.email else "WARNING",
                           ", ".join(x for x, ok in (("e-mail", parsed.email), ("téléphone", parsed.phone)) if ok) or "absentes"),
                   sc.crit("Sections reconnues", "OK" if len(parsed.order) >= 3 else "WARNING", ", ".join(parsed.order) or "aucune"),
-                  sc.crit("Dates lisibles", "OK" if parsed.dates else "WARNING", f"{len(parsed.dates)} date(s)")]
+                  sc.crit("Dates lisibles", "OK" if parsed.dates else "WARNING", nb(len(parsed.dates), "date", "dates"))]
         v = 100 - sum(sc_pen(c["status"]) for c in checks)
         dims.append(sc.dimension("cv", "parsing", v, checks, "texte seul : la mise en page n'est pas contrôlée", measured=False))
     v, d = sc.structure_from_parsed(parsed)

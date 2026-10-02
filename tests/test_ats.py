@@ -205,6 +205,41 @@ def test_scanner_and_roundtrip_on_real_pdf(profile, tmp_path):
     assert rt["lost"] == ["Ligne disparue du PDF"] and rt["placeholders"] == ["undefined"]
 
 
+def _two_column_pdf() -> bytes:
+    """CV fictif sur deux colonnes : colonne principale écrite d'abord, colonne latérale ensuite (comme pdfmake)."""
+    import pymupdf
+
+    doc = pymupdf.open()
+    page = doc.new_page(width=595, height=842)
+    main = [(40, "Camille Test"), (56, "Paris | +33 6 00 00 00 00 | camille.test@example.org"), (100, "EXPÉRIENCE PROFESSIONNELLE"),
+            (118, "Business Developer"), (132, "Alpha Services · Paris 2023 – 2025"), (146, "Prospection B2B et suivi du pipeline HubSpot"),
+            (176, "Sales Advisor"), (190, "Maison Lumen · Paris 2021 – 2023"), (204, "Clientèle internationale premium")]
+    side = [(100, "COMPÉTENCES"), (118, "Prospection B2B"), (132, "HubSpot"), (176, "LANGUES"), (190, "Anglais courant"),
+            (230, "FORMATION"), (246, "Bachelor Commerce 2021")]
+    for y, text in main:
+        page.insert_text((50, y), text, fontsize=10)
+    for y, text in side:
+        page.insert_text((400, y), text, fontsize=10)
+    return doc.tobytes()
+
+
+def test_scanner_reads_two_columns_like_two_families_of_ats():
+    from pai.ats.cvimport import cv_text_from_file
+    from pai.ats.scanner import read_pdf, scan_pdf
+
+    pdf = _two_column_pdf()
+    reading = read_pdf(pdf)
+    # ligne à ligne, « EXPÉRIENCE PROFESSIONNELLE COMPÉTENCES » n'est plus un titre de section : structure perdue
+    assert reading["used"] == "flow" and reading["structure"]["rows"] < reading["structure"]["flow"]
+    report = scan_pdf(pdf, max_pages=1)
+    by_id = {c["id"]: c for c in report["checks"]}
+    assert by_id["columns"]["status"] == "WARNING" and "ligne à ligne" in by_id["columns"]["detail"]
+    assert by_id["sections"]["status"] == "OK" and by_id["experience"]["status"] == "OK"
+    # l'import d'un CV PDF garde la meilleure lecture (sections dans l'ordre)
+    text, _ = cv_text_from_file("cv.pdf", pdf)
+    assert text.index("EXPÉRIENCE PROFESSIONNELLE") < text.index("Business Developer") < text.index("COMPÉTENCES")
+
+
 # ── Variantes, corpus, changements ──────────────────────────────────────────────────────────────────
 @pytest.mark.parametrize("title,sector,expected", [
     ("Business Developer Junior", "", "BUSINESS_DEVELOPER"), ("Chargé d'affaires BTP", "", "CHARGE_AFFAIRES"),

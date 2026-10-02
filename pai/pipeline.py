@@ -27,7 +27,7 @@ from .rules import load_rules, prompts_version, truth_rules
 from .schemas import (Analysis, Answer, ApplicationPack, CvDocument, LetterDocument, Line, MasterProfile, Match, Offer,
                       Strategy, StrategyChoice, ValidationReport, Versions)
 from .strategy import deterministic_strategy, sanitize_strategy
-from .textnorm import stable_hash
+from .textnorm import nb, stable_hash
 
 Progress = Callable[[str, str], None]
 
@@ -337,7 +337,7 @@ class Pipeline:
         questions = split_questions(questions_raw)
         if not questions:
             return []
-        self._step("questions", f"{len(questions)} question(s)")
+        self._step("questions", nb(len(questions), "question", "questions"))
         v = self._common_vars(analysis)
         ai = self._try_ai("questions", lambda: self.provider.answer_question(
             questions="\n".join(f"- {q}" for q in questions), analysis_json=v["analysis_json"], facts_table=v["facts_table"],

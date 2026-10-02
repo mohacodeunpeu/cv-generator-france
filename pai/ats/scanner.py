@@ -4,6 +4,10 @@ Chaque contrôle rend OK / WARNING / ERROR avec une explication. Le score FORMAT
 (100 − 25 par ERROR − 8 par WARNING, borné à 0). S'y ajoute la relecture (`roundtrip`) : le texte extrait
 du PDF, relu par le parseur, doit contenir toutes les lignes du CV source (rien de perdu) et rien d'autre
 (rien d'inventé : aucun reste de gabarit, aucune valeur vide type « undefined »).
+
+Deux lectures, comme deux familles d'ATS : dans l'ordre du flux du fichier (PDFBox/Tika, pdf.js) et ligne à ligne
+(par position, comme pdftotext -layout). Les sections sont jugées sur la meilleure des deux ; l'écart entre les deux
+(colonnes mêlées par une lecture ligne à ligne, flux désordonné) est signalé dans le contrôle « Colonnes ».
 """
 
 from __future__ import annotations
@@ -12,8 +16,8 @@ import io
 import re
 from typing import Any
 
-from ..pdf_qa import check_pdf, extract_text
-from ..textnorm import norm
+from ..pdf_qa import check_pdf, extract_text, extract_text_flow
+from ..textnorm import nb, norm
 from .parser import LABELS as SECTION_LABELS
 from .parser import parse_cv_text
 
@@ -81,16 +85,35 @@ def roundtrip(source_lines: list[str], extracted: str, allowed: list[str] | None
         known |= set(re.findall(r"[a-z0-9][a-z0-9'+#.-]*", norm(text)))
     extra = sorted({t for t in flat_tokens if len(t) >= 3 and not t.isdigit() and t not in known
                     and t.rstrip(".,;:") not in known})
-    placeholders = sorted({m.group(0) for m in _PLACEHOLDERS.finditer(flat)})
+    source_flat = norm(" ".join([*source_lines, *(allowed or [])]))
+    # un mot de gabarit n'est une erreur que s'il ne vient pas du CV lui-même (« second to none » reste légitime)
+    placeholders = sorted({m.group(0) for m in _PLACEHOLDERS.finditer(flat) if m.group(0) not in source_flat})
     return {"lost": lost[:12], "lost_count": len(lost), "unexpected": extra[:15], "unexpected_count": len(extra),
             "placeholders": placeholders, "source_lines": len(source_lines)}
+
+
+def _structure(parsed: Any) -> int:
+    """Ce qu'une lecture a su structurer : sections clés reconnues + expériences datées (plafonnées)."""
+    return sum(s in parsed.order for s in ("experience", "education", "skills")) + min(
+        sum(1 for e in parsed.experiences if e.start), 3)
+
+
+def read_pdf(pdf: bytes) -> dict[str, Any]:
+    """Les deux lectures d'un PDF et la meilleure (à égalité : l'ordre du flux)."""
+    texts = {"flow": extract_text_flow(pdf), "rows": extract_text(pdf)}
+    parses = {k: parse_cv_text(v) for k, v in texts.items()}
+    scores = {k: _structure(v) for k, v in parses.items()}
+    used = max(("flow", "rows"), key=lambda k: scores[k])
+    return {"text": texts[used], "parsed": parses[used], "used": used, "structure": scores}
 
 
 def scan_pdf(pdf: bytes, *, max_pages: int = 2, source_lines: list[str] | None = None,
              allowed: list[str] | None = None) -> dict[str, Any]:
     qa = check_pdf(pdf, expect_pages=max_pages)
-    text = extract_text(pdf)
-    parsed = parse_cv_text(text)
+    reading = read_pdf(pdf)
+    text, parsed = reading["text"], reading["parsed"]
+    mixed = reading["structure"]["rows"] < reading["structure"]["flow"]
+    disordered = reading["structure"]["flow"] < reading["structure"]["rows"]
     lay = _layout(pdf)
     checks: list[dict[str, str]] = []
 
@@ -99,32 +122,36 @@ def scan_pdf(pdf: bytes, *, max_pages: int = 2, source_lines: list[str] | None =
                          f"{chars} caractères lus" if chars >= 300 else "Peu ou pas de texte lisible : un ATS ne lira rien (PDF image ?)."))
     cid = text.count("(cid:") + text.count("�")
     checks.append(_check("encoding", "Encodage des caractères", ERROR if cid else OK,
-                         f"{cid} caractère(s) illisible(s) (police sans table Unicode)" if cid else "Caractères correctement encodés"))
+                         f"{nb(cid, 'caractère illisible', 'caractères illisibles')} (police sans table Unicode)" if cid else "Caractères correctement encodés"))
     pua, lig, emo = len(_PRIVATE_USE.findall(text)), len(_LIGATURES.findall(text)), len(_EMOJI.findall(text))
     odd = pua + lig + emo
     checks.append(_check("characters", "Caractères spéciaux", WARNING if odd else OK,
-                         f"{pua} pictogramme(s) de police, {lig} ligature(s), {emo} emoji" if odd else "Aucun caractère à risque"))
+                         f"{nb(pua, 'pictogramme', 'pictogrammes')} de police, {nb(lig, 'ligature', 'ligatures')}, {nb(emo, 'emoji', 'emojis')}" if odd else "Aucun caractère à risque"))
     pages = qa.get("pages", 0)
     checks.append(_check("pages", "Pagination", OK if pages <= max_pages else WARNING if pages == max_pages + 1 else ERROR,
-                         f"{pages} page(s) (maximum conseillé : {max_pages})"))
+                         f"{nb(pages, 'page', 'pages')} (maximum conseillé : {max_pages})"))
     over = qa.get("overflow_spans", 0)
     checks.append(_check("overflow", "Débordement", ERROR if over else OK,
-                         f"{over} segment(s) hors de la zone imprimable" if over else "Tout le texte tient dans la page"))
-    checks.append(_check("columns", "Colonnes", WARNING if lay["columns"] > 1 else OK,
-                         "Mise en page sur plusieurs colonnes : certains ATS mélangent l'ordre de lecture"
-                         if lay["columns"] > 1 else "Une seule colonne de lecture"))
+                         f"{nb(over, 'segment', 'segments')} hors de la zone imprimable" if over else "Tout le texte tient dans la page"))
+    checks.append(_check("columns", "Colonnes", WARNING if lay["columns"] > 1 or mixed or disordered else OK,
+                         "Plusieurs colonnes : un ATS qui lit ligne à ligne les mélange (sections moins bien reconnues) ; "
+                         "un ATS qui suit l'ordre du fichier les lit correctement" if mixed else
+                         "Ordre interne du fichier désordonné : un ATS qui suit le flux du PDF lit dans le désordre ; "
+                         "la lecture ligne à ligne est correcte" if disordered else
+                         "Plusieurs colonnes : les deux ordres de lecture reconnaissent les mêmes sections, "
+                         "mais certains ATS peuvent mêler les lignes" if lay["columns"] > 1 else "Une seule colonne de lecture"))
     checks.append(_check("tables", "Tableaux", WARNING if lay["tables"] else OK,
-                         f"{lay['tables']} tableau(x) détecté(s) : contenu parfois mal lu" if lay["tables"] else "Aucun tableau"))
+                         f"{nb(lay['tables'], 'tableau détecté', 'tableaux détectés')} : contenu parfois mal lu" if lay["tables"] else "Aucun tableau"))
     img_only = lay["images"] - lay["icons"]
     checks.append(_check("images", "Images", ERROR if img_only and chars < 300 else WARNING if img_only > 1 else OK,
-                         f"{lay['images']} image(s) dont {lay['icons']} pictogramme(s)" if lay["images"] else "Aucune image"))
+                         f"{nb(lay['images'], 'image', 'images')} dont {nb(lay['icons'], 'pictogramme', 'pictogrammes')}" if lay["images"] else "Aucune image"))
     checks.append(_check("textboxes", "Zones de texte pivotées", WARNING if lay["rotated_spans"] else OK,
-                         f"{lay['rotated_spans']} ligne(s) pivotée(s)" if lay["rotated_spans"] else "Aucun texte pivoté"))
+                         nb(lay['rotated_spans'], 'ligne pivotée', 'lignes pivotées') if lay["rotated_spans"] else "Aucun texte pivoté"))
     fonts_ok = not lay["type3_fonts"]
     small = qa.get("min_font_pt")
     checks.append(_check("fonts", "Polices", OK if fonts_ok and (small is None or small >= 7.5) else WARNING,
-                         (f"{len(qa.get('fonts', []))} police(s), taille minimale {small} pt" if fonts_ok else
-                          f"{lay['type3_fonts']} police(s) Type3 (texte parfois illisible)")))
+                         (f"{nb(len(qa.get('fonts', [])), 'police', 'polices')}, taille minimale {small} pt" if fonts_ok else
+                          f"{nb(lay['type3_fonts'], 'police', 'polices')} Type3 (texte parfois illisible)")))
     email_ok, phone_ok = bool(parsed.email), bool(parsed.phone)
     checks.append(_check("contact", "Coordonnées", OK if email_ok and phone_ok else ERROR if not email_ok else WARNING,
                          "E-mail et téléphone lus" if email_ok and phone_ok else
@@ -139,23 +166,24 @@ def scan_pdf(pdf: bytes, *, max_pages: int = 2, source_lines: list[str] | None =
     checks.append(_check("experience", "Expériences et dates",
                          OK if parsed.experiences and len(dated) == len(parsed.experiences) else
                          WARNING if parsed.experiences else ERROR,
-                         f"{len(parsed.experiences)} expérience(s) lue(s), {len(dated)} datée(s)" if parsed.experiences
+                         f"{nb(len(parsed.experiences), 'expérience lue', 'expériences lues')}, {nb(len(dated), 'datée', 'datées')}" if parsed.experiences
                          else "Aucune expérience datée reconnue"))
     checks.append(_check("education", "Formation", OK if parsed.education else WARNING,
-                         f"{len(parsed.education)} ligne(s) de formation" if parsed.education else "Formation introuvable"))
+                         f"{nb(len(parsed.education), 'ligne', 'lignes')} de formation" if parsed.education else "Formation introuvable"))
 
     report: dict[str, Any] = {"checks": checks, "pages": pages, "text_chars": chars, "layout": lay,
+                              "reading": {"used": reading["used"], "structure": reading["structure"]},
                               "parsed": parsed.as_dict(), "qa": {k: v for k, v in qa.items() if k != "issues"}}
     if source_lines is not None:
         rt = roundtrip(source_lines, text, allowed)
         report["roundtrip"] = rt
         checks.append(_check("lost", "Rien de perdu", OK if not rt["lost_count"] else ERROR,
                              "Toutes les lignes du CV sont relues dans le PDF" if not rt["lost_count"]
-                             else f"{rt['lost_count']} ligne(s) du CV introuvable(s) dans le PDF"))
+                             else f"{nb(rt['lost_count'], 'ligne du CV introuvable', 'lignes du CV introuvables')} dans le PDF"))
         bad = rt["placeholders"]
         checks.append(_check("added", "Rien d'ajouté", ERROR if bad else WARNING if rt["unexpected_count"] > 8 else OK,
                              f"Texte de gabarit dans le PDF : {', '.join(bad)}" if bad else
-                             f"{rt['unexpected_count']} mot(s) sans origine dans le CV source" if rt["unexpected_count"] > 8
+                             f"{nb(rt['unexpected_count'], 'mot', 'mots')} sans origine dans le CV source" if rt["unexpected_count"] > 8
                              else "Aucun texte sans origine"))
     report["score"] = max(0, 100 - sum(PENALTY[c["status"]] for c in checks))
     report["status"] = ERROR if any(c["status"] == ERROR for c in checks) else WARNING if any(

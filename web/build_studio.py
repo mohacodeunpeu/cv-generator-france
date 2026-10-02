@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from pai import ENGINE_VERSION  # noqa: E402
+from pai.ats import studio_payload as ats_payload  # noqa: E402
 from pai.rules import load_prompts, load_rules, prompts_version  # noqa: E402
 
 STUDIO = ROOT / "web" / "studio"
@@ -79,6 +80,7 @@ def studio_data() -> dict:
         "models": {k: rules.models.get(k) for k in ("artifact_tiers", "modes", "generation")},
         "brand": rules.brand,
         "prompts": prompts,
+        "ats": ats_payload(),
     }
 
 
@@ -109,6 +111,7 @@ def build(output: Path | None = None, server: bool = False) -> str:
     html = html.replace("/*@DATA@*/", f"window.PAI_DATA = {data};")
     html = html.replace("/*@FONTS@*/", "window.PAI_FONTS = " + json.dumps(fonts, separators=(",", ":")) + ";")
     html = html.replace("/*@ENGINE@*/", (STUDIO / "engine.js").read_text(encoding="utf-8"))
+    html = html.replace("/*@ATS@*/", (STUDIO / "ats.js").read_text(encoding="utf-8"))
     html = html.replace("/*@DESIGNS@*/", (STUDIO / "designs.js").read_text(encoding="utf-8"))
     html = html.replace("/*@APP@*/", app_source())
     out = output or DIST / ("pai_studio_server.html" if server else "pai_studio.html")

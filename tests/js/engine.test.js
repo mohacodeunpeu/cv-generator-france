@@ -44,6 +44,12 @@ test('analyse d\'offre : parité avec Python sur les offres du benchmark', { ski
     assert.equal(a.country, item.country, `${item.id} pays`);
     assert.equal(a.language_of_offer, item.language_of_offer, `${item.id} langue`);
     assert.deepEqual(a.keywords.filter((k) => k.priority === 'REQUIRED').map((k) => E.norm(k.term)).sort(), item.required.map(E.norm).sort(), `${item.id} REQUIRED`);
+    if (item.missions) {
+      assert.deepEqual(a.missions, item.missions, `${item.id} missions`);
+      assert.deepEqual((a.recruiter_wants || {}).explicit || [], item.explicit, `${item.id} profil recherché`);
+      assert.equal(a.degree_required, item.degree_required, `${item.id} diplôme`);
+      assert.equal(a.experience_years_min, item.experience_years_min, `${item.id} années`);
+    }
   }
 });
 

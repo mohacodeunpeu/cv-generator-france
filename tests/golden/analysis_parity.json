@@ -15,7 +15,23 @@
    "b2b",
    "linkedin sales navigator",
    "hubspot"
-  ]
+  ],
+  "missions": [
+   "Prospecter de nouveaux clients PME par téléphone, email et LinkedIn (outbound).",
+   "Qualifier les leads entrants et générer des rendez-vous pour les Account Executives.",
+   "Suivre votre pipeline dans HubSpot et reporter vos résultats chaque semaine.",
+   "Participer aux salons professionnels et aux campagnes de prospection."
+  ],
+  "explicit": [
+   "Bac+3 minimum (école de commerce ou université).",
+   "Une première expérience en prospection B2B est indispensable (stage, alternance ou CDI).",
+   "Maîtrise d'un CRM (HubSpot idéalement) et de LinkedIn Sales Navigator.",
+   "Anglais courant requis : 30 % de nos prospects sont à l'international.",
+   "Ténacité, sens de l'organisation, goût du challenge.",
+   "Rémunération : 34 à 38 k€ fixe + variable jusqu'à 8 k€. Télétravail 2 jours par semaine."
+  ],
+  "degree_required": "Bac+3",
+  "experience_years_min": null
  },
  {
   "id": "am_media_ladefense",
@@ -31,7 +47,22 @@
    "excel",
    "portefeuille clients",
    "b2b"
-  ]
+  ],
+  "missions": [
+   "Gérer et développer un portefeuille d'une trentaine de comptes clés (annonceurs et agences).",
+   "Identifier les opportunités d'upsell et de cross-sell, négocier les renouvellements.",
+   "Construire les bilans de campagne et les business reviews trimestrielles.",
+   "Assurer le reporting d'activité (Excel, tableaux de bord) auprès de la direction commerciale."
+  ],
+  "explicit": [
+   "2 ans d'expérience minimum en gestion de portefeuille clients B2B.",
+   "Excellent relationnel et capacité à négocier avec des décideurs.",
+   "Maîtrise d'Excel indispensable ; Salesforce est un plus.",
+   "Anglais professionnel.",
+   "Salaire : 40-45 k€ + variable. Mutuelle, tickets restaurant, 2 jours de télétravail."
+  ],
+  "degree_required": "UNKNOWN",
+  "experience_years_min": 2.0
  },
  {
   "id": "vie_barcelona",
@@ -44,7 +75,23 @@
   "language_of_offer": "fr",
   "required": [
    "espagnol"
-  ]
+  ],
+  "missions": [
+   "Développer le portefeuille de clients B2B (distributeurs, installateurs) sur la zone Catalogne.",
+   "Prospecter, organiser les rendez-vous, préparer les offres commerciales avec le siège.",
+   "Représenter l'entreprise sur les salons professionnels locaux.",
+   "Remonter les informations marché au siège (reporting mensuel dans le CRM)."
+  ],
+  "explicit": [
+   "Formation Bac+3 à Bac+5 en commerce.",
+   "Espagnol courant impératif ; anglais professionnel.",
+   "Première expérience commerciale ou en prospection B2B.",
+   "Autonomie, adaptabilité, goût de l'international.",
+   "Éligibilité au VIE requise.",
+   "Indemnité VIE selon le barème Business France. Départ : janvier 2027."
+  ],
+  "degree_required": "Bac+3",
+  "experience_years_min": null
  },
  {
   "id": "vie_dubai_en",
@@ -57,7 +104,23 @@
   "language_of_offer": "en",
   "required": [
    "english"
-  ]
+  ],
+  "missions": [
+   "Generate and qualify B2B leads across the UAE and Saudi Arabia.",
+   "Run outbound campaigns (calls, emails, LinkedIn) and book meetings for the Regional Sales Manager.",
+   "Keep the CRM up to date and report weekly on pipeline metrics.",
+   "Support the team at trade shows (Gitex, The Hotel Show)."
+  ],
+  "explicit": [
+   "Bachelor's degree in business or equivalent.",
+   "Fluent English is required; Arabic is a strong plus.",
+   "First experience in B2B prospecting or sales.",
+   "Comfortable with CRM tools and LinkedIn Sales Navigator.",
+   "Eligible for the V.I.E program.",
+   "Package: V.I.E allowance (Business France scale), start date: February 2027."
+  ],
+  "degree_required": "Bac+3",
+  "experience_years_min": null
  },
  {
   "id": "commercial_terrain_lyon",
@@ -70,7 +133,21 @@
   "language_of_offer": "fr",
   "required": [
    "permis b"
-  ]
+  ],
+  "missions": [
+   "Développer un secteur géographique : prospection terrain, rendez-vous clients, négociation.",
+   "Fidéliser un portefeuille existant de 150 clients PME.",
+   "Atteindre vos objectifs mensuels de chiffre d'affaires.",
+   "Saisir votre activité dans notre CRM."
+  ],
+  "explicit": [
+   "Permis B obligatoire (véhicule de fonction fourni).",
+   "Expérience réussie en vente BtoB, idéalement terrain.",
+   "Aisance relationnelle, sens de la négociation, rigueur.",
+   "Rémunération : 28 k€ fixe + commissions (45 k€ annuels possibles). Véhicule, téléphone, ordinateur."
+  ],
+  "degree_required": "UNKNOWN",
+  "experience_years_min": null
  },
  {
   "id": "recrutement_paris",
@@ -83,7 +160,23 @@
   "language_of_offer": "fr",
   "required": [
    "excel"
-  ]
+  ],
+  "missions": [
+   "Recueillir les besoins des entreprises clientes et rédiger les annonces.",
+   "Sourcer les candidats (jobboards, réseaux sociaux, partenaires emploi) et mener les entretiens.",
+   "Organiser des sessions de recrutement collectives et des job datings.",
+   "Travailler avec France Travail sur les dispositifs de formation (POEI) : un plus apprécié.",
+   "Développer la relation avec les entreprises clientes du secteur."
+  ],
+  "explicit": [
+   "Bac+2/3 en RH ou commerce.",
+   "Première expérience en recrutement ou en agence d'emploi.",
+   "Excellent sens relationnel, organisation, réactivité.",
+   "Maîtrise des outils bureautiques (Excel).",
+   "Salaire : 30 k€ annuel brut + primes. Démarrage immédiat."
+  ],
+  "degree_required": "Bac+2",
+  "experience_years_min": null
  },
  {
   "id": "retail_luxe_paris",
@@ -96,7 +189,22 @@
   "language_of_offer": "fr",
   "required": [
    "anglais"
-  ]
+  ],
+  "missions": [
+   "Offrir une expérience client d'exception à une clientèle locale et internationale.",
+   "Développer et fidéliser votre clientèle (clienteling, suivi des clients privilégiés).",
+   "Atteindre vos objectifs individuels de vente.",
+   "Participer à la mise en valeur des collections en boutique."
+  ],
+  "explicit": [
+   "Expérience réussie dans la vente en environnement premium ou luxe.",
+   "Anglais courant indispensable ; mandarin ou arabe très appréciés.",
+   "Présentation soignée, sens du service, élégance du discours.",
+   "Disponibilité le samedi.",
+   "Rémunération attractive (fixe + variable sur objectifs individuels et collectifs)."
+  ],
+  "degree_required": "UNKNOWN",
+  "experience_years_min": null
  },
  {
   "id": "digital_project_paris",
@@ -109,7 +217,22 @@
   "language_of_offer": "fr",
   "required": [
    "WIX"
-  ]
+  ],
+  "missions": [
+   "Piloter les projets clients de la prise de brief à la mise en ligne.",
+   "Construire et optimiser des sites sous Wix et WordPress.",
+   "Améliorer les taux de conversion des landing pages (tests, UX, contenus).",
+   "Produire des visuels simples (Canva) et coordonner les rédacteurs."
+  ],
+  "explicit": [
+   "Première expérience en gestion de projets web.",
+   "Maîtrise de Wix ; WordPress et notions de SEO appréciés.",
+   "Sens du client, autonomie, organisation.",
+   "Anglais lu et écrit.",
+   "32-36 k€ selon profil. Télétravail partiel."
+  ],
+  "degree_required": "UNKNOWN",
+  "experience_years_min": null
  },
  {
   "id": "customer_success_paris",
@@ -123,7 +246,22 @@
   "required": [
    "crm",
    "hubspot"
-  ]
+  ],
+  "missions": [
+   "Assurer l'onboarding des nouveaux clients et l'adoption de la plateforme.",
+   "Suivre la satisfaction (NPS) et réduire le churn de ton portefeuille.",
+   "Identifier les opportunités d'expansion avec l'équipe commerciale.",
+   "Animer des business reviews et suivre tes KPI dans HubSpot."
+  ],
+  "explicit": [
+   "1 à 3 ans d'expérience en relation client B2B, account management ou customer success.",
+   "Excellente communication, pédagogie, sens de l'organisation.",
+   "HubSpot ou autre CRM : requis.",
+   "Anglais professionnel.",
+   "38-44 k€ + bonus. 3 jours de télétravail."
+  ],
+  "degree_required": "UNKNOWN",
+  "experience_years_min": 1.0
  },
  {
   "id": "adv_montreuil",
@@ -136,7 +274,21 @@
   "language_of_offer": "fr",
   "required": [
    "SAP"
-  ]
+  ],
+  "missions": [
+   "Établir les devis et saisir les commandes clients dans SAP.",
+   "Suivre les livraisons, la facturation et les relances.",
+   "Tenir les tableaux de bord de l'activité commerciale (Excel).",
+   "Être l'interlocuteur des clients professionnels et des commerciaux terrain."
+  ],
+  "explicit": [
+   "Maîtrise de SAP obligatoire.",
+   "Excel avancé (tableaux croisés dynamiques).",
+   "Rigueur, organisation, sens du service client.",
+   "Bac+2 minimum."
+  ],
+  "degree_required": "Bac+2",
+  "experience_years_min": null
  },
  {
   "id": "evenementiel_paris",
@@ -147,7 +299,21 @@
   "contract": "CDD",
   "country": "FR",
   "language_of_offer": "fr",
-  "required": []
+  "required": [],
+  "missions": [
+   "Accueillir les demandes, construire les propositions et suivre les réservations d'événements.",
+   "Coordonner les équipes internes (banquets, cuisine, technique) et les prestataires.",
+   "Assurer l'accueil des clients le jour J et le suivi après l'événement.",
+   "Contribuer à la fidélisation de la clientèle entreprises."
+  ],
+  "explicit": [
+   "Première expérience en hôtellerie, événementiel ou vente premium.",
+   "Anglais courant ; une troisième langue est un atout.",
+   "Sens de l'accueil, organisation, gestion du stress.",
+   "Horaires variables selon les événements. Salaire selon profil."
+  ],
+  "degree_required": "UNKNOWN",
+  "experience_years_min": null
  },
  {
   "id": "client_relations_london_en",
@@ -161,7 +327,22 @@
   "required": [
    "english",
    "french"
-  ]
+  ],
+  "missions": [
+   "Be the first point of contact for French-speaking private clients (phone, email, chat).",
+   "Handle requests end to end: reservations, gifts, travel arrangements.",
+   "Build long-term relationships and anticipate client needs.",
+   "Keep client records accurate in our CRM."
+  ],
+  "explicit": [
+   "Native French and fluent English are essential.",
+   "Experience in premium retail, hospitality or client services.",
+   "Outstanding service mindset, discretion and organisation.",
+   "Arabic or Spanish would be an advantage.",
+   "Salary: £30,000–£34,000. Hybrid after probation."
+  ],
+  "degree_required": "UNKNOWN",
+  "experience_years_min": null
  },
  {
   "id": "head_of_sales_paris",
@@ -176,6 +357,21 @@
    "vente",
    "b2b",
    "Salesforce"
-  ]
+  ],
+  "missions": [
+   "Manager une équipe de 8 commerciaux (SDR et Account Executives) et la faire grandir.",
+   "Définir la stratégie commerciale et le plan de prospection grands comptes.",
+   "Piloter le forecast, le pipeline et les KPI sous Salesforce.",
+   "Recruter et former les nouveaux commerciaux."
+  ],
+  "explicit": [
+   "10 ans d'expérience minimum dans la vente SaaS B2B, dont 4 ans de management d'équipe.",
+   "Master ou école de commerce.",
+   "Maîtrise de Salesforce indispensable.",
+   "Anglais bilingue.",
+   "Package : 90-110 k€ + variable + BSPCE."
+  ],
+  "degree_required": "Bac+5",
+  "experience_years_min": 10.0
  }
 ]

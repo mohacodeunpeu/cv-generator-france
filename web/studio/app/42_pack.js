@@ -19,7 +19,7 @@ V.pack = () => {
       <div class="stack tight"><button class="linkish back" data-act="go" data-arg="packs">${icon('i-back')} Application Packs</button>
         <h1 class="title">${esc(a.job_title)}</h1>
         <div class="meta-row"><span>${esc(disp(a.company, 'company'))}</span><span class="sep">·</span><span>${esc(disp(a.location, 'location'))}</span><span class="sep">·</span><span>${esc(disp(a.contract, 'contract'))}</span><span class="sep">·</span><span>${esc(E.sector(a.sector_id).name || a.sector_id)}</span>
-          ${chip(p.status, p.status === 'FINAL' ? 'good' : 'warn')}${p.offer.synthetic ? '<span class="tag-ds synthetic">SYNTHETIC</span>' : ''}</div></div>
+          ${packChip(p.status)}${p.offer.synthetic ? '<span class="tag-ds synthetic">SYNTHETIC</span>' : ''}</div></div>
       <div class="row">${hasDocs ? `<button class="btn primary" data-act="dl-zip">${icon('i-download')} Télécharger le pack</button><button class="btn" data-act="dl-cv">CV</button><button class="btn" data-act="dl-letter">Lettre</button>` : `<button class="btn primary" data-act="rerun-standard">${icon('i-spark')} Générer CV et lettre</button>`}
         <button class="btn ghost" data-act="pack-tab" data-arg="offer">${icon('i-eye')} Voir l'offre</button>${p.cvs.length > 1 ? `<button class="btn ghost" data-act="pack-tab" data-arg="versions">${icon('i-compare')} Voir les changements</button>` : ''}</div></header>
     <div class="tabs" role="tablist">${PACK_TABS.map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" data-act="pack-tab" data-arg="${k}" ${!hasDocs && ['cv', 'letter', 'questions', 'versions'].includes(k) ? 'disabled' : ''}>${l}</button>`).join('')}</div>
@@ -27,36 +27,43 @@ V.pack = () => {
 };
 
 function packOverview(p) {
-  const e = p.cvs.length ? p.cvs[p.cv_index] : null; const L = p.letters.length ? p.letters[p.letter_index] : null; const m = p.match;
+  const e = p.cvs.length ? p.cvs[p.cv_index] : null; const L = p.letters.length ? p.letters[p.letter_index] : null;
   const fam = e ? e.doc.design_profile : p.design ? p.design.design : 'ats_hybrid';
-  const glance = [['Correspondance', m.match, ''], ['Exigences prouvées', m.quality, ' %'], ['Risque de rejet', m.risk, ''], ['Factualité', e ? p.scores.factuality_cv : null, ' %']];
-  return `<div class="overview">
-    <div class="stack loose">${e ? `<div class="desk" style="padding:52px 40px 60px"><div class="doc-stack"><div class="front">${cvPaper(e.doc, { width: 680 })}</div>${L ? `<div class="back">${letterPaper(L.doc, e.doc, { width: 560 })}</div>` : ''}</div></div>
-      <div class="row"><button class="cta" data-act="pack-tab" data-arg="cv">${icon('i-layout')} Ouvrir dans CV Studio</button><button class="btn lg" data-act="pack-tab" data-arg="letter">Letter Studio</button><button class="btn lg ghost" data-act="open-lab" data-arg="${esc(p.id)}">${icon('i-flask')} Donner mon avis</button></div>`
-    : `<div class="desk" style="padding:60px 40px;text-align:center"><div class="stack" style="align-items:center"><h2 class="h2">Analyse seule</h2><p class="lede">L'offre est analysée et la stratégie choisie. Lance la génération complète pour obtenir le CV, la lettre et le contrôle du PDF.</p><button class="cta" data-act="rerun-standard">${icon('i-spark')} Générer CV et lettre</button></div></div>`}</div>
-    <div class="stack loose">
-      <div class="glance">${glance.map(([l, v, u]) => `<div><div class="v">${v === null || v === undefined ? '—' : `${pct(v)}${u ? `<small>${u}</small>` : ''}`}</div><div class="l">${l}</div></div>`).join('')}</div>
-      <div class="nba" style="width:100%">${icon('i-bolt')}<div class="t"><span class="kicker">Prochaine action</span>${esc(p.next_action)}</div></div>
-      <section class="card">${companyCardHtml(p.company || E.companyCard(p.analysis, p.offer))}</section>
-      ${p.design ? `<section class="card stack"><div class="card-head" style="margin:0"><h3 class="h3">Design</h3>${chip(DESIGN_NAME(fam), 'gold')}</div><div class="design-decision">${designMini(DS.familyOf(fam), e ? e.doc.palette : p.design.palette)}<span class="small muted">${esc((D.designs[DS.familyOf(fam)] || {}).pitch || '')}</span></div>${whyDesign(p.design)}</section>` : ''}
-      <section class="card"><dl class="kv"><dt>Créé</dt><dd>${fmtTime(p.created_at)}</dd><dt>Mode</dt><dd>${esc(MODE_INFO[p.mode] ? MODE_INFO[p.mode][0] : p.mode)}</dd><dt>IA</dt><dd>${esc(p.provider)}</dd><dt>Versions du CV</dt><dd>${p.cvs.length}</dd><dt>Source</dt><dd>${esc(({ url: 'lien', pdf: 'PDF', text: 'texte collé' })[p.offer.source_type] || p.offer.source_type)}</dd></dl></section>
-    </div></div>`;
+  const r = atsFor(p, e); const s = p.strategy.best;
+  const docs = e ? `<div class="desk" style="padding:48px 36px 56px"><div class="doc-stack"><div class="front">${cvPaper(e.doc, { width: 680 })}</div>${L ? `<div class="back">${letterPaper(L.doc, e.doc, { width: 560 })}</div>` : ''}</div></div>
+      <div class="row"><button class="cta" data-act="pack-tab" data-arg="cv">${icon('i-layout')} Ouvrir dans CV Studio</button><button class="btn lg" data-act="pack-tab" data-arg="letter">Lettre Studio</button><button class="btn lg" data-act="dl-zip">${icon('i-download')} Télécharger le pack</button><button class="btn lg ghost" data-act="open-lab" data-arg="${esc(p.id)}">${icon('i-flask')} Donner mon avis</button></div>`
+    : `<div class="desk" style="padding:56px 40px;text-align:center"><div class="stack" style="align-items:center"><h3 class="h2">Analyse seule</h3><p class="lede">L'offre est analysée, le Score PAI calculé et la stratégie choisie. Lance la génération complète pour obtenir le CV, la lettre et la relecture du PDF.</p><button class="cta" data-act="rerun-standard">${icon('i-spark')} Générer CV et lettre</button></div></div>`;
+  return `<div class="overview2">
+    ${r ? scorePanel(r) : ''}
+    <div class="nba" style="width:100%">${icon('i-bolt')}<div class="t"><span class="kicker">Prochaine action</span>${esc(p.next_action)}</div></div>
+    ${r ? strengthsPanel(r) : ''}
+    ${r ? `<section class="card"><div class="card-head"><h3 class="h3">Exigences de l'offre</h3><span class="hint">classées puis comparées à tes faits</span></div>${requirementsPanel(r)}</section>
+      <section class="card"><div class="card-head"><h3 class="h3">Mots-clés</h3><span class="hint">${icon('i-check')} présent dans le CV</span></div>${keywordsPanel(r)}</section>` : ''}
+    <section class="card"><div class="card-head"><h3 class="h3">Stratégie CV</h3>${r ? chip(`CV ${r.variant.label}`, 'gold') : ''}</div>
+      <div class="grid g2"><div class="stack tight"><span class="kicker quiet">Titre et angle</span><b style="font-size:17px">« ${esc(s.title)} »</b><span class="small">${esc(s.hook || '')}</span><span class="hint">${esc(s.why || p.strategy.comparison || '')}</span></div>
+        <div class="stack tight"><span class="kicker quiet">Variante et design</span><span class="small">${r ? `${esc(r.variant.label)} : ${esc(r.variant.angle)} <span class="muted">(${esc(r.variant.why)})</span>` : ''}</span>
+          ${p.design ? `<div class="design-decision">${designMini(DS.familyOf(fam), e ? e.doc.palette : p.design.palette)}<span class="small muted">${esc(DESIGN_NAME(fam))} · ${esc((D.designs[DS.familyOf(fam)] || {}).pitch || '')}</span></div>${whyDesign(p.design)}` : ''}</div></div></section>
+    <section class="card stack"><div class="card-head"><h3 class="h3">Documents</h3>${chip(p.status === 'FINAL' ? 'Final' : 'Brouillon', p.status === 'FINAL' ? 'good' : 'warn')}</div>${docs}</section>
+    <div class="grid g2"><section class="card">${companyCardHtml(p.company || E.companyCard(p.analysis, p.offer))}</section>
+      <section class="card"><dl class="kv"><dt>Créé</dt><dd>${fmtTime(p.created_at)}</dd><dt>Mode</dt><dd>${esc(MODE_INFO[p.mode] ? MODE_INFO[p.mode][0] : p.mode)}</dd><dt>IA</dt><dd>${esc(p.provider)}</dd><dt>Versions du CV</dt><dd>${p.cvs.length}</dd><dt>Source</dt><dd>${esc(({ url: 'lien', pdf: 'PDF', text: 'texte collé', html: 'page HTML', file: 'fichier' })[p.offer.source_type] || p.offer.source_type)}</dd></dl></section></div>
+  </div>`;
 }
 
 function packOffer(p) {
   const a = p.analysis; const m = p.match; const o = p.offer;
-  const cov = m.coverage.map((c) => `<span class="chip ${c.covered ? 'good' : c.priority === 'REQUIRED' ? 'bad' : 'warn'}" title="${esc(c.covered ? `Prouvé par ${c.fact_ids.join(', ')} (${c.via})` : 'Aucun fait ne le prouve')}">${c.covered ? '✓' : '✗'} ${esc(c.term)} <span class="mono">${esc(c.priority[0])}</span></span>`).join(' ');
+  const cov = m.coverage.map((c) => `<span class="chip ${c.covered ? 'good' : c.priority === 'REQUIRED' ? 'bad' : 'warn'}" title="${esc(c.covered ? 'Prouvé par tes faits' : 'Aucun fait ne le prouve')}">${c.covered ? '✓' : '✗'} ${esc(c.term)}</span>`).join(' ');
   const list = (items, key = 'text') => (items && items.length ? `<ul class="why-list">${items.map((x) => `<li><span>${esc(typeof x === 'string' ? x : x[key] || x.requirement || '')}${x.fact_ids && x.fact_ids.length ? ` ${fids(x.fact_ids)}` : ''}</span></li>`).join('')}</ul>` : '<p class="muted small" style="margin:0">—</p>');
   return `<div class="split"><div class="card stack"><div class="card-head"><h3 class="h3">Texte de l'offre</h3><div class="row">${o.source_url ? `<a class="btn sm" href="${esc(o.source_url)}" target="_blank" rel="noopener noreferrer">${icon('i-link')} Ouvrir l'annonce</a>` : ''}${chip(({ url: 'Lien', pdf: 'PDF', text: 'Texte collé' })[o.source_type] || o.source_type)}</div></div>
       <div class="offer-text">${esc(o.text)}</div><p class="hint" style="margin:0">Empreinte ${esc(o.text_hash)} · lue le ${fmtTime(o.fetched_at)}${o.source_url ? ` · ${esc(hostOf(o.source_url))}` : ''}</p></div>
     <div class="stack"><div class="card"><h3 class="h3">Ce que PAI a compris</h3><dl class="kv" style="margin-top:12px"><dt>Poste</dt><dd>${esc(a.job_title)}</dd><dt>Entreprise</dt><dd>${esc(disp(a.company, 'company'))}</dd><dt>Lieu</dt><dd>${esc(disp(a.location, 'location'))}</dd><dt>Contrat</dt><dd>${esc(disp(a.contract, 'contract'))}</dd><dt>Secteur</dt><dd>${esc(E.sector(a.sector_id).name || a.sector_id)}</dd><dt>Niveau</dt><dd>${esc(a.seniority || '—')}</dd><dt>Langue</dt><dd>${esc(a.language_of_offer || 'fr')}</dd><dt>Analyse</dt><dd>${a.source === 'deterministic' ? 'déterministe (sans IA)' : 'IA + contrôle déterministe'}</dd></dl></div>
-      <div class="card"><h3 class="h3">Mots-clés (✓ prouvés par tes faits)</h3><div class="row" style="gap:6px;margin-top:12px">${cov || '<span class="muted">Aucun mot-clé détecté.</span>'}</div></div>
+      <div class="card"><h3 class="h3">Mots-clés et preuves</h3>${atsFor(p, p.cvs[p.cv_index]) ? keywordsPanel(atsFor(p, p.cvs[p.cv_index])) : `<div class="row" style="gap:6px;margin-top:12px">${cov || '<span class="muted">Aucun mot-clé détecté.</span>'}</div>`}</div>
       <div class="card"><h3 class="h3">Ce que le recruteur veut vraiment</h3><div class="grid g2" style="margin-top:12px"><div><b class="small">Explicite</b>${list((a.recruiter_wants || {}).explicit)}</div><div><b class="small">Déduit</b>${list((a.recruiter_wants || {}).inferred)}</div></div></div></div></div>`;
 }
 
 function packStrategy(p) {
   const s = p.strategy; const m = p.match; const P = Pp();
-  const subs = Object.entries(m.scores).map(([k, v]) => `<div class="sub"><span class="muted">${esc(k)}</span>${bar(v)}<span class="v">${pct(v)}</span></div>`).join('');
+  const ra = atsFor(p, p.cvs[p.cv_index]);
+  const subs = ra ? ra.dimensions.map((d) => `<div class="sub"><span class="muted">${esc(d.label)}</span>${d.available ? bar(d.value, dimTone(d.value)) : '<div class="bar"></div>'}<span class="v">${d.available ? `${d.value}\u00a0%` : '—'}</span></div>`).join('') : '';
   const opts = (s.options || []).map((o) => `<div class="card flat stack tight"><div class="row between"><b>${esc(o.key)} · ${esc(o.angle || '')}</b>${o.key === s.chosen ? chip('Choisi', 'good') : ''}</div>
     <span class="small">${esc(o.title || '')}</span><span class="muted small">${esc(o.hook || '')}</span></div>`).join('');
   const expName = (id) => { const f = P && P.fact(id); return f ? `${f.data.title || f.text} · ${f.data.company || ''}` : id; };
@@ -68,7 +75,7 @@ function packStrategy(p) {
     </div><div class="stack">
       ${p.design ? `<div class="card stack"><div class="card-head"><h3 class="h3">Design automatique</h3>${chip(DESIGN_NAME(p.design.design), 'gold')}</div><div class="design-decision">${designMini(p.design.design, p.design.palette)}<span class="small">${esc(paletteLabel(p.design.palette))} · ${esc(DENSITY_LABEL[p.design.density] || '')} · ${esc(PHOTO_LABEL[p.design.photo_mode])}</span></div>
         <ul class="why-list">${p.design.why.map((w) => `<li><span><b>${esc(w.k)}</b> · ${esc(w.t)}</span></li>`).join('')}</ul></div>` : ''}
-      <div class="card"><h3 class="h3">Sous-scores</h3><div class="stack" style="gap:8px;margin-top:12px">${subs}</div></div>
+      <div class="card"><h3 class="h3">Score PAI, par dimension</h3><div class="stack" style="gap:8px;margin-top:12px">${subs}</div></div>
       <div class="card"><h3 class="h3">Pourquoi ça colle</h3>${m.why_fit && m.why_fit.length ? `<ul class="why-list" style="margin-top:10px">${m.why_fit.map((x) => `<li><span>${esc(typeof x === 'string' ? x : x.text || '')}</span></li>`).join('')}</ul>` : '<p class="muted small">—</p>'}</div></div></div>`;
 }
 
@@ -76,7 +83,7 @@ function packRisks(p) {
   const m = p.match;
   return `<div class="grid g2">
     <div class="card"><h3 class="h3">Risques</h3><ul class="why-list" style="margin-top:12px">${p.risks.map((r) => `<li><span>${esc(r)}</span></li>`).join('') || '<li><span>Aucun risque majeur détecté.</span></li>'}</ul></div>
-    <div class="card"><h3 class="h3">Manques : jamais écrits, à préparer pour l'entretien</h3><ul class="why-list" style="margin-top:12px">${m.missing.map((x) => `<li><span><b>${esc(x.requirement)}</b> ${chip(x.priority, x.priority === 'MUST' ? 'bad' : 'warn')}${x.note ? ` · ${esc(x.note)}` : ''}</span></li>`).join('') || '<li><span>Aucun manque.</span></li>'}</ul></div>
+    <div class="card"><h3 class="h3">Non prouvé : jamais écrit, à préparer pour l'entretien</h3><ul class="why-list" style="margin-top:12px">${((atsFor(p, p.cvs[p.cv_index]) || { requirements: { unproven: [] } }).requirements.unproven).map((x) => `<li><span><b>${esc(x.text)}</b> ${chip(CLASS_UI[x.class] || x.class, x.class === 'MUST' ? 'bad' : 'warn')}${x.proof.note ? ` · ${esc(x.proof.note)}` : ''}</span></li>`).join('') || '<li><span>Aucune exigence non prouvée.</span></li>'}</ul></div>
     <div class="card"><h3 class="h3">Données de profil manquantes</h3><ul class="why-list" style="margin-top:12px">${(p.missing_profile_data || []).slice(0, 12).map((x) => `<li><span>${esc(x)}</span></li>`).join('') || '<li><span>—</span></li>'}</ul></div>
     <div class="card"><h3 class="h3">Lignes retirées (non prouvées)</h3>${p.cvs.length && (p.cvs[p.cv_index].doc.removed_lines || []).length ? `<div class="list">${p.cvs[p.cv_index].doc.removed_lines.map((r) => `<div class="item"><span class="grow"><span class="t" style="white-space:normal">${esc(r.text)}</span><span class="s">${esc((r.reasons || []).join(' ; '))}</span></span></div>`).join('')}</div>` : '<p class="muted small" style="margin:12px 0 0">Aucune.</p>'}</div></div>`;
 }
@@ -111,7 +118,7 @@ function studio(p) {
   const idx = cvIdx(p); const e = p.cvs[idx]; const doc = viewDoc(p, idx); const draft = studioDraft(p, idx);
   const pending = draft && Object.keys(draft).filter((k) => !['design_why', 'density_locked'].includes(k)).length; const prev = idx > 0 ? p.cvs[idx - 1] : null;
   const changes = prev ? compareDocs(prev.doc, e.doc) : changesSinceProfile(p, e.doc);
-  const scores = cvScores(p, e, doc); const fam = DS.familyOf(doc.design_profile); const dd = D.designs[fam] || {};
+  const fam = DS.familyOf(doc.design_profile); const dd = D.designs[fam] || {};
   const pal = doc.palette || dd.palette_default || 'petrol'; const qa = e.qa || {};
   const photoOk = !!S.photoAssets; const mode = doc.photo_mode || 'OFF'; const open = !!S.galleryOpen;
   const gallery = open ? `<div class="gallery"><div class="row between"><span class="kicker quiet">Ton CV dans les 5 designs · aperçus réels</span><button class="tb-btn" data-act="design-auto">${icon('i-wand')} Choix automatique</button></div>
@@ -122,7 +129,8 @@ function studio(p) {
   return `<div class="studio">
     <aside class="col left panel">
       <section><h3 class="h3">Pourquoi ce CV ?</h3><ul class="why-list">${whyThisCv(p, e.doc).map((t) => `<li><span>${esc(t)}</span></li>`).join('')}</ul></section>
-      <section><h3 class="h3">Ce qui a changé</h3><span class="hint">${prev ? `${esc(prev.label || `V${prev.v}`)} → ${esc(e.label || `V${e.v}`)}` : 'Depuis ton Master Profile'}</span>${changeList(changes)}</section>
+      <section><h3 class="h3">Ce qui a changé</h3><span class="hint">${prev ? `${esc(prev.label || `V${prev.v}`)} → ${esc(e.label || `V${e.v}`)}` : 'CV original → CV ciblé'}</span>${changeList(changes)}
+        <button class="linkish small" data-act="preview-mode" data-arg="changes">Avant / après, ligne par ligne →</button></section>
       <section><h3 class="h3">Retouches</h3>
         <div class="field"><label for="f-headline">Titre du CV</label><div class="row" style="flex-wrap:nowrap"><input id="f-headline" class="input grow" value="${esc((E.sectionLines(e.doc, 'headline')[0] || {}).text || '')}"><button class="btn sm" data-act="set-headline">OK</button></div></div>
         <div class="field"><span class="label">Ordre des expériences</span><div>${e.doc.experiences.map((b, i) => `<div class="exp-row"><span>${esc(b.title)} · <span class="muted">${esc(b.company)}</span></span><span class="row" style="gap:2px;flex-wrap:nowrap"><button class="btn icon sm ghost" data-act="exp-up" data-arg="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button><button class="btn icon sm ghost" data-act="exp-down" data-arg="${i}" ${i === e.doc.experiences.length - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button></span></div>`).join('')}</div></div>
@@ -133,16 +141,16 @@ function studio(p) {
         <div class="grp"><div class="version-pills" role="group" aria-label="Versions">${p.cvs.map((x, i) => `<button data-act="cv-version" data-arg="${i}" aria-pressed="${i === idx}" title="${esc(x.change || '')}">${esc(x.label && x.label.length < 5 ? x.label : `V${x.v}`)}</button>`).join('')}</div><span class="sep"></span>
           <button class="tb-btn" data-act="toggle-gallery" aria-expanded="${open}">${icon('i-palette')} <b>${esc(DESIGN_NAME(fam))}</b></button>
           <span class="tb-dots" role="group" aria-label="Couleurs">${(dd.palettes || Object.keys(DS.PALETTES)).map((k) => `<button class="swatch" data-act="set-palette" data-arg="${k}" aria-pressed="${pal === k}" aria-label="${esc(paletteLabel(k))}" title="${esc(paletteLabel(k))}" style="background:linear-gradient(135deg, ${DS.PALETTES[k].deep} 0 55%, ${DS.PALETTES[k].gold} 55%)"></button>`).join('')}</span></div>
-        <div class="grp"><div class="seg" role="group" aria-label="Affichage"><button data-act="preview-mode" data-arg="pdf" aria-pressed="${S.previewMode === 'pdf'}">PDF réel</button><button data-act="preview-mode" data-arg="proof" aria-pressed="${S.previewMode === 'proof'}">Preuves</button></div></div>
+        <div class="grp"><div class="seg" role="group" aria-label="Affichage"><button data-act="preview-mode" data-arg="pdf" aria-pressed="${S.previewMode === 'pdf'}">PDF réel</button><button data-act="preview-mode" data-arg="proof" aria-pressed="${S.previewMode === 'proof'}">Preuves</button><button data-act="preview-mode" data-arg="changes" aria-pressed="${S.previewMode === 'changes'}">Avant / après</button></div></div>
       </div>
       ${gallery}
-      <div class="canvas-wrap">${S.previewMode === 'proof' ? sheetHTML(doc, { rejected: e.report.rejected_ids || [] }) : cvPaper(doc, { width: 900 })}</div>
-      <p class="desk-note">${S.previewMode === 'proof' ? 'Survole une ligne : les faits qui la prouvent s\'affichent.' : `Vrai PDF, texte sélectionnable · ${qa.pages ? `${nb(qa.pages, 'page', 'pages')} · police min. ${num(qa.min_font_pt)}\u00a0pt · mots-clés requis ${qa.required_found}` : 'contrôle à la prochaine version'}${pending ? ' · aperçu non enregistré' : ''}`}</p>
+      <div class="canvas-wrap">${S.previewMode === 'proof' ? sheetHTML(doc, { rejected: e.report.rejected_ids || [] }) : S.previewMode === 'changes' ? `<div class="changes-wrap">${changesTable(doc)}</div>` : cvPaper(doc, { width: 900 })}</div>
+      <p class="desk-note">${S.previewMode === 'proof' ? 'Survole une ligne : les faits qui la prouvent s\'affichent.' : S.previewMode === 'changes' ? 'Chaque ligne du CV ciblé cite le fait qui l\'autorise : aucune ligne sans preuve.' : `Vrai PDF, texte sélectionnable · ${qa.pages ? `${nb(qa.pages, 'page', 'pages')} · police min. ${num(qa.min_font_pt)}\u00a0pt${e.scan ? ` · relu ${e.scan.source === 'serveur' ? 'par le serveur PAI' : 'dans le navigateur'} : format & parsing ${e.scan.score}\u00a0%` : ''}` : 'contrôle à la prochaine version'}${pending ? ' · aperçu non enregistré' : ''}`}</p>
       ${pending ? `<div class="draft-pill">${icon('i-palette')}<span>${esc(Object.keys(draft).filter((k) => !['design_why', 'density_locked', 'colors'].includes(k)).map((k) => ({ design_profile: DESIGN_NAME(draft.design_profile), palette: paletteLabel(draft.palette), density: DENSITY_LABEL[draft.density], photo_mode: PHOTO_LABEL[draft.photo_mode] })[k] || k).join(' · '))}</span>
         <button class="btn sm primary" data-act="studio-save">Enregistrer en V${Math.max(...p.cvs.map((x) => x.v || 0)) + 1}</button><button class="btn sm ghost" data-act="studio-reset">Annuler</button></div>` : ''}
     </div></section>
     <aside class="col right panel">
-      <section><div class="card-head" style="margin:0"><h3 class="h3">Qualité</h3><span class="chip">${e.critique && e.critique.ai ? 'Jury IA + calcul' : 'Calcul déterministe'}</span></div><div class="score-list">${scores.map(scoreCard).join('')}</div></section>
+      <section>${scorePanel(atsFor(p, e, doc), { compact: true, id: 'ps-studio' })}</section>
       <section>${feedbackBox(p, 'cv', idx, { regen: true })}</section>
       ${(e.doc.removed_lines || []).length ? `<section><details class="more"><summary>Lignes retirées faute de preuve (${e.doc.removed_lines.length})</summary><div class="list">${e.doc.removed_lines.map((r) => `<div class="item"><span class="grow"><span class="small">${esc(r.text)}</span><span class="s">${esc((r.reasons || []).join(' ; '))}</span></span></div>`).join('')}</div></details></section>` : ''}
     </aside>

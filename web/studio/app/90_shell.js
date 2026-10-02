@@ -1,5 +1,5 @@
 // ─── Coquille : navigation, barre du haut, feuille « Plus », rendu ───────────
-const RAIL_LABEL = { accueil: 'Accueil', analyser: 'Analyser', studio: 'Studio', packs: 'Packs', lab: 'Lab', learning: 'Learning', benchmark: 'Bench', profil: 'Profil', versions: 'Versions', reglages: 'Réglages' };
+const RAIL_LABEL = { accueil: 'Accueil', analyser: 'Analyser', studio: 'Studio', packs: 'Packs', lab: 'Lab', learning: 'Learning', benchmark: 'Bench', profil: 'Profil', versions: 'Versions', statut: 'État', reglages: 'Réglages' };
 function renderShell() {
   const btn = ([k, l, ic]) => `<button data-act="go" data-arg="${k}" aria-label="${esc(l)}" title="${esc(l)}">${icon(ic)}<span>${RAIL_LABEL[k] || l}</span></button>`;
   $('#nav').innerHTML = NAV_MAIN.map(btn).join('') + '<div class="group" aria-hidden="true"></div>' + NAV_SECOND.map(btn).join('');

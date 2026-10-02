@@ -28,7 +28,7 @@ from ..db.repo import ats_summary, record_calls
 from ..db.session import session_scope
 from ..ingest import IngestError, UrlIngestError, offer_from_file, offer_from_text, offer_from_url
 from ..schemas import Offer
-from ..textnorm import stable_hash
+from ..textnorm import nb, stable_hash
 from . import jobs, settings_ai
 from .auth import Principal, require
 
@@ -334,7 +334,12 @@ def cv_validate_sync(fields: dict[str, str], files: dict[str, tuple[str, bytes, 
     if not f or f[1][:5] != b"%PDF-":
         raise _err(422, "missing_pdf", "PDF manquant (cv_file).")
     source = [ln.strip() for ln in fields.get("source_text", "").splitlines() if ln.strip()]
-    report = scan_pdf(f[1], max_pages=int(fields.get("max_pages", 2) or 2), source_lines=source or None)
+    allowed = [ln.strip() for ln in fields.get("allowed_text", "").splitlines() if ln.strip()]
+    try:
+        max_pages = max(1, min(4, int(fields.get("max_pages", 2) or 2)))
+    except ValueError as exc:
+        raise _err(422, "bad_value", "max_pages : nombre entier attendu.") from exc
+    report = scan_pdf(f[1], max_pages=max_pages, source_lines=source or None, allowed=allowed or None)
     report["parsed"] = {k: report["parsed"][k] for k in ("order", "dates") if k in report["parsed"]} | {
         "experiences": len(report["parsed"].get("experiences", [])), "email_found": bool(report["parsed"].get("email")),
         "phone_found": bool(report["parsed"].get("phone"))}
@@ -343,7 +348,8 @@ def cv_validate_sync(fields: dict[str, str], files: dict[str, tuple[str, bytes, 
 
 @router.post("/cv/validate")
 async def cv_validate(request: Request, _: Principal = tracked("analyze")) -> dict[str, Any]:
-    """Scanner ATS d'un PDF : OK / WARNING / ERROR par contrôle ; avec `source_text`, relecture « rien de perdu »."""
+    """Scanner ATS d'un PDF : OK / WARNING / ERROR par contrôle ; avec `source_text` (lignes du CV source) relecture
+    « rien de perdu, rien d'ajouté » ; `allowed_text` : libellés légitimes du gabarit (nom, coordonnées, titres)."""
     fields, files = await read_input(request)
     return await run_in_threadpool(cv_validate_sync, fields, files)
 
@@ -516,14 +522,14 @@ def system_status() -> dict[str, Any]:
     if state.get("reachable"):
         names = [m["name"] for m in state.get("models", [])]
         add("local_model", "Modèle local", "OK" if names else "WARNING",
-            f"Ollama {state.get('version', '')} : {len(names)} modèle(s)" + (f" · choix mesuré : {sel.get('large', '?')} / {sel.get('small', '?')}" if sel else "")
+            f"Ollama {state.get('version', '')} : {nb(len(names), 'modèle', 'modèles')}" + (f" · choix mesuré : {sel.get('large', '?')} / {sel.get('small', '?')}" if sel else "")
             if names else "Ollama répond mais aucun modèle n'est installé (python -m pai ai setup --pull)")
     else:
         add("local_model", "Modèle local", "WARNING", "Ollama injoignable : PAI reste utilisable sans IA")
     try:
         cache_dir = paths.DATA_DIR / "cache"
         n = sum(1 for _ in cache_dir.glob("*.json")) + sum(1 for _ in (cache_dir / "results").glob("*.json")) if cache_dir.exists() else 0
-        add("cache", "Cache", "OK", f"{n} réponse(s) en cache")
+        add("cache", "Cache", "OK", f"{nb(n, 'réponse', 'réponses')} en cache")
     except OSError:
         add("cache", "Cache", "WARNING", "cache illisible : PAI continue sans cache")
     base_url = settings.base_url

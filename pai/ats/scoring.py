@@ -17,7 +17,7 @@ import yaml
 from .. import paths
 from ..rules import RuleSet, load_rules
 from ..schemas import Analysis, CvDocument, Match, ValidationReport
-from ..textnorm import contains_term, extract_numbers, norm
+from ..textnorm import contains_term, extract_numbers, nb, norm
 from .lexicon import stem
 from .parser import LABELS as SECTION_LABELS
 from .parser import ParsedCv
@@ -112,6 +112,12 @@ def structure_from_parsed(p: ParsedCv) -> tuple[float, list[dict[str, Any]]]:
 KW_WEIGHT = {"REQUIRED": 3.0, "IMPORTANT": 2.0, "NICE": 1.0}
 
 
+def doc_text(cv: CvDocument) -> str:
+    """Texte visible du CV (nom, coordonnées, lignes, en-têtes d'expérience) — sans identifiant interne de ligne."""
+    heads = [f"{b.title} {b.company}" for b in cv.experiences]
+    return "\n".join([cv.name, *cv.contact, *(ln.text for ln in cv.lines), *heads])
+
+
 def keyword_entries(analysis: Analysis, requirements: list[Requirement], cv_text: str | None,
                     rules: RuleSet | None = None) -> list[dict[str, Any]]:
     """Chaque mot-clé de l'offre : statut de preuve, présence dans le CV, et POURQUOI (présent / pas ajouté)."""
@@ -126,7 +132,7 @@ def keyword_entries(analysis: Analysis, requirements: list[Requirement], cv_text
         forms = rules.synonyms.equivalents(kw.term)
         present = bool(cv_text) and any(contains_term(text_n, f) for f in forms)
         if present and status == PROVEN:
-            why = "Présent : prouvé par " + ", ".join(r.proof.fact_ids[:3]) + "."
+            why = "Présent : prouvé par tes faits."
         elif present and status == PLAUSIBLE:
             why = f"Présent sous une forme prudente : {r.proof.via}."
         elif present:
@@ -148,12 +154,12 @@ def keyword_entries(analysis: Analysis, requirements: list[Requirement], cv_text
 def keywords_dim(entries: list[dict[str, Any]], has_cv: bool) -> tuple[float | None, list[dict[str, Any]], str]:
     if not entries:
         return None, [], "Aucun mot-clé extrait de l'offre."
-    total = sum(KW_WEIGHT[e["priority"]] for e in entries)
+    total = sum(KW_WEIGHT.get(e["priority"], 2.0) for e in entries)
     if has_cv:
-        got = sum(KW_WEIGHT[e["priority"]] for e in entries if e["in_cv"])
+        got = sum(KW_WEIGHT.get(e["priority"], 2.0) for e in entries if e["in_cv"])
         summary = f"{sum(e['in_cv'] for e in entries)}/{len(entries)} mots-clés présents dans le CV"
     else:
-        got = sum(KW_WEIGHT[e["priority"]] * (1.0 if e["status"] == PROVEN else 0.5 if e["status"] == PLAUSIBLE else 0)
+        got = sum(KW_WEIGHT.get(e["priority"], 2.0) * (1.0 if e["status"] == PROVEN else 0.5 if e["status"] == PLAUSIBLE else 0)
                   for e in entries)
         summary = f"{sum(e['status'] == PROVEN for e in entries)}/{len(entries)} mots-clés prouvés par le profil (avant CV)"
     details = [crit(e["term"], OK if (e["in_cv"] if has_cv else e["status"] == PROVEN) else
@@ -175,7 +181,7 @@ def matching_dim(reqs: list[Requirement]) -> tuple[float | None, list[dict[str, 
             p = sum(r.proof.status == PROVEN for r in rs)
             q = sum(r.proof.status == PLAUSIBLE for r in rs)
             details.append(crit(LABELS[klass], OK if p == len(rs) else WARNING if p + q == len(rs) else ERROR,
-                                f"{p} prouvée(s), {q} possible(s), {len(rs) - p - q} non prouvée(s) sur {len(rs)}",
+                                f"{p}/{len(rs)} prouvées · {q} possibles · {len(rs) - p - q} non prouvées",
                                 100 * (p + 0.5 * q) / len(rs)))
     must = [r for r in scored if r.klass == "MUST"]
     must_ok = sum(r.proof.status == PROVEN for r in must)
@@ -213,7 +219,8 @@ def languages_dim(match: Match, reqs: list[Requirement]) -> tuple[float, list[di
     w = {r.id: CLASS_WEIGHT[r.klass] or 1.0 for r in langs}
     value = 100 * sum(w[r.id] * (1.0 if r.proof.status == PROVEN else 0.5 if r.proof.status == PLAUSIBLE else 0)
                       for r in langs) / sum(w.values())
-    return value, details, f"{sum(r.proof.status == PROVEN for r in langs)}/{len(langs)} langue(s) prouvée(s)"
+    proven = sum(r.proof.status == PROVEN for r in langs)
+    return value, details, f"{proven}/{len(langs)} {'langues prouvées' if len(langs) > 1 else 'langue prouvée'}"
 
 
 def conditions_dim(match: Match, analysis: Analysis) -> tuple[float, list[dict[str, Any]], str]:
@@ -276,7 +283,7 @@ def readability_dim(p: ParsedCv, pages: int | None) -> tuple[float, list[dict[st
                         "un seul format" if len(formats) <= 1 else "formats mélangés (mois en lettres et en chiffres)"))
     score -= 0 if len(formats) <= 1 else 10
     if pages is not None:
-        details.append(crit("Pagination", OK if pages <= 2 else WARNING, f"{pages} page(s)"))
+        details.append(crit("Pagination", OK if pages <= 2 else WARNING, nb(pages, "page", "pages")))
         score -= 0 if pages <= 2 else 15
     return score, details, f"{avg:.0f} mots par puce, {p.words} mots au total".replace(".", ",")
 
@@ -291,13 +298,13 @@ def content_dim(p: ParsedCv, rules: RuleSet | None = None) -> tuple[float, list[
     details = [crit("Puces qui commencent par une action", OK if bs and action / len(bs) >= 0.6 else WARNING,
                     f"{action}/{len(bs)}"),
                crit("Résultats chiffrés", OK if bs and quant / len(bs) >= 0.3 else WARNING, f"{quant}/{len(bs)} puces"),
-               crit("Compétences précises", OK if len(p.skills) >= 5 else WARNING, f"{len(p.skills)} élément(s)"),
+               crit("Compétences précises", OK if len(p.skills) >= 5 else WARNING, nb(len(p.skills), "élément", "éléments")),
                crit("Profil / résumé", OK if "summary" in p.order else WARNING, "présent" if "summary" in p.order else "absent"),
                crit("Phrases creuses", OK if not (hard or soft) else WARNING if not hard else ERROR,
                     ", ".join((hard + soft)[:5]) or "aucune")]
     score = (35 * (action / len(bs) if bs else 0) + 30 * min(1.0, (quant / len(bs)) / 0.3 if bs else 0)
              + 15 * min(1.0, len(p.skills) / 5) + 10 * ("summary" in p.order) + 10) - 10 * len(hard) - 3 * len(soft)
-    return score, details, f"{quant} résultat(s) chiffré(s), {action} puce(s) d'action"
+    return score, details, f"{nb(quant, 'résultat chiffré', 'résultats chiffrés')}, {nb(action, 'puce', 'puces')} d'action"
 
 
 def coherence_dim(p: ParsedCv, today: date | None = None) -> tuple[float, list[dict[str, Any]], str]:
