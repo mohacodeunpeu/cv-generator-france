@@ -23,7 +23,7 @@ from sqlalchemy import select, text
 from .. import ENGINE_VERSION
 from ..config import get_settings
 from ..db.models import Feedback, Generation, Job, Outcome, StoredFile, StoreDocument, utcnow
-from ..db.repo import load_current_profile, persist_pack, record_calls, save_profile_doc, spent_today
+from ..db.repo import ats_summary, load_current_profile, persist_pack, record_calls, save_profile_doc, spent_today
 from ..db.session import session_scope
 from ..ingest import IngestError, UrlIngestError, offer_from_text, offer_from_url
 from ..pipeline import Pipeline
@@ -109,6 +109,7 @@ def run_pack_job(payload: dict[str, Any], progress: Callable[[str, str], None] |
         "questions": [a.model_dump() for a in pack.answers],
         "application_pack": {"cv_pdf": file_url(ids.get("cv")), "letter_pdf": file_url(ids.get("letter")), "zip": file_url(ids.get("zip")),
                              "expires_in_seconds": get_settings().file_url_ttl_seconds},
+        "pai_score": pack.scores.get("pai_score"), "ats": ats_summary(pack.ats) if pack.ats else {},
         "quality_scores": json.loads(json.dumps(pack.scores, default=str)), "risks": pack.risks, "next_action": pack.next_action,
         "missing_profile_data": pack.missing_profile_data, "versions": pack.versions.model_dump(), "cost_eur": pack.cost_eur,
     }

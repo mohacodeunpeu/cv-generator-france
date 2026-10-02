@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 import secrets
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -12,7 +13,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from .. import ENGINE_VERSION, paths
+from .. import ENGINE_VERSION, obs, paths
 from ..config import get_settings
 from ..db.models import StoredFile
 from ..db.repo import ensure_profile_doc
@@ -21,6 +22,7 @@ from . import jobs
 from .auth import (COOKIE, CSRF_HEADER, Principal, change_password, current_principal, login_limiter, new_session_token,
                    require, revoke_sessions, verify_password)
 from .security import SecurityHeaders, csp, unsign
+from .public import router as public_router
 from .v1 import OfferIn, router as v1_router, run_pack_job
 
 templates = Jinja2Templates(directory=str(paths.TEMPLATES_DIR))
@@ -75,6 +77,27 @@ def create_app() -> FastAPI:
                   openapi_url=None, lifespan=lifespan)
     app.add_middleware(SecurityHeaders)
     app.include_router(v1_router)
+    app.include_router(public_router)
+
+    @app.middleware("http")
+    async def request_ids(request: Request, call_next):  # noqa: ANN001, ANN202
+        """request_id par requête (en-tête X-Request-ID repris s'il est sûr), propagé aux jobs et aux appels IA ;
+        une ligne JSON par requête : méthode, route (jamais l'URL brute ni la query string), statut, durée."""
+        rid = obs.new_request_id(request.headers.get("x-request-id"))
+        token = obs.request_id_var.set(rid)
+        start, status = time.monotonic(), 500
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            response.headers["X-Request-ID"] = rid
+            return response
+        finally:
+            route = request.scope.get("route")
+            path = getattr(route, "path", "") or "(hors route)"
+            if path not in ("/health", "/api/health"):
+                obs.event("request", method=request.method, path=path, status=status,
+                          duration_ms=int((time.monotonic() - start) * 1000))
+            obs.request_id_var.reset(token)
 
     @app.get("/health", include_in_schema=False)
     def health() -> dict[str, str]:

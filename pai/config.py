@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     ai_provider: str = ""
     ai_model: str = ""                         # modèle du fournisseur actif (grand modèle pour local)
     ai_model_small: str = ""                   # petit modèle local (extraction, classement)
+    pai_access: str = ""                       # cloudflare | caddy | tailscale (affiché dans « État du système »)
     ai_base_url: str = ""                      # URL du fournisseur actif (Ollama, serveur compatible OpenAI)
     ai_api_key: str = ""                       # clé du fournisseur actif (jamais obligatoire)
     ai_profile: str = ""                       # eco | balanced | quality (routeur de tâches)
