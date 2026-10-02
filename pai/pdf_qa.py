@@ -34,10 +34,19 @@ def render_png(pdf: bytes, page: int = 0, dpi: int = 110) -> bytes:
 
 
 def extract_text(pdf: bytes) -> str:
+    """Lecture ligne à ligne (par position sur la page, comme pdftotext -layout) : deux colonnes y sont mêlées."""
     import pdfplumber
 
     with pdfplumber.open(io.BytesIO(pdf)) as doc:
         return "\n".join(page.extract_text() or "" for page in doc.pages)
+
+
+def extract_text_flow(pdf: bytes) -> str:
+    """Lecture dans l'ordre du flux du fichier (comme PDFBox/Tika ou pdf.js) : chaque colonne est lue d'un bloc."""
+    import pymupdf
+
+    with pymupdf.open(stream=pdf, filetype="pdf") as doc:
+        return "\n".join(ln.strip() for page in doc for ln in page.get_text("text").splitlines() if ln.strip())
 
 
 def check_pdf(pdf: bytes, *, expect_pages: int = 1, required_terms: list[str] | None = None,

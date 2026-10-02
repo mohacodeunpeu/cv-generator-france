@@ -165,6 +165,11 @@ def cmd_worker(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["ai"]:  # IA locale : python -m pai ai status | detect | bench | setup | pull | import-gguf
+        from .ai.setup import main as ai_main
+
+        return ai_main(argv[1:])
     parser = argparse.ArgumentParser(prog="pai", description="PAI — Personal Application Intelligence")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("bootstrap-profile", help="Construire le Master Profile v1 (confirmations + legacy)").set_defaults(fn=cmd_bootstrap_profile)

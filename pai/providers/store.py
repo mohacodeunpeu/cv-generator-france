@@ -54,12 +54,14 @@ class StoredProvider:
     api_key: str = field(default="", repr=False)   # déchiffrée, en mémoire seulement
     model: str = ""
     base_url: str = ""
+    model_small: str = ""                           # local : petit modèle
 
 
 @dataclass
 class StoredAiSettings:
     active: str = ""
     providers: dict[str, StoredProvider] = field(default_factory=dict)
+    profile: str = ""                               # eco | balanced | quality
 
     def get(self, pid: str) -> StoredProvider:
         return self.providers.get(pid) or StoredProvider()
@@ -70,7 +72,7 @@ def decode_settings(value: Any) -> StoredAiSettings:
     from cryptography.fernet import InvalidToken
 
     value = value if isinstance(value, dict) else {}
-    out = StoredAiSettings(active=str(value.get("active") or ""))
+    out = StoredAiSettings(active=str(value.get("active") or ""), profile=str(value.get("profile") or ""))
     entries = value.get("providers") if isinstance(value.get("providers"), dict) else {}
     for pid, entry in entries.items():
         if not isinstance(entry, dict):
@@ -82,7 +84,8 @@ def decode_settings(value: Any) -> StoredAiSettings:
             except (InvalidToken, ValueError, TypeError):
                 log.warning("Clé d'API enregistrée pour « %s » illisible (SECRET_KEY changée ?) : ignorée, à ressaisir.", pid)
         out.providers[str(pid)] = StoredProvider(api_key=key, model=str(entry.get("model") or ""),
-                                                 base_url=str(entry.get("base_url") or ""))
+                                                 base_url=str(entry.get("base_url") or ""),
+                                                 model_small=str(entry.get("model_small") or ""))
     return out
 
 

@@ -19,7 +19,8 @@ from ..config import get_settings
 from ..db.models import AuditLog
 from ..db.repo import record_calls
 from ..db.session import session_scope
-from ..providers import LABELS, PROVIDER_IDS, active_provider_id, ai_mode, build_from_config, provider_config
+from ..providers import (LABELS, PROVIDER_IDS, active_profile, active_provider_id, ai_mode, build_from_config, build_router,
+                         normalize_provider_id, provider_config)
 from ..providers.base import ProviderError
 from ..providers.store import (StoredAiSettings, decode_settings, encrypt_secret, key_hint, load_settings_value,
                                read_stored_settings, save_settings_value)
@@ -30,9 +31,13 @@ KEYED_IDS = frozenset({"claude", "gemini", "mistral", "openai"})
 BASE_URL_IDS = frozenset({"openai", "local"})
 TEST_PROMPT = "Réponds uniquement par OK."
 MISSING = {"openai": "Clé ou modèle manquant (OPENAI_API_KEY / OPENAI_MODEL, ou Réglages → IA).",
-           "local": "Modèle local manquant (LOCAL_MODEL, ou Réglages → IA)."}
+           "local": "Ollama injoignable ou aucun modèle local installé (python -m pai ai setup)."}
 _API_KEY = re.compile(r"^[\x21-\x7e]{8,400}$")               # ASCII imprimable, sans espace ni caractère de contrôle
 _MODEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,79}$")  # 80 caractères max (colonne llm_calls.model)
+
+
+def pid_raw_not_local(value: str | None) -> bool:
+    return (value or "").strip().lower() not in ("local", "ollama")
 
 
 def _invalid(message: str) -> HTTPException:
@@ -40,7 +45,7 @@ def _invalid(message: str) -> HTTPException:
 
 
 def _provider_id(value: str, name: str) -> str:
-    pid = value.strip().lower()
+    pid = normalize_provider_id(value) if value.strip().lower() in ("none", "anthropic", "openai_compatible", "ollama") else value.strip().lower()
     if pid not in PROVIDER_IDS:
         raise _invalid(f"« {name} » inconnu : valeurs possibles {', '.join(PROVIDER_IDS)}.")
     return pid
@@ -76,18 +81,27 @@ def describe(stored: StoredAiSettings | None = None) -> dict[str, Any]:
     for pid in PROVIDER_IDS:
         cfg = provider_config(pid, settings, stored)
         built = build_from_config(cfg)
+        small = ""
+        if pid == "local":
+            from ..providers.ollama import OllamaProvider
+
+            small = OllamaProvider(base_url=cfg.base_url, model=cfg.model_small, tier="small").resolved_model()
         providers.append({"id": pid, "label": LABELS[pid], "configured": _configured(pid, built),
                           "key_hint": key_hint(cfg.api_key), "model": "" if pid == "null" else built.model_for("cv_content"),
-                          "base_url": cfg.base_url, "source": cfg.source})
-    configured = next(p["configured"] for p in providers if p["id"] == active)
-    return {"active": active, "mode": ai_mode(active, configured), "providers": providers}
+                          "model_small": small, "base_url": cfg.base_url, "source": cfg.source})
+    router = build_router(active, settings, stored)
+    return {"active": active, "mode": router.mode() if hasattr(router, "mode") else "DEGRADED",
+            "profile": active_profile(settings, stored), "plan": router.plan() if hasattr(router, "plan") else {},
+            "providers": providers}
 
 
 def ai_status() -> tuple[str, str]:
-    """(fournisseur actif, mode IA : REMOTE | LOCAL | DEGRADED)."""
+    """(fournisseur actif, mode IA : REMOTE | LOCAL | DEGRADED). Le mode est celui du routeur : un fournisseur externe
+    configuré donne REMOTE, sinon un modèle local installé donne LOCAL, sinon DEGRADED (sans IA)."""
     settings, stored = get_settings(), read_stored_settings()
     active = active_provider_id(settings, stored)
-    return active, ai_mode(active, _configured(active, build_from_config(provider_config(active, settings, stored))))
+    router = build_router(active, settings, stored)
+    return active, router.mode() if hasattr(router, "mode") else ai_mode(active, False)
 
 
 @router.get("/settings/ai")
@@ -102,7 +116,9 @@ class AiSettingsIn(BaseModel):
     provider: str | None = Field(None, max_length=20)
     api_key: str | None = None  # longueur contrôlée par _API_KEY : une erreur de validation FastAPI recopierait la clé
     model: str | None = Field(None, max_length=200)
+    model_small: str | None = Field(None, max_length=200)     # local : petit modèle (vide = choix automatique)
     base_url: str | None = Field(None, max_length=500)
+    profile: str | None = Field(None, max_length=20)          # eco | balanced | quality (routeur)
     clear_key: bool = False
 
     model_config = {"extra": "forbid"}
@@ -116,8 +132,16 @@ def put_ai_settings(body: AiSettingsIn, principal: Principal = require("admin"))
     pid = _provider_id(body.provider, "provider") if body.provider is not None else None
     api_key = (body.api_key or "").strip()
     model = body.model.strip() if body.model is not None else None
+    model_small = body.model_small.strip() if body.model_small is not None else None
     base_url = body.base_url.strip() if body.base_url is not None else None
-    touches = bool(api_key) or body.clear_key or model is not None or base_url is not None
+    profile = body.profile.strip().lower() if body.profile is not None else None
+    if profile is not None and profile not in ("eco", "balanced", "quality", ""):
+        raise _invalid("« profile » : eco, balanced ou quality.")
+    if model_small is not None and pid_raw_not_local(body.provider):
+        raise _invalid("« model_small » n'existe que pour le fournisseur local.")
+    if model_small and not _MODEL.match(model_small):
+        raise _invalid("Nom de modèle invalide (80 caractères max : lettres, chiffres, . _ : / @ + -).")
+    touches = bool(api_key) or body.clear_key or model is not None or base_url is not None or model_small is not None
     if touches and pid is None:
         raise _invalid("Précisez « provider » pour modifier une clé, un modèle ou une URL.")
     if touches and pid == "null":
@@ -140,6 +164,12 @@ def put_ai_settings(body: AiSettingsIn, principal: Principal = require("admin"))
         if active is not None and value.get("active") != active:
             value["active"] = active
             changed.append("active")
+        if profile is not None and value.get("profile", "") != profile:
+            if profile:
+                value["profile"] = profile
+            else:
+                value.pop("profile", None)
+            changed.append("profile")
         if pid is not None and touches:
             providers = value.setdefault("providers", {})
             entry = providers.setdefault(pid, {})
@@ -151,6 +181,9 @@ def put_ai_settings(body: AiSettingsIn, principal: Principal = require("admin"))
             if model is not None and model != entry.get("model", ""):
                 _entry_set(entry, "model", model)
                 changed.append("model")
+            if model_small is not None and model_small != entry.get("model_small", ""):
+                _entry_set(entry, "model_small", model_small)
+                changed.append("model_small")
             if body.clear_key and entry.pop("key", None):
                 changed.append("key_cleared")
             if api_key:

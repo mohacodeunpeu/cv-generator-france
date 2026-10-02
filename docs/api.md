@@ -1,4 +1,99 @@
-# API PAI `/v1`
+# API PAI : `/api` (contrat recommandé) et `/v1` (historique, conservée)
+
+`/api` est le contrat simple et stable pour l'interface, **JobAgent** et les scripts. `/v1` reste disponible sans
+changement (compatibilité). **Aucune route n'exige d'IA ni de clé payante** : sans IA, les réponses viennent des voies
+déterministes (mode « SANS IA »). **PAI ne postule jamais et n'envoie aucun message.**
+
+## `/api` en bref
+
+| Méthode | Route | Droit | Rôle |
+|---|---|---|---|
+| GET | `/api/health` | — | vivant (aucune donnée interne) |
+| GET | `/api/ready` | — | prêt : base, migrations, stockage, configuration (`200` ou `503`) ; l'IA n'est jamais bloquante |
+| POST | `/api/jobs/ingest` | analyze | lire une offre : texte, URL, **fichier PDF / HTML / DOCX / texte** ; rien n'est enregistré |
+| POST | `/api/jobs/analyze` | analyze | analyse + exigences classées et prouvées + Score PAI provisoire ; **cache** (`"cache": "hit"/"miss"`) |
+| POST | `/api/cv/analyze` | analyze | **mode A** (CV seul) ou **mode B** (CV + offre) ; CV en PDF, DOCX ou texte |
+| POST | `/api/cv/optimize` | analyze | CV ciblé tracé (sans PDF) + changements AVANT / APRÈS / RAISON / PREUVE + Score PAI |
+| POST | `/api/cv/generate` | generate | synchrone : CV + lettre, PDF relus (scanner ATS), Score PAI complet, lien du CV |
+| POST | `/api/cv/validate` | analyze | scanner ATS d'un PDF (OK / WARNING / ERROR) ; avec `source_text` : relecture « rien de perdu » |
+| POST | `/api/letter/generate` | generate | synchrone : lien de la lettre (même version que le CV) |
+| POST | `/api/application/prepare` | generate | pack complet ; **asynchrone** par défaut (`202` + `job_id`), `?wait=true` = synchrone ; `Idempotency-Key` |
+| GET | `/api/jobs/{job_id}` | read | état du job et résultat (identifiants de version, Score PAI, liens signés) |
+| GET | `/api/application/{id}` | read | une version (`pack_…`) ou une candidature (`app_…` : toutes ses versions, la plus récente d'abord) |
+| GET | `/api/corpus` | read | corpus métier (TOP 20 / 40 seulement au-delà de 10 / 25 offres, volume toujours affiché) |
+| GET | `/api/system/status` | read | PAI, ATS, API, base, IA, modèle local, cache, accès public, JobAgent → OK / WARNING / ERROR |
+| GET | `/api/ai/usage?days=30` | read | appels IA par fournisseur / modèle / niveau, cache hit / miss, jetons, temps, coût |
+
+**Entrées directes** — JSON ou `multipart/form-data` :
+
+| Champ | Sens |
+|---|---|
+| `offer_text` / `offer_url` / `offer_file` | l'offre (priorité : fichier, puis texte, puis URL) ; `title` (ou `role`), `company` en option |
+| `cv_file` / `cv_text` | le CV pour `/api/cv/analyze` et `/api/cv/validate` |
+| `*_b64` + `*_filename` | fichier en base64 dans un corps JSON (ex. `offer_file_b64`, `offer_filename`) |
+| `ai` | `auto` (défaut : le routeur décide) ou `none` (jamais d'IA) |
+| `mode`, `questions`, `source`, `offer_id`, `candidate_id` | pack : `STANDARD` / `DEEP`, questions du formulaire, origine (`jobagent`), identifiants de l'appelant |
+
+Fichiers : 8 Mo au plus. Chaque réponse porte l'en-tête `X-Request-ID` (repris de la requête s'il est sûr) : il relie
+la requête, ses jobs et ses appels IA dans le journal, sans aucun contenu.
+
+**Erreurs** : `{"detail": {"code": "…", "message": "…"}}`, message affichable. Lecture d'URL : `login_walled`,
+`auth_required`, `forbidden`, `anti_bot`, `not_found`, `rate_limited`, `unavailable`, `js_required`, `timeout`,
+`too_large`, `bad_url`, `blocked_address`, `unreadable` — le message dit **pourquoi le serveur PAI** n'a pas pu lire la
+page (« Le serveur PAI n'a pas pu récupérer cette URL (HTTP 403) : le site bloque les lectures automatiques… ») et
+propose le texte collé ou le PDF. Autres : `missing_offer`, `missing_cv`, `missing_pdf`, `no_text` (PDF image),
+`unsupported_format`, `too_large`, `bad_json`, `no_profile`.
+
+### Exemples
+
+```bash
+H='Authorization: Bearer pai_…'
+# Offre depuis un PDF, analyse sans IA
+curl -s -H "$H" -F offer_file=@offre.pdf -F ai=none https://<serveur>/api/jobs/analyze
+# CV seul (mode A)
+curl -s -H "$H" -F cv_file=@mon_cv.pdf https://<serveur>/api/cv/analyze
+# CV + offre (mode B) : preuves tirées du CV fourni
+curl -s -H "$H" -F cv_file=@mon_cv.pdf -F offer_url=https://exemple.fr/offre/42 https://<serveur>/api/cv/analyze
+# Pack complet pour JobAgent (asynchrone, idempotent)
+curl -s -H "$H" -H 'Idempotency-Key: jobagent-offre-42' -H 'Content-Type: application/json' \
+     -d '{"offer_text": "…", "company": "Nordlys", "source": "jobagent"}' https://<serveur>/api/application/prepare
+# → 202 {"job_id": "job_…", "status": "PENDING", "poll": "/api/jobs/job_…"}
+```
+
+### Réponse d'un pack (`/api/jobs/{id}` → `result`, `/api/cv/generate`, `?wait=true`)
+
+```json
+{
+  "application_id": "app_3f2a9c1d7e44",
+  "version_id": "pack_2c9f1a7be3d4",
+  "status": "DRAFT",
+  "pai_score": 86,
+  "ats": {
+    "score": {"value": 86, "complete": true, "missing": [], "label": "Score PAI",
+              "disclaimer": "Score interne PAI … ni le score d'un ATS réel ni une probabilité d'embauche."},
+    "dimensions": [{"id": "parsing", "label": "Format & parsing", "value": 100, "available": true, "summary": "…", "weight": 12},
+                   {"id": "matching", "label": "Matching offre", "value": 81, "…": "…"}],
+    "requirements": {"proven": 11, "plausible": 4, "unproven": 3, "context": 1},
+    "unproven_must": [],
+    "keywords": [{"term": "HubSpot", "status": "PROUVÉ", "in_cv": true, "priority": "REQUIRED"},
+                 {"term": "Salesforce", "status": "NON_PROUVÉ", "in_cv": false, "priority": "NICE"}],
+    "variant": {"id": "BUSINESS_DEVELOPER", "label": "Business Developer", "why": "intitulé …"},
+    "passes": [{"pass": 1, "status": "OK", "score": 100, "errors": []}]
+  },
+  "application_pack": {"cv_pdf": "https://<serveur>/v1/files/<jeton signé>", "letter_pdf": "…", "zip": "…", "expires_in_seconds": 300},
+  "versions": {"application_id": "app_…", "offer_v": "…", "profile_v": "…", "analysis_v": "…", "template": "hybrid_modern",
+               "cv_v": "…", "letter_v": "…", "engine_v": "…", "prompt_v": "…", "rules_v": "…", "timestamp": "…"},
+  "risks": ["…"], "next_action": "…", "…": "champs /v1 inchangés (strategy, match, questions, quality_scores…)"
+}
+```
+
+Le ZIP du pack contient : CV et lettre (PDF), `pack.json`, `pack.md` (Score PAI, exigences prouvées / possibles / non
+prouvées, changements), `versions.json`, `analyse_ats.json`. « Quel CV ai-je envoyé ? » :
+`GET /api/application/app_…` liste toutes les versions de la candidature avec leurs fichiers.
+
+---
+
+# API historique `/v1`
 
 API versionnée du serveur PAI, pensée d'abord pour le futur JobAgent (« API first »).
 Documentation interactive : `https://<serveur>/docs` (protégée, droit `read`).

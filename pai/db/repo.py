@@ -94,10 +94,28 @@ def spent_today(s: Session) -> float:
 
 
 def record_calls(s: Session, calls: list[CallRecord], generation_id: str | None = None) -> None:
+    from ..obs import request_id_var
+
+    rid = request_id_var.get()
     for c in calls:
         s.add(LlmCall(generation_id=generation_id, task=c.task, provider=c.provider, model=c.model, prompt_tag=c.prompt_tag[:60],
                       input_hash=c.input_hash, tokens_in=c.tokens_in, tokens_out=c.tokens_out, cost_eur=c.cost_eur,
-                      latency_ms=c.latency_ms, cached=c.cached, ok=c.ok, error=c.error))
+                      latency_ms=c.latency_ms, cached=c.cached, ok=c.ok, error=c.error[:500], tier=c.tier[:12],
+                      request_id=rid[:64]))
+
+
+def ats_summary(ats: dict[str, Any]) -> dict[str, Any]:
+    """Résumé stable du rapport ATS (API, JobAgent, manifeste du pack) : pourcentages d'abord, sans contenu du CV."""
+    req = ats.get("requirements", {})
+    return {
+        "score": {k: ats.get("score", {}).get(k) for k in ("value", "complete", "missing", "disclaimer", "label")},
+        "dimensions": [{k: d.get(k) for k in ("id", "label", "value", "available", "summary", "weight")} for d in ats.get("dimensions", [])],
+        "requirements": {k: len(v) for k, v in req.items()},
+        "unproven_must": [r["text"] for r in req.get("unproven", []) if r.get("class") == "MUST"][:10],
+        "keywords": [{k: kw.get(k) for k in ("term", "status", "in_cv", "priority")} for kw in ats.get("keywords", [])],
+        "variant": {k: ats.get("variant", {}).get(k) for k in ("id", "label", "why")},
+        "passes": ats.get("passes", []),
+    }
 
 
 def persist_pack(s: Session, pack: ApplicationPack, files: dict[str, bytes], calls: list[CallRecord],
@@ -139,5 +157,6 @@ def persist_pack(s: Session, pack: ApplicationPack, files: dict[str, bytes], cal
     zip_file = store_file(s, f"PAI_Pack_{base}.zip", "application/zip", export_zip(pack, files), gen.id)
     ids["zip"] = zip_file.id
     s.add(ApplicationPackRow(id="apk_" + pack.id, generation_id=gen.id, zip_file_id=zip_file.id,
-                             manifest={"versions": pack.versions.model_dump(), "status": pack.status, "scores": gen.scores}))
+                             manifest={"versions": pack.versions.model_dump(), "status": pack.status, "scores": gen.scores,
+                                       "ats": ats_summary(pack.ats) if pack.ats else {}}))
     return ids

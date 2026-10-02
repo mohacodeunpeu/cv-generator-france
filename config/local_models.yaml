@@ -1,0 +1,121 @@
+# Registre des modèles locaux (Ollama). Versionné : changer de candidats = modifier ce fichier, pas le code.
+#
+# Le CHOIX FINAL n'est pas écrit ici : `python -m pai ai setup` détecte la machine (architecture, cœurs, RAM, GPU),
+# ne garde que les candidats qui tiennent en mémoire, les mesure sur les tâches PAI (qualité, factualité, JSON,
+# vitesse, mémoire : pai/ai/selfeval.py) et enregistre le meilleur compromis (Réglages → IA, ou AI_MODEL /
+# AI_MODEL_SMALL qui restent prioritaires). Sans modèle installé, PAI fonctionne en mode « sans IA ».
+#
+# ram_gb : mémoire vive nécessaire au contexte par défaut (poids + cache KV + marge), mesurée ou estimée.
+# tiers : small (extraction, classement, textes courts) · large (stratégie, lettre, reformulation) · embed (sémantique).
+# prior : rang a priori (1 = meilleur) pour départager AVANT mesure ; la mesure sur la machine l'emporte toujours.
+version: 1
+
+reserve_ram_gb: 3.0          # laissés à PAI, PostgreSQL et au système avant de charger un modèle
+min_tokens_per_second:
+  small: 8                   # en dessous, trop lent pour une analyse interactive
+  large: 3                   # une lettre (≈ 450 jetons) en moins de 3 minutes
+
+candidates:
+  - id: qwen3-4b-instruct
+    ollama: qwen3:4b-instruct-2507-q4_K_M
+    docker_hub: ai/qwen3:4b-instruct-2507-q4_K_M
+    params_b: 4.0
+    file_gb: 2.5
+    ram_gb: 4.2
+    tiers: [large]
+    prior: 1
+    think: false             # variante « instruct » : pas de raisonnement caché, réponses directes
+    license: Apache-2.0
+    notes: multilingue (français correct), JSON fiable ; bon compromis qualité / vitesse sur CPU
+  - id: gemma3-4b
+    ollama: gemma3:4b
+    docker_hub: ai/gemma3:4b-q4_K_M
+    params_b: 4.3
+    file_gb: 2.5
+    ram_gb: 4.5
+    tiers: [large]
+    prior: 2
+    license: Gemma
+    notes: très bon français ; un peu plus lent
+  - id: qwen2.5-3b
+    ollama: qwen2.5:3b
+    docker_hub: ai/qwen2.5:3B-Q4_K_M
+    params_b: 3.1
+    file_gb: 1.9
+    ram_gb: 3.2
+    tiers: [large, small]
+    prior: 3
+    license: Qwen Research
+    notes: JSON solide ; français correct
+  - id: qwen3-1.7b
+    ollama: qwen3:1.7b
+    docker_hub: ai/qwen3:1.7b-q4_K_M
+    params_b: 1.7
+    file_gb: 1.1
+    ram_gb: 2.2
+    tiers: [small]
+    prior: 1
+    think: false             # modèle hybride : raisonnement désactivé (réponses courtes, JSON direct)
+    license: Apache-2.0
+    notes: petit et rapide ; extraction et classement
+  - id: gemma3-1b
+    ollama: gemma3:1b
+    docker_hub: ai/gemma3:1b-q4_K_M
+    params_b: 1.0
+    file_gb: 0.8
+    ram_gb: 1.6
+    tiers: [small]
+    prior: 2
+    license: Gemma
+    notes: le plus léger ; utile sur une petite machine
+  - id: qwen3-8b
+    ollama: qwen3:8b
+    docker_hub: ai/qwen3:8B-Q4_K_M
+    params_b: 8.2
+    file_gb: 5.0
+    ram_gb: 7.5
+    tiers: [large]
+    prior: 0                 # meilleur, mais seulement si la machine suit (GPU ou 8 cœurs et plus)
+    min_cpus: 8
+    think: false
+    license: Apache-2.0
+    notes: nettement meilleur en rédaction ; trop lent sur 4 cœurs sans GPU
+  - id: embeddinggemma
+    ollama: embeddinggemma
+    docker_hub: ai/embeddinggemma:300M-Q8_0
+    params_b: 0.3
+    file_gb: 0.33
+    ram_gb: 0.8
+    tiers: [embed]
+    prior: 1
+    license: Gemma
+    notes: embeddings multilingues (français) pour la correspondance sémantique
+  - id: nomic-embed-text
+    ollama: nomic-embed-text
+    docker_hub: ai/nomic-embed-text-v1.5:137M-F16
+    params_b: 0.14
+    file_gb: 0.27
+    ram_gb: 0.5
+    tiers: [embed]
+    prior: 2
+    license: Apache-2.0
+    notes: embeddings surtout anglais ; repli
+
+# Paramètres par tâche pour les modèles locaux (contexte minimal = moins de calcul, réponses plus stables).
+tasks:
+  default:          {num_ctx: 4096, temperature: 0.2, max_tokens: 800,  timeout_s: 240}
+  extract:          {num_ctx: 4096, temperature: 0.0, max_tokens: 400,  timeout_s: 120}
+  analyze_offer:    {num_ctx: 6144, temperature: 0.0, max_tokens: 900,  timeout_s: 240}
+  analyze_company:  {num_ctx: 4096, temperature: 0.0, max_tokens: 400,  timeout_s: 120}
+  classify:         {num_ctx: 4096, temperature: 0.0, max_tokens: 500,  timeout_s: 120}
+  strategy:         {num_ctx: 6144, temperature: 0.2, max_tokens: 900,  timeout_s: 360}
+  cv_content:       {num_ctx: 8192, temperature: 0.2, max_tokens: 1800, timeout_s: 600}
+  cv_fix:           {num_ctx: 6144, temperature: 0.1, max_tokens: 900,  timeout_s: 360}
+  letter:           {num_ctx: 6144, temperature: 0.3, max_tokens: 900,  timeout_s: 480}
+  answers:          {num_ctx: 4096, temperature: 0.2, max_tokens: 700,  timeout_s: 240}
+  critique:         {num_ctx: 8192, temperature: 0.0, max_tokens: 1200, timeout_s: 480}
+  learning_rules:   {num_ctx: 4096, temperature: 0.2, max_tokens: 700,  timeout_s: 240}
+  chat:             {num_ctx: 4096, temperature: 0.3, max_tokens: 600,  timeout_s: 180}
+  studio_quick:     {num_ctx: 4096, temperature: 0.0, max_tokens: 700,  timeout_s: 180}
+  studio_default:   {num_ctx: 8192, temperature: 0.2, max_tokens: 1800, timeout_s: 600}
+  studio_complex:   {num_ctx: 8192, temperature: 0.2, max_tokens: 1500, timeout_s: 600}

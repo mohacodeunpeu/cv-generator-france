@@ -2,15 +2,15 @@
 // INGEST → UNDERSTAND → COMPANY → MATCH → STRATEGY → CV → LETTER → PACK → QA.
 // Chaque étape a une voie déterministe : sans IA, PAI produit quand même un pack complet (moins rédigé, tout aussi vrai).
 const STAGES = [
-  ['ingest', 'Ingest', "Lecture de l'offre"],
-  ['understand', 'Understand', 'Compréhension du poste'],
-  ['company', 'Company', "L'entreprise, d'après l'annonce"],
-  ['match', 'Match', 'Ton profil face à l\'offre'],
-  ['strategy', 'Strategy', 'Angle, titre et design'],
+  ['ingest', 'Lecture', "Lecture de l'offre"],
+  ['understand', 'Compréhension', 'Poste, exigences, mots-clés'],
+  ['company', 'Entreprise', "L'entreprise, d'après l'annonce"],
+  ['match', 'Score PAI', 'Exigences prouvées par tes faits'],
+  ['strategy', 'Stratégie', 'Angle, variante de CV et design'],
   ['cv', 'CV', 'CV lié à tes faits, validé ligne par ligne'],
-  ['letter', 'Letter', 'Lettre assortie au CV'],
+  ['letter', 'Lettre', 'Lettre assortie au CV'],
   ['pack', 'Pack', 'Questions, scores et versions'],
-  ['qa', 'QA', 'PDF réel : pages, lecture ATS, polices'],
+  ['qa', 'Relecture', 'PDF réel relu comme par un ATS'],
 ];
 const STAGE_KEYS = STAGES.map((s) => s[0]);
 const MODE_SKIP = { QUICK: ['cv', 'letter', 'qa'], STANDARD: [], DEEP: [] };
@@ -231,10 +231,12 @@ async function runPipeline(input) {
     R.company = E.companyCard(a, offer);
     setStep('company', 'done', R.company.name ? `${R.company.name}${R.company.figures.length ? ` · ${nb(R.company.figures.length, 'chiffre cité', 'chiffres cités')}` : ''} · source : l'annonce` : "Entreprise non nommée dans l'annonce");
 
-    // 4. MATCH
-    setStep('match', 'run');
+    // 4. SCORE PAI (déterministe : aucune IA ne décide de ce qui est prouvé)
+    setStep('match', 'run', 'Exigences classées, preuves cherchées dans tes faits');
     const m = E.computeMatch(P, a); R.match = m;
-    setStep('match', 'done', `Correspondance ${pct(m.match)}\u00a0/\u00a0100 · qualité ${pct(m.quality)} · risque\u00a0${pct(m.risk)}`);
+    R.ats = ATS.matchReport(P, a, m, offer.text);
+    const rq = R.ats.requirements; const must = [].concat(rq.proven, rq.plausible, rq.unproven).filter((x) => x.class === 'MUST');
+    setStep('match', 'done', `Score PAI ${R.ats.score.value}\u00a0% (provisoire) · ${must.length ? `${must.filter((x) => x.proof.status === 'PROUVÉ').length}/${must.length} exigences obligatoires prouvées` : nb(rq.proven.length, 'exigence prouvée', 'exigences prouvées')}`);
 
     // 5. STRATEGY (+ design automatique expliqué)
     setStep('strategy', 'run', 'Comparaison des positionnements');
@@ -249,11 +251,11 @@ async function runPipeline(input) {
     const auto = designFor(a, strat, offer.text);
     strat.best.design_profile = auto.design; strat.best.photo_mode = auto.photo_mode;
     R.strategy = strat; R.design = auto;
-    setStep('strategy', 'done', `« ${strat.best.title} » · ${DESIGN_NAME(auto.design)} · ${DS.PALETTES[auto.palette] ? DS.PALETTES[auto.palette].label : auto.palette}${auto.photo_mode !== 'OFF' ? ' · avec photo' : ''}`);
+    setStep('strategy', 'done', `« ${strat.best.title} » · CV ${R.ats.variant.label} · ${DESIGN_NAME(auto.design)} · ${DS.PALETTES[auto.palette] ? DS.PALETTES[auto.palette].label : auto.palette}${auto.photo_mode !== 'OFF' ? ' · avec photo' : ''}`);
 
     const pack = { id: uid('pack'), created_at: nowIso(), mode, status: 'DRAFT', engine: 'studio', provider: AI.ok() ? AI.label() : 'aucun (mode sans IA)', ai_mode: AI.mode(),
       versions: { offer_v: offer.text_hash, profile_v: profileTag(S.profile), engine_v: D.version.engine, prompt_v: D.version.prompts, rules_v: D.version.rules, cv_v: '', letter_v: '', answers_v: '', design_v: `${auto.design}@${(D.designs[auto.design] || {}).version || 1}` },
-      offer, analysis: a, match: m, strategy: strat, design: auto, company: R.company, cvs: [], cv_index: 0, letters: [], letter_index: 0, answers: [], scores: {},
+      offer, analysis: a, match: m, strategy: strat, design: auto, company: R.company, ats: R.ats, cvs: [], cv_index: 0, letters: [], letter_index: 0, answers: [], scores: {},
       risks: m.risks.map((r) => r.text).concat(strat.best.risks || []), next_action: '', missing_profile_data: missingData(S.profile), log: [], calls: [] };
 
     if (mode === 'QUICK') {
@@ -294,14 +296,15 @@ async function runPipeline(input) {
     pack.letters = [{ v: 1, label: 'V1', created_at: nowIso(), source: L.letter.source, doc: L.letter, report: L.report, checks: L.checks }];
     setStep('pack', 'done', `${pack.answers.length ? `${nb(pack.answers.length, 'réponse', 'réponses')} · ${pack.answers.filter((x) => x.confidence === 'BLOCKED').length} à compléter` : 'aucune question'} · ${pack.cvs.length} CV · 1 lettre`);
 
-    // 9. QA (PDF réel)
-    setStep('qa', 'run', 'pdfmake → PDF texte, relu par pdf.js');
+    // 9. RELECTURE (PDF réel, relu comme par un ATS : serveur PAI, sinon navigateur)
+    setStep('qa', 'run', SERVER ? 'PDF relu par le scanner ATS du serveur PAI' : 'PDF relu dans le navigateur (pdf.js)');
     const maxPages = E.country(a.country).max_pages || 1;
     const required = m.coverage.filter((c) => c.covered && c.priority === 'REQUIRED').map((c) => c.term);
     for (const [i, entry] of pack.cvs.entries()) {
       const fit = await PDF.cvFitted(entry.doc, maxPages);
       entry.doc = fit.doc; entry.qa = PDF.qa(fit.info, fit.doc, required, maxPages); entry.qa.trim_steps = fit.trimSteps;
       entry.report = E.Validator(S.profile, offer.text, [a.job_title, a.company]).validateLines(entry.doc.lines);
+      entry.scan = await scanCv(entry.doc, fit.bytes, fit.info, entry.qa, maxPages);
       if (mode === 'DEEP' && i === 0 && S.aiLimits && S.aiLimits.images) {
         const png = await PDF.pngBlob(fit.bytes);
         const vis = await tryAi('qa', () => AI.ask('judge_visual', { context: `CV pour « ${a.job_title} » (${a.company}), design ${DESIGN_NAME(fit.doc.design_profile)}` }, { signal, images: [png], cache: false }));
@@ -313,8 +316,10 @@ async function runPipeline(input) {
       const first = pack.cvs[0]; const best = pack.cvs.slice().sort((x, y) => avg(y) - avg(x))[0];
       pack.cv_index = pack.cvs.indexOf(best.qa && best.qa.ok ? best : first);
     }
-    const q0 = pack.cvs[pack.cv_index].qa; R.qa = q0;
-    setStep('qa', q0.ok ? 'done' : 'fail', `${nb(q0.pages, 'page', 'pages')} · police min. ${num(q0.min_font_pt)}\u00a0pt · mots-clés requis ${q0.required_found}${q0.issues.length ? ` · ${q0.issues.map((x) => x.detail).join(', ')}` : ' · aucun défaut'}`);
+    const e0 = pack.cvs[pack.cv_index]; const q0 = e0.qa; R.qa = q0;
+    pack.ats = ATS.matchReport(P, a, m, offer.text, { cv: e0.doc, validation: e0.report, scan: e0.scan }); R.ats = pack.ats;
+    const errs = e0.scan.checks.filter((c) => c.status === 'ERROR').map((c) => c.label.toLowerCase());
+    setStep('qa', q0.ok && !errs.length ? 'done' : 'fail', `Format & parsing ${e0.scan.score}\u00a0% · ${nb(q0.pages, 'page', 'pages')} · Score PAI ${pack.ats.score.value}\u00a0%${errs.length ? ` · à corriger : ${errs.join(', ')}` : ' · rien de perdu, rien d\'ajouté'}`);
     return await finishPack(pack);
   } catch (e) {
     const cancelled = e && (e.code === 'cancelled' || e.name === 'AbortError');
@@ -331,7 +336,7 @@ function computeScores(pack) {
   const cvE = pack.cvs[pack.cv_index]; const lE = pack.letters[pack.letter_index];
   const crit = cvE && cvE.critique ? cvE.critique.deterministic : null;
   const points = E.scoreEvents(cvE && cvE.doc, lE && lE.doc, pack.analysis, pack.match, pack.strategy, { cv: (cvE && cvE.report) || {}, letter: (lE && lE.report) || {} }, crit);
-  return { factuality_cv: cvE ? cvE.report.factuality : null, factuality_letter: lE ? lE.report.factuality : null, match: pack.match.match, quality: pack.match.quality, risk: pack.match.risk, points };
+  return { pai_score: pack.ats && pack.ats.score ? pack.ats.score.value : null, factuality_cv: cvE ? cvE.report.factuality : null, factuality_letter: lE ? lE.report.factuality : null, match: pack.match.match, quality: pack.match.quality, risk: pack.match.risk, points };
 }
 function refreshStatus(pack) {
   const cvE = pack.cvs[pack.cv_index]; const lE = pack.letters[pack.letter_index];
@@ -342,6 +347,8 @@ function refreshStatus(pack) {
     : !S.profile.validated ? 'Valide ton Master Profile (Profil) : tes documents passeront de BROUILLON à FINAL. Puis relis et postule toi-même.'
       : !pdfOk ? 'Le PDF a un défaut de mise en page : ouvre CV Studio et change de densité ou de design.'
         : 'Corrige les lignes signalées (factualité 100 % requise) avant de postuler.';
+  const P0 = Pp();
+  if (cvE && P0) { try { pack.ats = ATS.matchReport(P0, pack.analysis, pack.match, (pack.offer && pack.offer.text) || '', { cv: cvE.doc, validation: cvE.report, scan: cvE.scan || null }); } catch (e) { console.warn('score PAI', e); } }
   pack.scores = computeScores(pack);
   if (cvE) { pack.versions.cv_v = E.hash(cvE.doc.lines); pack.versions.letter_v = lE ? E.hash(lE.doc.lines) : ''; pack.versions.design_v = `${cvE.doc.design_profile}@${(D.designs[DS.familyOf(cvE.doc.design_profile)] || {}).version || 1}`; }
   pack.versions.answers_v = pack.answers.length ? E.hash(pack.answers) : '';
@@ -383,7 +390,13 @@ const Ingest = {
       login_walled: 'Cette page demande une connexion (LinkedIn, Indeed connecté…) : PAI ne lit jamais derrière un compte. Copie le texte de l\'offre ou enregistre-la en PDF.',
       bad_url: 'Lien invalide.', blocked_address: 'Adresse refusée par sécurité (réseau privé ou local).', too_large: 'Page trop lourde pour être lue.',
       timeout: 'Le site met trop de temps à répondre.', http_error: 'Le site a renvoyé une erreur (page expirée ou supprimée ?).', unreadable: 'Page lue, mais aucun texte d\'offre exploitable.',
-      no_fetch_here: e && e.message, rate_limited: 'Trop de lectures en peu de temps : réessaie dans une minute.',
+      no_fetch_here: e && e.message, rate_limited: 'Le site limite les lectures : réessaie dans une minute, ou colle le texte de l\'offre.',
+      forbidden: 'Le serveur PAI n\'a pas pu lire cette page : le site en refuse l\'accès. Colle le texte de l\'offre ou importe son PDF.',
+      anti_bot: 'Le serveur PAI n\'a pas pu lire cette page : le site bloque les lectures automatiques (protection anti-robot). Colle le texte ou importe le PDF.',
+      auth_required: 'Le serveur PAI n\'a pas pu lire cette page : le site exige une connexion. Colle le texte de l\'offre ou importe son PDF.',
+      not_found: 'Le serveur PAI n\'a pas trouvé cette page (offre retirée ?). Colle le texte si tu l\'as encore.',
+      unavailable: 'Le site de l\'offre est indisponible pour l\'instant : réessaie plus tard, ou colle le texte de l\'offre.',
+      js_required: 'Le serveur PAI n\'a pas pu lire cette page : elle n\'affiche l\'offre qu\'avec JavaScript. Colle le texte de l\'offre ou importe son PDF.',
     })[code] || `Lecture impossible (${code || (e && e.message) || 'erreur'}).`;
   },
 };

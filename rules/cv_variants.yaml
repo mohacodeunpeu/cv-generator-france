@@ -1,0 +1,43 @@
+# Variantes de CV construites depuis le CV MAÎTRE (seule source de vérité : le profil).
+# Une variante ne crée aucun fait : elle choisit l'angle (titre, ordre des compétences, expériences mises en avant).
+# Sélection automatique : mots de l'intitulé d'abord (le plus spécifique gagne, dans l'ordre ci-dessous), puis secteur,
+# sinon MASTER. Les termes sont comparés sans casse ni accents.
+version: 1
+order: [CHARGE_AFFAIRES, RECRUTEMENT, DIGITAL, BUSINESS_DEVELOPER, COMMERCIAL]
+variants:
+  MASTER:
+    label: CV maître
+    angle: Profil complet, sans ciblage particulier.
+    skill_groups: [commercial, tools, digital]
+  CHARGE_AFFAIRES:
+    label: Chargé d'affaires
+    title: [charge d'affaires, chargee d'affaires, ingenieur d'affaires, technico-commercial, technico commercial]
+    sectors: []
+    angle: Suivi d'affaires de bout en bout, négociation, relation client dans la durée.
+    skill_groups: [commercial, tools, digital]
+  RECRUTEMENT:
+    label: Recrutement
+    title: [recruteur, recruteuse, recrutement, talent acquisition, charge de recrutement, chargee de recrutement, sourcing, rh]
+    sectors: [recrutement_rh]
+    angle: Sourcing, entretiens, relation candidats et managers.
+    skill_groups: [commercial, tools, digital]
+  DIGITAL:
+    label: Digital
+    title: [community manager, digital, marketing digital, social media, web, growth, contenu, content, e-commerce]
+    sectors: [digital_web]
+    angle: Contenus, réseaux sociaux, performance mesurée.
+    skill_groups: [digital, tools, commercial]
+  BUSINESS_DEVELOPER:
+    label: Business Developer
+    title: [business developer, business development, bizdev, sdr, bdr, developpement commercial, key account, account executive]
+    sectors: [business_development, international_vie]
+    angle: Prospection, qualification, pipeline, conquête de nouveaux clients.
+    skill_groups: [commercial, tools, digital]
+  COMMERCIAL:
+    label: Commercial
+    title: [commercial, commerciale, vendeur, vendeuse, sales, conseiller de vente, conseillere de vente, account manager,
+            charge de clientele, chargee de clientele, attache commercial, attachee commerciale]
+    sectors: [commercial, retail_premium, account_management, customer_success, administration_commerciale, relation_client,
+              hospitality_evenementiel]
+    angle: Vente, conseil, fidélisation, résultats commerciaux.
+    skill_groups: [commercial, tools, digital]

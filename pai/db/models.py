@@ -219,6 +219,8 @@ class LlmCall(TimestampMixin, Base):
     cached: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     ok: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     error: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    tier: Mapped[str] = mapped_column(String(12), default="", server_default="", nullable=False)
+    request_id: Mapped[str] = mapped_column(String(64), default="", server_default="", nullable=False)
 
 
 class CvVersion(TimestampMixin, Base):

@@ -155,15 +155,19 @@ def test_extract_json_tolerant():
 def test_provider_switch_and_degraded_default(monkeypatch):
     from pai.config import reset_settings_cache
 
-    monkeypatch.setenv("PAI_AI_PROVIDER", "claude")
+    monkeypatch.setenv("AI_PROVIDER", "anthropic")      # alias de claude
     monkeypatch.setenv("ANTHROPIC_API_KEY", "")
     reset_settings_cache()
-    assert isinstance(get_provider(), NullProvider)  # pas de clé → mode dégradé
+    prov = get_provider()
+    assert not prov.available and prov.mode() == "DEGRADED"  # pas de clé, pas de modèle local → sans IA, sans erreur
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
     reset_settings_cache()
     prov = get_provider()
     assert prov.available and prov.name == "claude" and prov.model_for("strategy") == "claude-opus-5-5"
-    assert get_provider("local").name == "null"  # LOCAL_MODEL absent
+    assert prov.model_for("factuality_judge") == "none"      # la factualité n'appelle jamais d'IA
+    local = get_provider("local")
+    assert local.name == "local" and not local.available    # Ollama injoignable (sonde simulée)
+    assert isinstance(get_provider("none"), type(local)) and get_provider("none").mode() == "DEGRADED"
 
 
 def test_openai_compat_provider(monkeypatch):

@@ -17,12 +17,15 @@ async function newCvVersion(label, mutate, opts = {}) {
   const draft = studioDraft(live, baseIdx);
   const doc = Object.assign(clone(base.doc), draft || {}); if (doc.colors === null) delete doc.colors;
   await mutate(doc);
-  const maxP = E.country(p.analysis.country).max_pages || 1; let fitted = doc; let qa = base.qa;
-  try { const fit = await PDF.cvFitted(doc, maxP); fitted = fit.doc; qa = PDF.qa(fit.info, fit.doc, requiredTerms(p), maxP); qa.trim_steps = fit.trimSteps; } catch (e) { console.warn(e); }
+  const maxP = E.country(p.analysis.country).max_pages || 1; let fitted = doc; let qa = base.qa; let scan = base.scan || null;
+  try {
+    const fit = await PDF.cvFitted(doc, maxP); fitted = fit.doc; qa = PDF.qa(fit.info, fit.doc, requiredTerms(p), maxP); qa.trim_steps = fit.trimSteps;
+    scan = await scanCv(fitted, fit.bytes, fit.info, qa, maxP);
+  } catch (e) { console.warn(e); }
   const report = E.Validator(S.profile, p.offer.text, [p.analysis.job_title, p.analysis.company]).validateLines(fitted.lines);
   const critique = opts.presentationOnly ? base.critique : { deterministic: E.deterministicCritique(fitted, p.analysis, p.match, report), ai: null, cycles: 0 };
   const v = Math.max(...p.cvs.map((x) => x.v || 0)) + 1;
-  p.cvs.push({ v, label: `V${v}`, created_at: nowIso(), source: fitted.source, doc: fitted, report, critique, qa, change: label, from: base.label || `V${base.v}` });
+  p.cvs.push({ v, label: `V${v}`, created_at: nowIso(), source: fitted.source, doc: fitted, report, critique, qa, scan, change: label, from: base.label || `V${base.v}` });
   p.cv_index = p.cvs.length - 1;
   refreshStatus(p); const saved = await Store.savePack(p);
   S.cvIndex = saved.cv_index; S.compareWith = Math.max(0, saved.cvs.findIndex((x) => x.v === base.v)); S.studio = null;
@@ -70,7 +73,7 @@ async function saveFeedback(p, doc, version, rating, reasons, comment) {
 }
 function packMarkdown(p) {
   const a = p.analysis; const m = p.match; const s = p.strategy.best; const P = Pp(); const L = p.letters[p.letter_index]; const e = p.cvs[p.cv_index];
-  return [`# Application Pack — ${a.job_title} · ${disp(a.company, 'company')}`, '', `Statut : **${p.status}** · ${p.mode} · ${p.provider} · ${p.created_at}${p.offer.synthetic ? ' · SYNTHETIC' : ''}`, '',
+  return [`# Application Pack — ${a.job_title} · ${disp(a.company, 'company')}`, '', `Statut : **${PACK_STATUS[p.status] || p.status}** · ${p.mode} · ${p.provider} · ${p.created_at}${p.offer.synthetic ? ' · SYNTHETIC' : ''}`, '',
     '## Versions', '', ...Object.entries(p.versions).map(([k, v]) => `- ${k} : ${v || '—'}`), '', '## Correspondance', '', `MATCH ${m.match} · QUALITY ${m.quality} · RISK ${m.risk}`, '',
     ...m.coverage.map((c) => `- ${c.covered ? '✅' : '❌'} ${c.term} (${c.priority})`), '', '## Stratégie', '', `- Titre : ${s.title}`, `- Accroche : ${s.hook}`, `- ${s.ats_mode} · ${e ? DESIGN_NAME(e.doc.design_profile) : s.design_profile}`, '',
     ...(p.design ? ['## Pourquoi ce design', '', ...p.design.why.map((w) => `- ${w.k} : ${w.t}`), ''] : []),
@@ -137,6 +140,10 @@ const ACT = {
   'cv-keep': async (el) => { const p = clone(curPack()); p.cv_index = Number(el.dataset.arg); refreshStatus(p); await Store.savePack(p); S.cvIndex = p.cv_index; toast(`${p.cvs[p.cv_index].label} retenue pour ce pack.`, 'i-check'); render(); },
   'toggle-gallery': () => { S.galleryOpen = !S.galleryOpen; render(); },
   'preview-mode': (el) => { S.previewMode = el.dataset.arg; render(); },
+  // Score PAI : une dimension (ou « all ») ouvre ses critères internes ; un second clic referme.
+  'ats-dim': (el) => { const k = el.dataset.arg; S.atsOpen = S.atsOpen === k ? null : k; render(); },
+  'sys-refresh': () => { Sys.load(); },
+  'ai-profile': async (el) => { try { S.server.ai = await Srv.req('PUT', '/v1/settings/ai', { profile: el.dataset.arg }); await Srv.loadStatus(); toast(`Profil IA : ${({ eco: 'économe', balanced: 'équilibré', quality: 'qualité' })[el.dataset.arg] || el.dataset.arg}.`, 'i-check'); } catch (e) { toast(`Refusé : ${(e && e.message) || e}`, 'i-alert'); } render(); },
   'letter-mode': (el) => { S.letterMode = el.dataset.arg; render(); },
   'set-design': (el) => {
     const f = el.dataset.arg; const p = curPack(); const doc = viewDoc(p, cvIdx(p)); const dd = D.designs[f] || {};
@@ -370,6 +377,7 @@ const ACT = {
     const key = (($(`#ai-key-${id}`) || {}).value || '').trim(); if (key) body.api_key = key;
     const model = $(`#ai-model-${id}`); if (model) body.model = model.value.trim();
     const url = $(`#ai-url-${id}`); if (url) body.base_url = url.value.trim();
+    const small = $(`#ai-small-${id}`); if (small) body.model_small = small.value.trim();
     try { S.server.ai = await Srv.req('PUT', '/v1/settings/ai', body); await Srv.loadStatus(); toast('Réglages IA enregistrés (clé chiffrée, jamais réaffichée).', 'i-check'); } catch (e) { toast(`Refusé : ${(e && e.message) || e}`, 'i-alert'); }
     render();
   },

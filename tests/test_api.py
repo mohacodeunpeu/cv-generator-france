@@ -286,13 +286,13 @@ def test_ai_complete_daily_cost_cap_and_call_journal(client, monkeypatch):
     reset_settings_cache()
     headers = api_key("generate")
     first = client.post("/v1/ai/complete", json={"prompt": "x", "json": True, "tier": "quick"}, headers=headers)
-    assert first.status_code == 200 and first.json()["json"] == {"ok": True, "task": "extract"}
+    assert first.status_code == 200 and first.json()["json"] == {"ok": True, "task": "studio_quick"}
     assert client.post("/v1/ai/complete", json={"prompt": "x", "tier": "complex"}, headers=headers).status_code == 200
     third = client.post("/v1/ai/complete", json={"prompt": "x"}, headers=headers)
     assert third.status_code == 429 and third.json()["detail"]["code"] == "rate_limited"
     with session_scope() as s:
         calls = s.query(LlmCall).all()
-        assert [c.task for c in calls] == ["extract", "strategy"] and round(sum(c.cost_eur for c in calls), 3) == 0.02
+        assert [c.task for c in calls] == ["studio_quick", "studio_complex"] and round(sum(c.cost_eur for c in calls), 3) == 0.02
 
 
 # ── Routes historiques ───────────────────────────────────────────────────────

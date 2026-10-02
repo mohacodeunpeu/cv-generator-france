@@ -1,8 +1,10 @@
 // ─── Réglages : fournisseur IA (interchangeable), thème, compte, données ; Versions ──
-const PROVIDERS = ['claude', 'gemini', 'mistral', 'openai', 'local', 'null'];
-const PROVIDER_HINT = { claude: 'Anthropic · clé API', gemini: 'Google AI Studio · clé API', mistral: 'La Plateforme · clé API', openai: 'OpenAI ou API compatible · clé + URL', local: 'Ollama / LM Studio sur ton serveur · URL', null: 'Aucun appel IA : tout reste déterministe' };
-const MODE_TXT = { REMOTE: 'IA distante (fournisseur cloud)', LOCAL: 'IA locale (ton serveur)', DEGRADED: 'Sans IA : voies déterministes' };
-const modeBadge = (m, compact) => `<span class="mode-badge ${m === 'DEGRADED' ? 'warn' : m === 'LOCAL' ? 'gold' : ''}" title="AI MODE · ${esc(m)} — ${esc(MODE_TXT[m] || '')}"><span class="dot"></span>${compact ? '' : 'AI MODE · '}${esc(m)}${compact && m !== 'DEGRADED' ? ` · ${esc(AI.short())}` : ''}</span>`;
+const PROVIDERS = ['local', 'null', 'claude', 'gemini', 'mistral', 'openai'];
+const PROVIDER_HINT = { claude: 'Anthropic · clé API payante', gemini: 'Google AI Studio · clé API', mistral: 'La Plateforme · clé API', openai: 'OpenAI ou API compatible · clé + URL', local: 'Ollama sur ton serveur · aucun coût, aucune clé', null: 'Aucun appel IA : tout reste déterministe' };
+// Mode IA affiché en clair : SANS IA (voies déterministes), IA LOCALE (gratuite, sur ton serveur), IA EXTERNE (optionnelle).
+const MODE_LABEL = { REMOTE: 'IA externe', LOCAL: 'IA locale', DEGRADED: 'Sans IA' };
+const MODE_TXT = { REMOTE: 'IA externe optionnelle (fournisseur cloud, avec ta clé)', LOCAL: 'IA locale gratuite, sur ton serveur', DEGRADED: 'Sans IA : chaque étape suit sa voie déterministe, tout reste vrai' };
+const modeBadge = (m, compact) => `<span class="mode-badge ${m === 'DEGRADED' ? 'warn' : m === 'LOCAL' ? 'gold' : ''}" title="${esc(MODE_TXT[m] || '')}"><span class="dot"></span>${compact ? '' : 'Mode · '}${esc((MODE_LABEL[m] || m).toUpperCase())}${compact && m !== 'DEGRADED' ? ` · ${esc(AI.short())}` : ''}</span>`;
 
 function aiProviderCard() {
   if (!SERVER) {
@@ -16,15 +18,21 @@ function aiProviderCard() {
   if (!S.server.aiLoaded) { Srv.loadAi(); return `<div class="card"><h3 class="h3">Fournisseur IA</h3><p class="muted small live-dots">Chargement</p></div>`; }
   if (!st) return `<div class="card stack"><h3 class="h3">Fournisseur IA</h3><div class="notice warn">${icon('i-alert')}<span>Réglages IA illisibles (serveur plus ancien ou droits insuffisants).</span></div></div>`;
   const open = S.server.aiOpen || st.active;
+  const order = PROVIDERS.filter((id) => st.providers.some((x) => x.id === id)).concat(st.providers.map((x) => x.id).filter((id) => !PROVIDERS.includes(id)));
+  const providers = order.map((id) => st.providers.find((x) => x.id === id));
+  const prof = st.profile || 'balanced';
   return `<div class="card stack"><div class="card-head"><h3 class="h3">Fournisseur IA</h3>${modeBadge(st.mode)}</div>
-    <p class="small" style="margin:0">PAI n'est pas Claude : l'IA n'est qu'un rédacteur interchangeable, contrôlé par le validateur. Les clés sont chiffrées sur ton serveur et ne sont jamais réaffichées (seulement un indice).</p>
-    <div class="providers">${st.providers.map((pv) => { const active = pv.id === st.active; const t = S.server.aiTest[pv.id];
+    <p class="small" style="margin:0">PAI fonctionne entièrement sans IA. L'IA locale (Ollama, gratuite) améliore la rédaction ; un fournisseur externe reste optionnel. Le score, les preuves et la factualité ne passent jamais par une IA. Les clés sont chiffrées sur ton serveur et ne sont jamais réaffichées (seulement un indice).</p>
+    <div class="field"><span class="label">Usage de l'IA</span><div class="seg" role="group" aria-label="Profil d'usage de l'IA">${[['eco', 'Économe'], ['balanced', 'Équilibré'], ['quality', 'Qualité']].map(([k, l]) => `<button data-act="ai-profile" data-arg="${k}" aria-pressed="${prof === k}">${l}</button>`).join('')}</div>
+      <span class="hint">Économe : l'IA seulement pour la lettre et l'extraction. Équilibré : aussi la stratégie et les reformulations. Qualité : toutes les étapes rédactionnelles.</span></div>
+    <div class="providers">${providers.map((pv) => { const active = pv.id === st.active; const t = S.server.aiTest[pv.id];
       return `<div class="provider ${active ? 'on' : ''}"><div class="row between"><div class="stack tight"><b>${esc(pv.label || PROVIDER_LABEL[pv.id] || pv.id)}</b><span class="hint">${esc(PROVIDER_HINT[pv.id] || '')}${pv.model ? ` · ${esc(pv.model)}` : ''}${pv.key_hint ? ` · clé ${esc(pv.key_hint)}` : ''}</span></div>
         <div class="row" style="gap:6px">${active ? chip('Actif', 'good') : ''}${pv.id !== 'null' ? chip(pv.configured ? 'Configuré' : 'Non configuré', pv.configured ? 'accent' : 'warn') : ''}</div></div>
         <div class="row">${active ? '' : `<button class="btn sm" data-act="ai-activate" data-arg="${esc(pv.id)}">Activer</button>`}${pv.id !== 'null' ? `<button class="btn sm ghost" data-act="ai-open" data-arg="${esc(pv.id)}">${open === pv.id ? 'Fermer' : 'Configurer'}</button><button class="btn sm ghost" data-act="ai-test" data-arg="${esc(pv.id)}">${icon('i-plug')} Tester la connexion</button>` : ''}${t ? testChip(t) : ''}</div>
         ${open === pv.id && pv.id !== 'null' ? `<div class="grid g2 provider-form">${['claude', 'gemini', 'mistral', 'openai'].includes(pv.id) ? `<div class="field"><label for="ai-key-${pv.id}">Clé d'API ${pv.key_hint ? '(laisser vide = inchangée)' : ''}</label><input id="ai-key-${pv.id}" class="input" type="password" autocomplete="off" spellcheck="false" placeholder="${pv.key_hint ? esc(pv.key_hint) : 'colle ta clé'}"></div>` : ''}
-          <div class="field"><label for="ai-model-${pv.id}">Modèle (vide = défaut)</label><input id="ai-model-${pv.id}" class="input" value="${esc(pv.source === 'ui' ? pv.model : '')}" placeholder="${esc(pv.model || '')}"></div>
-          ${['openai', 'local'].includes(pv.id) ? `<div class="field"><label for="ai-url-${pv.id}">URL de base</label><input id="ai-url-${pv.id}" class="input" value="${esc(pv.base_url || '')}" placeholder="${pv.id === 'local' ? 'http://ollama:11434/v1' : 'https://api.openai.com/v1'}"></div>` : ''}
+          <div class="field"><label for="ai-model-${pv.id}">${pv.id === 'local' ? 'Grand modèle (vide = choix mesuré sur ta machine)' : 'Modèle (vide = défaut)'}</label><input id="ai-model-${pv.id}" class="input" value="${esc(pv.source === 'ui' ? pv.model : '')}" placeholder="${esc(pv.model || '')}"></div>
+          ${pv.id === 'local' ? `<div class="field"><label for="ai-small-${pv.id}">Petit modèle (vide = choix mesuré)</label><input id="ai-small-${pv.id}" class="input" value="${esc(pv.source === 'ui' ? pv.model_small || '' : '')}" placeholder="${esc(pv.model_small || '')}"></div>` : ''}
+          ${['openai', 'local'].includes(pv.id) ? `<div class="field"><label for="ai-url-${pv.id}">URL de base</label><input id="ai-url-${pv.id}" class="input" value="${esc(pv.base_url || '')}" placeholder="${pv.id === 'local' ? 'http://ollama:11434' : 'https://api.openai.com/v1'}"></div>` : ''}
           <div class="row" style="grid-column:1/-1"><button class="btn sm primary" data-act="ai-save" data-arg="${esc(pv.id)}">Enregistrer</button>${pv.key_hint ? `<button class="btn sm ghost danger" data-act="ai-clear" data-arg="${esc(pv.id)}">Effacer la clé</button>` : ''}</div></div>` : ''}</div>`; }).join('')}</div></div>`;
 }
 const testChip = (t) => (t.busy ? '<span class="chip accent live"><span class="dot"></span>Test…</span>' : t.ok ? chip(`OK · ${fmtMs(t.latency_ms || 0)}${t.model ? ` · ${t.model}` : ''}`, 'good') : `<span class="chip bad" title="${esc(t.error || '')}">Échec : ${esc(String(t.error || 'erreur').slice(0, 80))}</span>`);
