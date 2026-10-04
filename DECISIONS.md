@@ -98,3 +98,29 @@
 
 22. **Intégration continue GitHub Actions.** Tests Python (SQLite + PostgreSQL 16), migrations, parité JS,
     e2e navigateur, `pip-audit`, `docker compose config`, uniquement avec des données fictives.
+
+23. **PAI autonome, IA locale par défaut.** `default_provider: local` (Ollama, gratuit ; sans modèle → sans IA),
+    `none` toujours possible, fournisseurs externes optionnels. Écarté : Claude par défaut. Raison : aucun coût
+    ni compte obligatoire ; toutes les fonctions marchent sans IA.
+
+24. **Modèle local choisi par mesure, porte de vérité d'abord.** Écarté : le plus gros modèle « qui tient ».
+    Raison : sur CPU, gemma3 4B déclarait prouvée une exigence non prouvée et gemma3 1B inventait un outil ; ils
+    sont écartés quel que soit leur score. Profil `eco` conseillé quand le grand modèle génère moins de 8 jetons/s.
+
+25. **Score PAI en pourcentages, critères en interne.** Écarté : afficher 20 à 24 critères notés. Raison : décision
+    plus rapide ; les critères restent consultables (« Voir les détails »). Jamais présenté comme un score d'ATS
+    réel ni une probabilité d'embauche.
+
+26. **Deux lectures du PDF par le scanner** (flux du fichier, ligne à ligne). Écarté : une seule lecture par
+    position (elle mêlait les colonnes et notait 34 % un CV lisible par un ATS moderne). Raison : les ATS réels
+    se partagent entre ces deux familles ; l'écart est signalé, pas caché.
+
+27. **Cloudflare Tunnel nommé pour l'accès public.** Écarté : trycloudflare (adresse temporaire), ports ouverts
+    par défaut. Raison : nom d'hôte stable, aucun port entrant, IP du serveur non exposée ; Caddy reste possible.
+
+28. **JobAgent : `PAI_MODE=off` par défaut, `auto` seulement avec des documents FINAL et 100 % factuels.** Écarté :
+    remplacer directement les documents de JobAgent. Raison : ne rien casser ; repli systématique ; un profil non
+    validé ne part jamais automatiquement.
+
+29. **Proxy sortant seulement explicite (`PAI_FETCH_PROXY`).** Écarté : suivre `HTTPS_PROXY`. Raison : la lecture
+    d'URL doit partir vers l'adresse validée (anti-SSRF) ; un proxy hérité par erreur n'est jamais suivi.

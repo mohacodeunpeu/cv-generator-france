@@ -1,60 +1,56 @@
 # Progression PAI — point de reprise
 
-Une nouvelle session lit ce fichier, puis `DECISIONS.md` et `RUNBOOK.md`, et reprend à « Reste à faire ».
-Branche de travail : `claude/elegant-dirac-vhi4np` (PR brouillon, rien sur `master` : la fusion est ta décision).
+Une nouvelle session lit ce fichier, puis `ARCHITECTURE.md`, `DECISIONS.md` et `docs/deployment.md`.
+Branche : `feature/pai-ultimate-autonomous` → PR brouillon `mohacodeunpeu/cv-generator-france#3` (base
+`claude/elegant-dirac-vhi4np`) ; rien sur `master`, la fusion est la décision du propriétaire.
+JobAgent : branche `feature/pai-integration` → PR brouillon `mohacodeunpeu/hellowork-automation-pro#1` (jamais `main`,
+qui se déploie tout seul).
 
-## Fait (avec preuve)
+## Grille d'avancement (critères explicites, mesurés au 4 octobre 2026)
 
-| Lot | Contenu | Preuve |
-|---|---|---|
-| P0 | Commit `master` décalé réparé ; paquet `pai` reconstruit ; règles, prompts, secteurs, designs versionnés | `import pai`, CI |
-| P0.5 | Master Profile v1 : `profiles/confirmations.yaml` + `legacy/` (85 faits), **MBA FORBIDDEN**, conflit « Bachelor PSB » en REVIEW, chiffres importés « à confirmer » | `python -m pai bootstrap-profile` |
-| P1-P3 | Profil versionné, analyse d'offre (secteur correct 13/13), matching 12 sous-scores, stratégie A/B/C | `tests/test_engine.py`, parité JS |
-| P4 | CV : faits liés ligne à ligne, sélection gloutonne des mots-clés prouvés, rendu Chromium 1 page, QA PDF | CV réel envoyé (hors Git) : 1 page, factualité 100 % |
-| P5 | Validateur claim → evidence (Python + JS) : MBA, faux diplôme, faux chiffre, outil non prouvé, niveau de langue gonflé, entreprise inventée, fait UNVERIFIED, phrases creuses, fausse date | `tests/golden/validator_cases.json` (23 cas) |
-| P6 | Lettre à phrases typées, questions (salaire BLOCKED), Application Pack ZIP versionné | tests + pack réel |
-| Studio | **PAI Studio** : https://claude.ai/artifact/DuyUG7Brc5LSKZ9WuoCfNK (version 5, refonte « Atelier »), IA via ton compte Claude, base privée (propriétaire seul, vérifié), benchmark et arène importés | e2e Chromium, captures `docs/proofs/redesign/` (avant / après) |
-| Interface | Refonte « Atelier » : design system (`docs/DESIGN_SYSTEM.md`), accueil centré sur « Analyser une offre », analyse en 9 étapes animées, CV Studio / Letter Studio (5 designs rendus réellement), Application Pack, page de connexion ; 3 passages critiques sur rendu réel avec les vraies polices | `docs/AUDIT_VISUEL.md`, `docs/proofs/redesign/`, e2e 375 → 1920 px |
-| Serveur | API `/v1`, PostgreSQL 16 + Alembic (30 tables), auth argon2 + sessions révocables + CSRF + limitation, clés d'API, jobs SKIP LOCKED idempotents, plafond de coût journalier, même interface servie par le serveur | `tests/test_api.py` (SQLite + PostgreSQL 16.13), e2e serveur |
-| Benchmark | Ancien vs PAI, même instrument, 13 offres SYNTHETIC : **92,9 vs 54,6** ; factualité CV 100 vs 0 ; lettre 100 vs 13,6 ; couverture honnête 97,4 vs 91,0 ; seul avantage de l'ancien : couverture brute (76,4 vs 71,7), en partie par bourrage | `python -m pai benchmark`, `tests/test_benchmark.py` |
-| Déploiement | Dockerfile (amd64/arm64), `docker-compose.yml` (projet `pai`, réseau interne, limites), Caddy HTTPS, sauvegardes age + rotation, test de fumée | pile Docker réelle lancée ici : pack généré par le worker, sauvegarde → modification → restauration OK ; captures `docs/proofs/server/` |
-| Mise à jour du serveur | `deploy/update.sh` (sauvegarde → code → reconstruction → santé → test de fumée → retour arrière auto), minuteur systemd, bouton GitHub Actions | `docs/DEPLOIEMENT_AUTO.md` ; scénarios succès / échec / retour arrière testés en bac à sable |
-| Qualité | CI GitHub Actions ; `pip-audit` : aucune vulnérabilité connue | `.github/workflows/ci.yml` |
+Chaque pourcentage = critères remplis et prouvés / critères définis. Une dépendance externe est nommée à part,
+jamais comptée comme faite.
 
-Tests au dernier passage (29/09) : **Python 274 réussis, 1 ignoré** (SQLite + PostgreSQL 16), **JS 13/13** (dont parité
-du CV sur 13 offres et étalement des 5 gabarits), **e2e navigateur 15/15** (parcours complet, 5 designs PDF, 7 largeurs
-de 375 à 1920 px, serveur sous CSP stricte).
+| Domaine | Critères (preuve) | Fait | % |
+|---|---|---|---|
+| **Moteur ATS** | lecture de CV ; analyse d'offre ; mots-clés ; synonymes et taxonomie française ; sémantique locale jamais preuve ; classes MUST/IMPORTANT/NICE/CONTEXT ; PROUVÉ/PLAUSIBLE/NON PROUVÉ (HubSpot, prospection, Salesforce, immobilier testés) ; écarts ; factualité ; scanner PDF OK/WARNING/ERROR (liste complète du cahier des charges, dont en-tête/pied de page et densité) ; Score PAI en dimensions ; modes A et B ; « pourquoi présent / pas ajouté » ; corpus TOP 20/40 avec volume ; boucle de relecture bornée ; parité Python ↔ JS (`tests/test_ats.py`, `tests/js/ats.test.js`) | 16/16 | **100 %** |
+| **Moteur de documents** | gabarits conservés ; contenu séparé du design ; profil maître unique ; 6 variantes ; interdits (MBA, diplômes, chiffres…) ; provenance par ligne ; avant/après/raison/preuve ; CV → PDF → relecture ; lettre au même validateur ; pack complet ; versions (`application_id`, `version_id`, empreintes, profil, gabarit, date) ; pack téléchargeable | 12/12 | **100 %** |
+| **Abstraction IA** | interface multi-fournisseurs ; défaut local/none ; alias `AI_*` ; routeur aucune/petit/grand/externe et profils ; aucune IA pour le déterministe ; cache par empreinte (hit/miss, invalidation) ; JSON validé et réponses rejetées jamais resservies ; contextes minimaux (lettre, correction) ; dégradation propre ; usage visible | 10/10 | **100 %** |
+| **IA locale** | fournisseur Ollama ; détection matérielle réelle ; auto-évaluation 7 tâches + vitesse + mémoire ; porte de vérité ; choix automatique ; registre configurable (contexte, température, délai, jetons) ; marche sans modèle ; génération réelle en Docker mesurée ; profil conseillé par la mesure | 9/9 | **100 %** (qualité bornée par le CPU : voir limites) |
+| **API** | `/api/jobs/analyze`, `/jobs/ingest`, `/cv/analyze`, `/cv/optimize`, `/cv/generate`, `/cv/validate`, `/letter/generate`, `/application/prepare`, `GET /application/{id}`, `/health`, `/ready` ; PDF/HTML/DOCX/texte directs ; documentée (`docs/api.md`) ; testée (`tests/test_public_api.py`) | 14/14 | **100 %** |
+| **Sécurité** | secrets hors Git + garde-fou CI (clés, jetons, IP de serveur) ; journaux sans contenu ; sessions (connexion, déconnexion, expiration, révocation au changement de mot de passe) ; CSRF/CSP/en-têtes ; anti-SSRF ; clés d'API hachées à droits ; IP réelle derrière le tunnel ; `pip-audit` ; lint et typage | 9/9 | **100 %** autonome · externe : dépôt public avec ancien historique `legacy/` (décision du propriétaire) |
+| **Déploiement** | image multi-architecture ; Compose pai/postgres/ollama/cloudflared(/caddy) ; `.env.example` ; tunnel nommé + état ; migrations au démarrage + `/api/ready` ; sauvegarde chiffrée + restauration vérifiée en CI ; mise à jour sauvegarde → build → migration → santé → fumée → retour arrière (détachée) ; image testée en CI ; contrôles de santé des trois services | 9/9 | **100 % prêt** · externe : jeton de tunnel et domaine, mise à jour du serveur (accès non disponible d'ici) |
+| **JobAgent** | audit du pont ; pont robuste ; modes OFF/ASSISTED/AUTO + `PAI_ENABLED`/`PAI_REQUIRED` ; branché (HelloWork, France Travail) ; repli ; tests (faux PAI) + essai réel de bout en bout ; README conforme au comportement réel ; automatisation existante intacte (534 tests) | 8/8 | **100 %** du code · externe : fusion de la PR #1 |
+| **Tests** | Python (SQLite + PostgreSQL) ; API ; JS (parité) ; navigateur (Studio et serveur, CSP) ; Docker (CI + pile locale) ; sauvegarde/restauration ; IA (routeur, cache, replis, IA locale réelle) ; PDF ; URL (anti-SSRF, causes d'échec) ; pont JobAgent ; lint ; typage | 12/12 | **100 %** · externe : test d'URL sur de vrais sites d'emploi (refusés par le réseau de l'environnement) |
+| **Documentation** | README ; RUNBOOK ; ARCHITECTURE ; API ; DEPLOYMENT ; ATS ; AI PROVIDERS ; JOBAGENT INTEGRATION ; SECURITY ; PROGRESS ; BENCHMARK | 11/11 | **100 %** |
 
-## À FOURNIR (par toi)
+AUTONOME : 100 % des fonctions marchent sans IA externe ni compte Claude · OPTIONNEL EXTERNE : disponible.
 
-1. **Valider ton profil** dans PAI Studio (onglet Profil) : trancher le conflit de diplôme en file REVIEW,
-   confirmer les chiffres importés de l'ancien générateur, dire si l'expérience la plus récente est toujours
-   en cours. Tant que ce n'est pas fait, tout reste en BROUILLON.
-2. **Clé API Anthropic** : seulement pour le serveur auto-hébergé (PAI Studio n'en a pas besoin).
-3. **Mettre à jour le serveur** (l'adresse publique de PAI sert encore l'ancienne interface) : une
-   commande en SSH, ou le minuteur automatique, ou le bouton GitHub Actions — voir `docs/DEPLOIEMENT_AUTO.md`.
-4. **Vérification depuis la session** : autoriser le domaine du serveur PAI dans l'accès réseau de
-   l'environnement cloud (sinon le proxy répond 403 et l'URL publique ne peut pas être retestée d'ici).
-5. **JobAgent** : export JSON du profil, ou autoriser son URL dans la politique réseau (le lien trycloudflare
-   était bloqué) — rien n'a été lu ni modifié côté JobAgent.
-6. **Photo professionnelle** (optionnelle : désactivée par défaut, activée seulement si le pays l'accepte).
-7. **Anciens CV et lettres (PDF)** et **offres réelles** (texte collé) pour un benchmark sur de vraies annonces.
-8. **Dépôt public** : il contient des coordonnées personnelles dans l'historique (`legacy/amine_profile.py`).
-   Recommandé : passer le dépôt en privé (Settings → General → Change visibility) ; option : purge de
-   l'historique avec `git filter-repo` (réécrit l'historique, à faire en connaissance de cause).
+## Mesures clés
 
-## Reste à faire (prochaines sessions)
+- Régression (13 offres fictives, PAI sans IA) : score 92,9 contre 54,6 ; factualité CV et lettre 100 % ;
+  0 ligne non prouvée ; couverture honnête 97,4 % (`docs/benchmark.md`).
+- IA locale en Docker (3 cœurs, sans GPU) : pack en 320 s, lettre de `qwen3:4b-instruct` retenue, factualité 100 %
+  (`docs/ai-providers.md`).
+- Pile Docker (PostgreSQL + interface/API + worker) saine en 23 s ; test de fumée complet (`docs/deployment.md`).
 
-- Benchmark avec juge IA (3 passes, deux ordres) et sur offres réelles dès qu'elles sont fournies.
-- Boucle d'apprentissage sur résultats réels (`/v1/outcomes`) : statistiques à partir de 5 cas, conclusions à 20 (A5).
-- Branchement JobAgent → `/v1` (lecture seule côté JobAgent aujourd'hui ; contrat dans `docs/api.md`).
-- Photo dans les designs `human_premium` ; variantes de gabarits par pays (US/UK sans photo, déjà géré par les règles).
-- Si le serveur 24/7 devient l'usage principal : réévaluer une interface Next.js (décision 3).
+## À faire par le propriétaire
 
-## Risques connus
+1. **Valider le profil** dans PAI (onglet Profil) : sans validation, tout reste `BROUILLON` et JobAgent (mode auto)
+   n'envoie jamais un document PAI.
+2. **Accès public** : domaine chez Cloudflare, tunnel nommé, `CLOUDFLARE_TUNNEL_TOKEN` (`docs/deployment.md` § 3).
+3. **Mettre à jour le serveur** : `deploy/update.sh` (ou minuteur / bouton, `docs/DEPLOIEMENT_AUTO.md`).
+4. **IA locale** (facultatif) : `COMPOSE_PROFILES=…,ai-local` puis `python -m pai ai setup --pull`.
+5. **JobAgent** : clé d'API PAI, `JOBAGENT_PAI_URL`, `PAI_MODE=assisted` pour commencer ; fusionner la PR #1.
+6. **Offres réelles** : déposer des offres dans `data/benchmark_real/` sur le serveur et lancer
+   `python -m pai benchmark-real` (l'environnement de développement n'a pas accès aux sites d'emploi).
+7. **Dépôt public** : passer en privé (historique `legacy/` avec d'anciennes coordonnées).
 
-- Offres du benchmark fictives : elles mesurent la qualité documentaire, pas les taux de réponse.
-- Sans profil validé, aucun document ne passe en FINAL (voulu, A3).
-- Un changement de modèle ou de prompt peut changer les sorties IA : versions tracées dans chaque pack,
-  validateur déterministe inchangé.
-- Le dépôt public expose l'historique legacy (voir À FOURNIR 8).
+## Limites connues
+
+- IA locale sur CPU : une lettre prend 3 à 6 minutes ; le profil `eco` limite l'IA à la lettre. Un modèle de
+  4 milliards de paramètres rédige moins bien qu'un grand modèle externe : PAI garantit la vérité, pas le style.
+- Le Score PAI mesure la qualité et la preuve, pas une probabilité d'embauche ; deux familles de lecture d'ATS
+  sont simulées, pas tous les ATS du marché.
+- Benchmark sur offres réelles : outil prêt et testé, aucun résultat publié tant que des offres réelles n'ont pas
+  été mesurées sur le serveur.
