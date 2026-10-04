@@ -47,9 +47,30 @@ class CachedProvider(AIProvider):
         self._current_tag = prompt_tag
         return super().complete(task, prompt_text, prompt_tag, images)
 
-    def _complete(self, task: str, prompt_text: str, images: list[bytes] | None = None) -> ProviderResult:
+    def _path(self, task: str, prompt_text: str, images: list[bytes] | None) -> Path:
         img_key = stable_hash(b"".join(images), 12) if images else ""
-        path = self.cache_dir / f"{task}-{self.key(task, prompt_text + img_key)}.json"
+        return self.cache_dir / f"{task}-{self.key(task, prompt_text + img_key)}.json"
+
+    def discard(self, task: str, prompt_text: str, images: list[bytes] | None = None) -> None:
+        try:
+            self._path(task, prompt_text, images).unlink(missing_ok=True)
+        except OSError:  # cache indisponible : rien à oublier
+            pass
+
+    def remember(self, task: str, prompt_text: str, result: ProviderResult, images: list[bytes] | None = None) -> None:
+        if self.mode == "on":
+            self._write(self._path(task, prompt_text, images), task, result)
+
+    def _write(self, path: Path, task: str, result: ProviderResult) -> None:
+        try:
+            path.write_text(json.dumps({"task": task, "prompt_tag": self._current_tag, "model": result.model,
+                                        "text": result.text, "tokens_in": result.tokens_in,
+                                        "tokens_out": result.tokens_out}, ensure_ascii=False, indent=1), encoding="utf-8")
+        except OSError:  # écriture impossible : le résultat est rendu quand même
+            pass
+
+    def _complete(self, task: str, prompt_text: str, images: list[bytes] | None = None) -> ProviderResult:
+        path = self._path(task, prompt_text, images)
         if self.mode in ("on", "replay_only"):
             try:
                 data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
@@ -62,10 +83,5 @@ class CachedProvider(AIProvider):
             raise DegradedMode(f"Rejeu hors ligne : aucune réponse enregistrée pour {task} ({path.name})")
         result = self.inner._complete(task, prompt_text, images)
         if self.mode == "on":
-            try:
-                path.write_text(json.dumps({"task": task, "prompt_tag": self._current_tag, "model": result.model,
-                                            "text": result.text, "tokens_in": result.tokens_in,
-                                            "tokens_out": result.tokens_out}, ensure_ascii=False, indent=1), encoding="utf-8")
-            except OSError:  # écriture impossible : le résultat est rendu quand même
-                pass
+            self._write(path, task, result)
         return result

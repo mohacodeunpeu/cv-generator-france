@@ -21,7 +21,7 @@ from .matching import compute_match
 from .obs import event
 from .pdf_qa import check_pdf
 from .profile import experiences_table, facts_table, missing_data, profile_version_tag
-from .providers.base import AIProvider, ProviderError
+from .providers.base import AIProvider, DegradedMode, ProviderError
 from .questions import answer_deterministic, split_questions
 from .rules import load_rules, prompts_version, truth_rules
 from .schemas import (Analysis, Answer, ApplicationPack, CvDocument, LetterDocument, Line, MasterProfile, Match, Offer,
@@ -68,7 +68,11 @@ class Pipeline:
         try:
             return fn()
         except ProviderError as exc:
-            self._step(stage, f"IA indisponible → voie déterministe ({exc})")
+            if isinstance(exc, DegradedMode) and "sans IA (profil" in str(exc):
+                # choix du routeur (profil eco / balanced) : rien n'est en panne
+                self._step(stage, f"voie déterministe ({str(exc).split(' : ', 1)[-1]})")
+            else:
+                self._step(stage, f"IA indisponible → voie déterministe ({exc})")
             return None
 
     def _common_vars(self, analysis: Analysis) -> dict[str, str]:

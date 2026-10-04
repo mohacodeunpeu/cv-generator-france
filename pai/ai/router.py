@@ -115,6 +115,16 @@ class AIRouter(AIProvider):
                 if self.on_call:
                     self.on_call(rec)
 
+    def discard(self, task: str, prompt_text: str, images: list[bytes] | None = None) -> None:
+        provider = self.route(task)[1]
+        if provider is not None:
+            provider.discard(task, prompt_text, images)
+
+    def remember(self, task: str, prompt_text: str, result: ProviderResult, images: list[bytes] | None = None) -> None:
+        provider = self.route(task)[1]
+        if provider is not None:
+            provider.remember(task, prompt_text, result, images)
+
     def _complete(self, task: str, prompt_text: str, images: list[bytes] | None = None) -> ProviderResult:  # pragma: no cover
         raise NotImplementedError("AIRouter.complete aiguille directement vers le fournisseur choisi")
 

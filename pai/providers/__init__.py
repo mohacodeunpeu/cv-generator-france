@@ -133,12 +133,15 @@ def active_provider_id(settings: Settings | None = None, stored: StoredAiSetting
     return "null"
 
 
-def active_profile(settings: Settings | None = None, stored: StoredAiSettings | None = None) -> str:
-    """Profil du routeur : réglage enregistré → AI_PROFILE → config/models.yaml → balanced."""
+def active_profile(settings: Settings | None = None, stored: StoredAiSettings | None = None, active: str = "") -> str:
+    """Profil du routeur : réglage enregistré → AI_PROFILE → profil conseillé par la mesure de l'IA locale
+    (`eco` si le grand modèle est lent sur cette machine) → config/models.yaml → balanced."""
     from ..ai.router import PROFILES, router_config
+    from .ollama import recommended_profile
 
     settings = settings or get_settings()
-    for candidate in (getattr(stored, "profile", "") if stored is not None else "", settings.ai_profile,
+    measured = recommended_profile() if active == "local" else ""
+    for candidate in (getattr(stored, "profile", "") if stored is not None else "", settings.ai_profile, measured,
                       str(router_config().get("profile") or "")):
         chosen = (candidate or "").strip().lower()
         if chosen in PROFILES:
@@ -169,7 +172,7 @@ def build_router(active: str, settings: Settings, stored: StoredAiSettings | Non
     modèle local est installé, le local pour les petites tâches (moins de jetons payants)."""
     from ..ai.router import AIRouter, router_config
 
-    profile = active_profile(settings, stored)
+    profile = active_profile(settings, stored, active)
     if active == "null":
         return AIRouter(active="null", profile=profile)
     local_cfg = provider_config("local", settings, stored)

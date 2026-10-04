@@ -66,14 +66,40 @@ def reset_probe_cache() -> None:
         _probe_cache.clear()
 
 
-def load_selection() -> dict[str, str]:
-    """Choix mesuré par `python -m pai ai setup` : {"small": nom, "large": nom, "embed": nom}."""
-    path = paths.DATA_DIR / "ai" / "local_selection.json"
+def _selection_file() -> dict[str, Any]:
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        return {k: str(v) for k, v in (data.get("selection") or {}).items() if v}
+        data = json.loads((paths.DATA_DIR / "ai" / "local_selection.json").read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
     except (OSError, ValueError):
         return {}
+
+
+def load_selection() -> dict[str, str]:
+    """Choix mesuré par `python -m pai ai setup` : {"small": nom, "large": nom, "embed": nom}."""
+    return {k: str(v) for k, v in (_selection_file().get("selection") or {}).items() if v}
+
+
+def measured_speed(model: str) -> float:
+    """Jetons/s mesurés pour ce modèle par l'auto-évaluation (0 si jamais mesuré)."""
+    for r in (_selection_file().get("report") or {}).get("results", []):
+        name = str(r.get("model", ""))
+        if model and name in (model, f"{model}:latest", model.removesuffix(":latest")):
+            return float(r.get("tokens_per_s") or 0.0)
+    return 0.0
+
+
+def recommended_profile() -> str:
+    """Profil du routeur conseillé par la mesure (`eco` quand le grand modèle est lent sur cette machine)."""
+    return str(_selection_file().get("recommended_profile") or "")
+
+
+def call_timeout(configured_s: float, prompt_text: str, max_tokens: int, tokens_per_s: float) -> float:
+    """Délai d'un appel : celui de la configuration, allongé si la vitesse mesurée l'exige (lecture du prompt à
+    ~40 jetons/s sur CPU + génération complète à la vitesse mesurée, marge 30 %), plafonné à 15 minutes."""
+    if tokens_per_s <= 0:
+        return configured_s
+    needed = 30 + len(prompt_text) / 3.5 / 40 + max_tokens / tokens_per_s * 1.3
+    return min(900.0, max(configured_s, needed))
 
 
 def installed_names(state: dict[str, Any]) -> set[str]:
@@ -165,7 +191,8 @@ class OllamaProvider(AIProvider):
             payload["format"] = "json"
         if self._think_flag(model) is False:
             payload["think"] = False
-        timeout = float(p.get("timeout_s", 240)) * self.timeout_scale
+        timeout = call_timeout(float(p.get("timeout_s", 240)), prompt_text, int(p.get("max_tokens", 800)),
+                               measured_speed(model)) * self.timeout_scale
         start = time.monotonic()
         try:
             resp = httpx.post(f"{self.base_url}/api/chat", json=payload, timeout=httpx.Timeout(timeout, connect=5.0))
@@ -183,6 +210,9 @@ class OllamaProvider(AIProvider):
         except httpx.HTTPError as exc:
             reset_probe_cache()
             raise ProviderError(f"local : Ollama injoignable ({exc.__class__.__name__})") from exc
+        if data.get("done_reason") == "length":
+            # coupée à la limite de jetons : un JSON incomplet, inutile de le relire ni de le mettre en cache
+            raise ProviderError(f"local : réponse tronquée à {payload['options']['num_predict']} jetons pour « {task} »")
         text = _THINK.sub("", ((data.get("message") or {}).get("content") or "")).strip()
         return ProviderResult(text=text, model=model, tokens_in=int(data.get("prompt_eval_count") or 0),
                               tokens_out=int(data.get("eval_count") or 0), cost_eur=0.0,

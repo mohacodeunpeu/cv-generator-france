@@ -234,3 +234,21 @@ def test_pdf_quality_checks(profile):
     qa = check_pdf(pipe.files["cv.pdf"], expect_pages=1, reading_order=["Camille Test", "Expérience professionnelle", "Formation"])
     assert qa["ok"], qa["issues"]
     assert all("Fira" in f or "PAI" in f for f in qa["fonts"]), qa["fonts"]
+
+
+def test_deliberate_no_ai_steps_are_not_reported_as_failures(profile):
+    """Profil eco : une étape faite sans IA par choix n'est pas une panne (« IA indisponible » est réservé aux pannes)."""
+    from pai.providers.base import DegradedMode
+
+    pipe = Pipeline(profile, FakeProvider())
+
+    def by_choice():
+        raise DegradedMode("strategy : tâche traitée sans IA (profil « eco »)")
+
+    def broken():
+        raise ProviderError("local : délai de réponse dépassé (600 s)")
+
+    assert pipe._try_ai("stratégie", by_choice) is None and pipe._try_ai("lettre", broken) is None
+    details = [e["detail"] for e in pipe.log]
+    assert details[0] == "voie déterministe (tâche traitée sans IA (profil « eco »))"
+    assert details[1].startswith("IA indisponible → voie déterministe (local : délai")

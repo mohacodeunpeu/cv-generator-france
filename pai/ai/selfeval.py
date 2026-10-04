@@ -284,10 +284,22 @@ def choose(results: list[dict[str, Any]], min_tps: dict[str, float]) -> dict[str
     return out
 
 
+ECO_BELOW_TPS = 8.0   # grand modèle plus lent que ça (CPU sans GPU) : l'IA ne sert qu'aux tâches qui en valent la peine
+
+
+def recommend_profile(selection: dict[str, str], report: dict[str, Any]) -> str:
+    """`eco` quand le grand modèle choisi génère moins de 8 jetons/s (une lettre ≈ 3 à 6 min sur CPU) : seules la
+    lettre et l'extraction passent par l'IA ; sinon `balanced`. Mesuré, jamais supposé."""
+    large = selection.get("large", "")
+    tps = next((float(r.get("tokens_per_s") or 0) for r in report.get("results", []) if r.get("model") == large), 0.0)
+    return "eco" if large and tps < ECO_BELOW_TPS else "balanced"
+
+
 def save_selection(selection: dict[str, str], report: dict[str, Any]) -> str:
     target = paths.DATA_DIR / "ai"
     target.mkdir(parents=True, exist_ok=True)
     path = target / "local_selection.json"
-    path.write_text(json.dumps({"selection": selection, "report": report, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())},
+    path.write_text(json.dumps({"selection": selection, "recommended_profile": recommend_profile(selection, report),
+                                "report": report, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())},
                                ensure_ascii=False, indent=1), encoding="utf-8")
     return str(path)

@@ -134,6 +134,12 @@ class AIProvider:
         self._record(record, start, result.latency_ms)
         return result
 
+    def discard(self, task: str, prompt_text: str, images: list[bytes] | None = None) -> None:
+        """Oublie la réponse mise en cache pour cette entrée (réponse rejetée : JSON invalide ou incomplet)."""
+
+    def remember(self, task: str, prompt_text: str, result: ProviderResult, images: list[bytes] | None = None) -> None:
+        """Enregistre une réponse validée sous la clé de la demande d'origine (succès obtenu à un nouvel essai)."""
+
     def _record(self, record: CallRecord, start: float, latency_ms: int = 0) -> None:
         from ..obs import event, tier_var
 
@@ -158,11 +164,15 @@ class AIProvider:
             result = self.complete(task, text + suffix, prompt_tag=tpl.tag, images=images)
             try:
                 data = extract_json(result.text)
-                if schema is not None:
-                    return schema.model_validate(data)
-                return data
+                value = schema.model_validate(data) if schema is not None else data
             except (ValueError, ValidationError) as exc:
                 last_error = str(exc)[:300]
+                # une réponse rejetée ne doit être resservie ni à l'essai suivant ni au prochain pack
+                self.discard(task, text + suffix, images)
+                continue
+            if attempt:
+                self.remember(task, text, result, images)   # même demande demain → même réponse, sans appel
+            return value
         raise ProviderError(f"Sortie JSON invalide pour {task} après {retries + 1} essais : {last_error}")
 
     # -- tâches (interface section F) -------------------------------------------

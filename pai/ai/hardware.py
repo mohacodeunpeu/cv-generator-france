@@ -37,6 +37,13 @@ class Hardware:
         return asdict(self) | {"vram_gb": self.vram_gb}
 
 
+def _env_float(name: str) -> float:
+    try:
+        return max(0.0, float(os.environ.get(name, "") or 0))
+    except ValueError:
+        return 0.0
+
+
 def _read(path: str) -> str:
     try:
         return Path(path).read_text(encoding="utf-8", errors="replace")
@@ -130,6 +137,17 @@ def detect(models_dir: str | Path | None = None) -> Hardware:
         hw.notes.append(f"limite mémoire du conteneur : {limit:.1f} Go")
         total, available = limit, min(available or limit, limit)
     hw.ram_total_gb, hw.ram_available_gb = round(total, 1), round(available, 1)
+    # Ollama dans un autre conteneur (profil Docker ai-local) : ce sont SES ressources qui comptent, pas les limites du
+    # conteneur de PAI. PAI_AI_HOST_CPUS / PAI_AI_HOST_RAM_GB les donnent, bornées par ce que la machine possède.
+    host_cpus, host_ram = _env_float("PAI_AI_HOST_CPUS"), _env_float("PAI_AI_HOST_RAM_GB")
+    if host_cpus or host_ram:
+        if host_cpus:
+            hw.cpus = round(min(host_cpus, float(os.cpu_count() or host_cpus)), 1)
+        if host_ram:
+            machine = _meminfo_gb("MemTotal") or host_ram
+            hw.ram_total_gb = round(min(host_ram, machine), 1)
+            hw.ram_available_gb = round(min(_meminfo_gb("MemAvailable") or hw.ram_total_gb, hw.ram_total_gb), 1)
+        hw.notes.append(f"ressources du serveur Ollama : {hw.cpus:g} cœurs, {hw.ram_total_gb:g} Go")
     hw.gpus = _gpus()
     target = Path(models_dir) if models_dir else Path.cwd()
     while not target.exists() and target != target.parent:
