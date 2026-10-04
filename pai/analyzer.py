@@ -260,13 +260,13 @@ def deterministic_analysis(offer: Offer, rules: RuleSet | None = None) -> Analys
         if contains_term(u, hard):
             sentence, prio = _best_priority(sentences, hard)
             skills.append(Skill(name=hard, priority=prio, evidence=sentence))
-    keywords: list[Keyword] = [Keyword(term=s.name, priority=to_kw[s.priority]) for s in skills]  # type: ignore[arg-type]
+    keywords: list[Keyword] = [Keyword(term=s.name, priority=to_kw[s.priority]) for s in skills]
     for tool in tools:
         _, tool_priority = _best_priority(sentences, tool)
         prio = to_kw[tool_priority]
         keywords.append(Keyword(term=tool.upper() if len(tool) <= 3 else tool.title(), priority=prio))
     for lang in languages:
-        keywords.append(Keyword(term=lang["name"], priority=to_kw[lang["priority"]]))  # type: ignore[arg-type]
+        keywords.append(Keyword(term=lang["name"], priority=to_kw[lang["priority"]]))
 
     missions = _section_bullets(lines, _MISSION_HEAD)
     profile_reqs = _section_bullets(lines, _PROFILE_HEAD)

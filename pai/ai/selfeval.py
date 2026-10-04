@@ -142,8 +142,9 @@ def score_reformulation(out: Any) -> float:
 def score_factuality(out: Any) -> tuple[float, int]:
     gold = [bool(x["gold"]) for x in cases()["factuality"]]
     items = out.get("supported") if isinstance(out, dict) else out
-    got = [(str(x).strip().lower() in ("true", "1", "oui", "vrai")) if not isinstance(x, bool) else x for x in (items or [])][:len(gold)]
-    got += [None] * (len(gold) - len(got))
+    parsed = [(str(x).strip().lower() in ("true", "1", "oui", "vrai")) if not isinstance(x, bool) else x
+              for x in (items or [])][:len(gold)]
+    got: list[bool | None] = [*parsed, *([None] * (len(gold) - len(parsed)))]
     ok = sum(1 for a, b in zip(got, gold) if a == b)
     accepted_lies = sum(1 for a, b in zip(got, gold) if b is False and a is True)
     return max(0.0, round(100 * ok / len(gold) - 20 * accepted_lies, 1)), accepted_lies
@@ -224,8 +225,8 @@ def run_provider(provider: AIProvider, *, tasks: list[str] | None = None) -> dic
 def run_deterministic() -> dict[str, Any]:
     """Même mesure pour le mode SANS IA, là où une voie déterministe existe (extraction, classement, correspondance)."""
     from ..analyzer import deterministic_analysis
-    from ..rules import load_rules
     from ..ingest import offer_from_text
+    from ..rules import load_rules
 
     c = cases()
     scores: dict[str, float] = {}

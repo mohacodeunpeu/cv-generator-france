@@ -12,11 +12,11 @@ from typing import Any
 
 from ..rules import RuleSet, load_rules
 from ..schemas import Analysis, CvDocument, MasterProfile, Match, ValidationReport
+from ..textnorm import nb
 from . import requirements as rq
 from . import scoring as sc
 from .parser import parse_cv_text
 from .variants import select_variant
-from ..textnorm import nb
 
 ENGINE_VERSION = "ats-1"
 
@@ -139,7 +139,7 @@ def cv_report(text: str | None = None, pdf: bytes | None = None, *, rules: RuleS
                           ", ".join(x for x, ok in (("e-mail", parsed.email), ("téléphone", parsed.phone)) if ok) or "absentes"),
                   sc.crit("Sections reconnues", "OK" if len(parsed.order) >= 3 else "WARNING", ", ".join(parsed.order) or "aucune"),
                   sc.crit("Dates lisibles", "OK" if parsed.dates else "WARNING", nb(len(parsed.dates), "date", "dates"))]
-        v = 100 - sum(sc_pen(c["status"]) for c in checks)
+        v: float = 100 - sum(sc_pen(c["status"]) for c in checks)
         dims.append(sc.dimension("cv", "parsing", v, checks, "texte seul : la mise en page n'est pas contrôlée", measured=False))
     v, d = sc.structure_from_parsed(parsed)
     dims.append(sc.dimension("cv", "structure", v, d, f"{sum(c['status'] == 'OK' for c in d)}/{len(d)} critères"))

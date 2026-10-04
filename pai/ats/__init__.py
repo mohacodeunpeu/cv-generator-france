@@ -16,7 +16,7 @@ Correspondance avec les briques attendues :
 """
 
 from .report import ENGINE_VERSION, cv_report, match_report
-from .requirements import classify_requirement, prove, proof_status_for_texts
+from .requirements import classify_requirement, proof_status_for_texts, prove
 
 __all__ = ["ENGINE_VERSION", "classify_requirement", "cv_report", "match_report", "proof_status_for_texts", "prove"]
 
@@ -26,7 +26,8 @@ def studio_payload() -> dict:
     pondérations, variantes. Une seule source de vérité (ce paquet) : le port JavaScript ne recopie aucune liste."""
     from ..analyzer import _MUST, _NICE
     from ..claims import LANGUAGES, LEVEL_WORDS
-    from . import lexicon, requirements as rq, scoring, semantic, variants
+    from . import lexicon, scoring, semantic, variants
+    from . import requirements as rq
 
     return {
         "lexicon": {"stopwords": sorted(lexicon.STOPWORDS), "filler": sorted(lexicon.FILLER), "suffixes": list(lexicon._SUFFIXES)},

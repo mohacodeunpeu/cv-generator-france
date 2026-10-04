@@ -14,8 +14,25 @@ from ..pack import export_zip, slug
 from ..profile import profile_version_tag
 from ..providers.base import CallRecord
 from ..schemas import ApplicationPack, MasterProfile, Offer
-from .models import (AnalysisRow, AnswerSet, ApplicationPackRow, Candidate, Claim, Critique, CvVersion, FactRow, Generation,
-                     LetterVersion, LlmCall, OfferRow, ProfileVersion, ScoreEvent, StoredFile, StoreDocument, utcnow)
+from .models import (
+    AnalysisRow,
+    AnswerSet,
+    ApplicationPackRow,
+    Candidate,
+    Claim,
+    Critique,
+    CvVersion,
+    FactRow,
+    Generation,
+    LetterVersion,
+    LlmCall,
+    OfferRow,
+    ProfileVersion,
+    ScoreEvent,
+    StoredFile,
+    StoreDocument,
+    utcnow,
+)
 
 PROFILE_PATH = "pai/profile"
 

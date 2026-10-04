@@ -19,11 +19,27 @@ from ..config import get_settings
 from ..db.models import AuditLog
 from ..db.repo import record_calls
 from ..db.session import session_scope
-from ..providers import (LABELS, PROVIDER_IDS, active_profile, active_provider_id, ai_mode, build_from_config, build_router,
-                         normalize_provider_id, provider_config)
+from ..providers import (
+    LABELS,
+    PROVIDER_IDS,
+    active_profile,
+    active_provider_id,
+    ai_mode,
+    build_from_config,
+    build_router,
+    normalize_provider_id,
+    provider_config,
+)
 from ..providers.base import ProviderError
-from ..providers.store import (StoredAiSettings, decode_settings, encrypt_secret, key_hint, load_settings_value,
-                               read_stored_settings, save_settings_value)
+from ..providers.store import (
+    StoredAiSettings,
+    decode_settings,
+    encrypt_secret,
+    key_hint,
+    load_settings_value,
+    read_stored_settings,
+    save_settings_value,
+)
 from .auth import Principal, require
 
 router = APIRouter(tags=["v1"])

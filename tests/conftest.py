@@ -18,6 +18,7 @@ os.environ.setdefault("ENVIRONMENT", "test")
 from pai.config import reset_settings_cache  # noqa: E402
 from pai.schemas import MasterProfile  # noqa: E402
 
+
 def pytest_configure(config):
     config.addinivalue_line("markers", "real_ollama: test qui utilise un vrai serveur Ollama (ignoré s'il est absent)")
 

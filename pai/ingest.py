@@ -63,7 +63,7 @@ def offer_from_text(text: str, title: str = "", company: str = "", source_url: s
         cleaned = cleaned[:30000]
     text_hash = stable_hash(norm(cleaned), 16)
     return Offer(id=f"off_{text_hash[:12]}", source_type=source_type, source_url=source_url, title_hint=title.strip(),
-                 company_hint=company.strip(), text=cleaned, text_hash=text_hash, synthetic=synthetic)  # type: ignore[arg-type]
+                 company_hint=company.strip(), text=cleaned, text_hash=text_hash, synthetic=synthetic)
 
 
 # ── URL ──────────────────────────────────────────────────────────────────────
@@ -128,7 +128,8 @@ def job_postings(soup: Any) -> list[dict[str, Any]]:
             if isinstance(node, list):
                 stack.extend(reversed(node))
             elif isinstance(node, dict):
-                types = node.get("@type") if isinstance(node.get("@type"), list) else [node.get("@type")]
+                raw_type = node.get("@type")
+                types = raw_type if isinstance(raw_type, list) else [raw_type]
                 if any(str(t).rsplit("/", 1)[-1].rsplit(":", 1)[-1] == "JobPosting" for t in types if t):
                     found.append(node)
                 stack.extend(node[k] for k in ("mainEntity", "@graph") if isinstance(node.get(k), (list, dict)))
@@ -176,7 +177,8 @@ def _salary(raw: Any) -> str:
     """baseSalary (MonetaryAmount) → « 40 000 – 45 000 EUR par an » ; vide si aucun montant."""
     if not isinstance(raw, dict):
         return ""
-    spec = raw.get("value") if isinstance(raw.get("value"), dict) else {"value": raw.get("value")}
+    value = raw.get("value")
+    spec = value if isinstance(value, dict) else {"value": value}
     amounts = [a for a in (_amount(spec.get("minValue")), _amount(spec.get("maxValue"))) if a] or \
               [a for a in [_amount(spec.get("value"))] if a]
     if not amounts:

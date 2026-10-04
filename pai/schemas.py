@@ -157,7 +157,7 @@ class Analysis(Loose):
     hidden_risks: list[str] = Field(default_factory=list)
     freshness: str = "UNKNOWN"
     ats_guess: str = "UNKNOWN"
-    recruiter_wants: dict[str, list[str]] = Field(default_factory=lambda: {"explicit": [], "inferred": []})
+    recruiter_wants: dict[str, list[str]] = Field(default_factory=lambda: {"explicit": list[str](), "inferred": list[str]()})
     keywords: list[Keyword] = Field(default_factory=list)
     language_of_offer: str = "fr"
     # Ajouts du moteur

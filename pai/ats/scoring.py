@@ -129,18 +129,19 @@ def keyword_entries(analysis: Analysis, requirements: list[Requirement], cv_text
     for kw in analysis.keywords:
         r = by_term.get(norm(kw.term))
         status = r.proof.status if r else UNPROVEN
+        via = r.proof.via if r else ""
         forms = rules.synonyms.equivalents(kw.term)
         present = bool(cv_text) and any(contains_term(text_n, f) for f in forms)
         if present and status == PROVEN:
             why = "Présent : prouvé par tes faits."
         elif present and status == PLAUSIBLE:
-            why = f"Présent sous une forme prudente : {r.proof.via}."
+            why = f"Présent sous une forme prudente : {via}."
         elif present:
             why = "Présent dans le CV source, mais aucun fait du profil ne le prouve : à vérifier."
         elif status == PROVEN:
             why = "Prouvé mais pas encore dans le CV : à placer (place limitée ou priorité faible)." if cv_text else "Prouvé par le profil."
         elif status == PLAUSIBLE:
-            why = f"Pas ajouté tel quel : {r.proof.via}. À formuler prudemment ou à préparer pour l'entretien."
+            why = f"Pas ajouté tel quel : {via}. À formuler prudemment ou à préparer pour l'entretien."
         else:
             why = "Pas ajouté : aucun fait ne le prouve. L'écrire gonflerait le score au prix de la vérité."
             if r and r.proof.related:

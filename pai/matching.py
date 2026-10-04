@@ -13,7 +13,7 @@ from .claims import build_evidence
 from .profile import language_level
 from .rules import RuleSet, load_rules
 from .schemas import Analysis, Fact, KeywordCoverage, MasterProfile, Match
-from .textnorm import contains_term, norm
+from .textnorm import norm
 
 WEIGHTS = {"role": 0.18, "skills": 0.24, "experience": 0.12, "sector": 0.10, "degree": 0.06, "language": 0.08,
            "location": 0.07, "contract": 0.05, "salary": 0.02, "seniority": 0.04, "availability": 0.02, "preferences": 0.02}

@@ -209,7 +209,7 @@ def test_client_ip_from_cloudflare_only_behind_the_tunnel(monkeypatch):
         asyncio.run(CloudflareClientIp(app)(scope, None, None))
         return seen["client"][0]
 
-    spoof = [(b"x-forwarded-for", b"1.2.3.4"), (b"cf-connecting-ip", b"203.0.113.9")]
+    spoof = [(b"x-forwarded-for", b"198.51.100.7"), (b"cf-connecting-ip", b"203.0.113.9")]
     monkeypatch.setattr(get_settings(), "pai_access", "caddy")
     assert call(spoof) == "10.0.0.2"                                   # Caddy : l'en-tête serait falsifiable, ignoré
     monkeypatch.setattr(get_settings(), "pai_access", "cloudflare")

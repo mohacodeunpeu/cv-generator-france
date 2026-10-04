@@ -67,6 +67,28 @@ jobs:
       - name: Audit des dépendances
         run: pip-audit -r requirements.txt
 
+  qualite:
+    name: Qualité (lint, typage, secrets)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Dépendances
+        run: pip install -r requirements-dev.txt
+      - name: Lint (ruff)
+        run: ruff check pai app.py tests web/build_studio.py deploy/smoke_test.py migrations
+      - name: Typage (mypy, paquet pai)
+        run: mypy
+      - name: Secrets, adresses de serveur et données personnelles (fichiers suivis)
+        run: python -m pytest tests/test_no_personal_data.py -q
+      - name: Scripts shell (syntaxe)
+        run: for f in deploy/*.sh; do bash -n "$f"; done
+
   docker:
     name: Docker (image, pile Compose, migrations, test de fumée)
     runs-on: ubuntu-24.04

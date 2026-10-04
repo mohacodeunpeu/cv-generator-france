@@ -17,11 +17,28 @@ from pai.api.security import secret_key
 from pai.config import Settings, reset_settings_cache
 from pai.db.models import AppSetting, AuditLog, LlmCall
 from pai.db.session import session_scope
-from pai.providers import (PROVIDER_IDS, ClaudeProvider, NullProvider, OllamaProvider, OpenAICompatProvider, active_provider_id, ai_mode,
-                           build_provider, get_provider, provider_config)
+from pai.providers import (
+    PROVIDER_IDS,
+    ClaudeProvider,
+    NullProvider,
+    OllamaProvider,
+    OpenAICompatProvider,
+    active_provider_id,
+    ai_mode,
+    build_provider,
+    get_provider,
+    provider_config,
+)
 from pai.providers.openai_compat import GEMINI_BASE_URL, MISTRAL_BASE_URL
-from pai.providers.store import (StoredAiSettings, StoredProvider, decode_settings, decrypt_secret, encrypt_secret, key_hint,
-                                 read_stored_settings)
+from pai.providers.store import (
+    StoredAiSettings,
+    StoredProvider,
+    decode_settings,
+    decrypt_secret,
+    encrypt_secret,
+    key_hint,
+    read_stored_settings,
+)
 from tests.conftest import TEST_OFFER, fake_ollama_state
 from tests.fake_provider import FakeProvider
 from tests.test_api import api_key, client, login, session_csrf  # noqa: F401 — fixture partagée (SQLite + PostgreSQL)

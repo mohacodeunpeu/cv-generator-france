@@ -54,7 +54,7 @@ def build(analyses: Iterable[dict[str, Any]]) -> dict[str, Any]:
         n = f["offers"]
         top = 40 if n >= min40 else 20 if n >= min20 else 0
 
-        def ranked(counter: Counter, limit: int) -> list[dict[str, Any]]:
+        def ranked(counter: Counter, limit: int, n: int = n) -> list[dict[str, Any]]:
             return [{"term": t, "count": c, "share": round(100 * c / n)} for t, c in counter.most_common(limit)]
 
         out["families"][fid] = {
@@ -83,7 +83,7 @@ def from_db(include_synthetic: bool = False) -> dict[str, Any]:
                 rows.append(dict(a.analysis) | {"text_hash": o.text_hash})
         for d in s.query(StoreDocument).filter(StoreDocument.collection.like("%pack%")):
             data = d.data or {}
-            a = data.get("analysis")
-            if isinstance(a, dict) and (include_synthetic or not (data.get("offer") or {}).get("synthetic")):
-                rows.append(a | {"text_hash": (data.get("offer") or {}).get("text_hash", "")})
+            stored = data.get("analysis")
+            if isinstance(stored, dict) and (include_synthetic or not (data.get("offer") or {}).get("synthetic")):
+                rows.append(stored | {"text_hash": (data.get("offer") or {}).get("text_hash", "")})
     return build(rows)

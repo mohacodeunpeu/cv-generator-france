@@ -355,5 +355,5 @@ def drop_rejected(lines: list[Line], report: ValidationReport) -> tuple[list[Lin
     """Supprime les lignes rejetées ; renvoie les lignes gardées et le journal des suppressions."""
     reasons = {v.line_id: v.reasons for v in report.verdicts if not v.ok}
     kept = [ln for ln in lines if ln.id not in reasons]
-    removed = [{"id": ln.id, "text": ln.text, "reasons": reasons[ln.id]} for ln in lines if ln.id in reasons]
+    removed: list[dict[str, object]] = [{"id": ln.id, "text": ln.text, "reasons": reasons[ln.id]} for ln in lines if ln.id in reasons]
     return kept, removed

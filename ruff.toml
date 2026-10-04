@@ -1,0 +1,15 @@
+# Lint de PAI (CI : job « Qualité »). Règles choisies pour attraper de vrais défauts sans bruit :
+# F (pyflakes : noms indéfinis, imports et variables inutiles), E4/E7/E9 (imports, instructions, syntaxe),
+# W6 (échappements invalides), B (bugbear : pièges courants), I (ordre des imports).
+# B008 ignorée : Depends()/tracked() en valeur par défaut est l'idiome FastAPI. B905 : zip() historique.
+line-length = 140
+target-version = "py312"
+extend-exclude = ["legacy", "web/dist", "web/vendor", "data"]
+
+[lint]
+select = ["F", "E4", "E7", "E9", "W6", "B", "I"]
+ignore = ["B008", "B905"]
+
+[lint.per-file-ignores]
+# pytest : une fixture importée d'un autre module de test est « redéfinie » par le paramètre du test (idiome pytest).
+"tests/**" = ["F811"]

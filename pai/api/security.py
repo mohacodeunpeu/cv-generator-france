@@ -57,7 +57,7 @@ def csp(nonce: str | None = None) -> str:
 
 
 class SecurityHeaders(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next):
         response: Response = await call_next(request)
         headers = response.headers
         headers.setdefault("Content-Security-Policy", csp())

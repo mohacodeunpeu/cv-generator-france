@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .. import paths
 from ..config import Settings, get_settings
@@ -20,10 +21,12 @@ from .base import AIProvider, BudgetExceeded, DegradedMode, ProviderError, extra
 from .cache import CachedProvider
 from .claude import ClaudeProvider
 from .null import NullProvider
-from .ollama import OllamaProvider, normalize_base_url, probe
-from .openai_compat import (GEMINI_BASE_URL, MISTRAL_BASE_URL, OpenAICompatProvider, gemini_provider, mistral_provider,
-                            openai_provider)
+from .ollama import OllamaProvider, normalize_base_url
+from .openai_compat import GEMINI_BASE_URL, MISTRAL_BASE_URL, OpenAICompatProvider, gemini_provider, mistral_provider, openai_provider
 from .store import StoredAiSettings, read_stored_settings
+
+if TYPE_CHECKING:
+    from ..ai.router import AIRouter
 
 __all__ = ["AIProvider", "BudgetExceeded", "CachedProvider", "ClaudeProvider", "DegradedMode", "LABELS", "NullProvider",
            "OllamaProvider", "OpenAICompatProvider", "PROVIDER_IDS", "ProviderConfig", "ProviderError", "active_profile",
@@ -166,7 +169,7 @@ def _wrap(inner: AIProvider, settings: Settings, cache_dir: Path | None, budget_
 
 
 def build_router(active: str, settings: Settings, stored: StoredAiSettings | None = None, *, budget_eur: float | None = None,
-                 cache_dir: Path | None = None) -> AIProvider:
+                 cache_dir: Path | None = None) -> AIRouter:
     """Routeur par tâche. `null` : aucune IA, même si Ollama tourne (choix explicite de l'utilisateur).
     `local` : petit et grand modèles locaux. Fournisseur externe : l'externe pour les tâches exigeantes et, si un
     modèle local est installé, le local pour les petites tâches (moins de jetons payants)."""

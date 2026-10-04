@@ -19,11 +19,22 @@ from ..db.models import StoredFile
 from ..db.repo import ensure_profile_doc
 from ..db.session import init_db, session_scope
 from . import jobs
-from .auth import (COOKIE, CSRF_HEADER, Principal, change_password, current_principal, login_limiter, new_session_token,
-                   require, revoke_sessions, verify_password)
-from .security import CloudflareClientIp, SecurityHeaders, csp, unsign
+from .auth import (
+    COOKIE,
+    CSRF_HEADER,
+    Principal,
+    change_password,
+    current_principal,
+    login_limiter,
+    new_session_token,
+    require,
+    revoke_sessions,
+    verify_password,
+)
 from .public import router as public_router
-from .v1 import OfferIn, router as v1_router, run_pack_job
+from .security import CloudflareClientIp, SecurityHeaders, csp, unsign
+from .v1 import OfferIn, run_pack_job
+from .v1 import router as v1_router
 
 templates = Jinja2Templates(directory=str(paths.TEMPLATES_DIR))
 STUDIO_SERVER = paths.WEB_DIR / "dist" / "pai_studio_server.html"
@@ -186,7 +197,7 @@ def create_app() -> FastAPI:
     def docs(_: Principal = require("read")) -> HTMLResponse:
         nonce = secrets.token_urlsafe(16)
         page = get_swagger_ui_html(openapi_url="/openapi.json", title="PAI API", swagger_favicon_url="data:,")
-        return HTMLResponse(_with_nonce(page.body.decode("utf-8"), nonce), headers={"Content-Security-Policy": csp(nonce)})
+        return HTMLResponse(_with_nonce(bytes(page.body).decode("utf-8"), nonce), headers={"Content-Security-Policy": csp(nonce)})
 
     # ── Routes historiques (compatibilité) : authentifiées, désormais 100 % factuelles ──
     def _legacy(poste: str, entreprise: str, description: str) -> dict:

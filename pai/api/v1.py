@@ -470,7 +470,7 @@ def store_query(collection: str, order_by: str = "", direction: str = "asc", lim
         raise HTTPException(status_code=400, detail={"code": "invalid_argument", "message": "Collection invalide"})
     with session_scope() as s:
         docs = s.scalars(select(StoreDocument).where(StoreDocument.collection == collection)).all()
-        items = [{"id": d.path.rsplit("/", 1)[-1], "data": d.data} for d in docs]
+        items: list[dict[str, Any]] = [{"id": d.path.rsplit("/", 1)[-1], "data": d.data} for d in docs]
     if order_by:
         present = [d for d in items if d["data"].get(order_by) is not None]
         absent = [d for d in items if d["data"].get(order_by) is None]

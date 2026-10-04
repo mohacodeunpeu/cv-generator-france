@@ -50,7 +50,7 @@ def build_letter_deterministic(profile: MasterProfile, analysis: Analysis, match
 
     def add(section: str, kind: str, text: str, fact_ids: list[str] | None = None, quote: str = "") -> None:
         lines.append(Line(id=f"{section.lower()}{sum(1 for ln in lines if ln.section == section) + 1}", section=section,
-                          kind=kind, text=text, fact_ids=fact_ids or [], offer_quote=quote))  # type: ignore[arg-type]
+                          kind=kind, text=text, fact_ids=fact_ids or [], offer_quote=quote))
 
     up = [profile.fact(e) for e in strategy.best.experiences_up if profile.fact(e)]
     main = up[0] if up else (profile.experiences()[0] if profile.experiences() else None)
@@ -154,7 +154,7 @@ def letter_from_ai(payload: dict[str, Any], profile: MasterProfile, analysis: An
             kind = str(s.get("kind", "claim"))
             if kind not in ("claim", "offer_ref", "projection", "closing"):
                 kind = "claim"
-            lines.append(Line(id=f"{role.lower()}{sum(1 for ln in lines if ln.section == role) + 1}", section=role, kind=kind,  # type: ignore[arg-type]
+            lines.append(Line(id=f"{role.lower()}{sum(1 for ln in lines if ln.section == role) + 1}", section=role, kind=kind,
                               text=str(s.get("text", "")).strip(), fact_ids=[str(x) for x in s.get("fact_ids", [])],
                               offer_quote=str(s.get("offer_quote", ""))))
     doc = base.model_copy(deep=True)

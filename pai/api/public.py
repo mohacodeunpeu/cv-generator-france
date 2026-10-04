@@ -21,11 +21,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import case, func, select, text
 from starlette.concurrency import run_in_threadpool
+from starlette.datastructures import UploadFile
 
 from .. import ENGINE_VERSION, obs, paths
 from ..config import get_settings
 from ..db.models import ApplicationPackRow, Generation, Job, LlmCall, OfferRow, StoredFile
-from ..db.repo import ats_summary, record_calls
+from ..db.repo import record_calls
 from ..db.session import session_scope
 from ..ingest import IngestError, UrlIngestError, offer_from_file, offer_from_text, offer_from_url
 from ..schemas import Offer
@@ -71,7 +72,7 @@ async def read_input(request: Request) -> tuple[dict[str, str], dict[str, tuple[
     if ctype.startswith("multipart/form-data"):
         form = await request.form()
         for key, value in form.multi_items():
-            if hasattr(value, "read"):
+            if isinstance(value, UploadFile):
                 data = await value.read(MAX_UPLOAD + 1)
                 if len(data) > MAX_UPLOAD:
                     raise _err(413, "too_large", "Fichier trop lourd (8 Mo maximum).")
@@ -124,6 +125,14 @@ def offer_from_inputs(fields: dict[str, str], files: dict[str, tuple[str, bytes,
     if required:
         raise _err(422, "missing_offer", "Offre manquante : texte (offer_text), lien (offer_url) ou fichier (offer_file).")
     return None
+
+
+def required_offer(fields: dict[str, str], files: dict[str, tuple[str, bytes, str]]) -> Offer:
+    """Comme offer_from_inputs, mais l'offre est obligatoire : 422 si rien n'est fourni (jamais None)."""
+    offer = offer_from_inputs(fields, files)
+    if offer is None:
+        raise _err(422, "missing_offer", "Offre manquante : texte (offer_text), lien (offer_url) ou fichier (offer_file).")
+    return offer
 
 
 def _offer_view(offer: Offer) -> dict[str, Any]:
@@ -228,7 +237,7 @@ def ready() -> JSONResponse:
 async def jobs_ingest(request: Request, _: Principal = tracked("analyze")) -> dict[str, Any]:
     """Lit une offre (texte, URL, PDF, HTML, DOCX) côté serveur. Rien n'est enregistré."""
     fields, files = await read_input(request)
-    offer = await run_in_threadpool(offer_from_inputs, fields, files)
+    offer = await run_in_threadpool(required_offer, fields, files)
     return {"offer": _offer_view(offer)}
 
 
@@ -279,7 +288,7 @@ async def jobs_analyze(request: Request, _: Principal = tracked("analyze")) -> d
     """Analyse d'offre + (si un profil existe) exigences prouvées et Score PAI provisoire. `ai=none` : jamais d'IA.
     Même offre + même profil + mêmes règles et modèle → résultat en cache (« cache »: « hit »)."""
     fields, files = await read_input(request)
-    offer = await run_in_threadpool(offer_from_inputs, fields, files)
+    offer = await run_in_threadpool(required_offer, fields, files)
     return await run_in_threadpool(analyze_offer_sync, offer, fields.get("ai", "auto") != "none")
 
 
@@ -381,7 +390,7 @@ def cv_optimize_sync(offer: Offer, use_ai: bool) -> dict[str, Any]:
 async def cv_optimize(request: Request, _: Principal = tracked("analyze")) -> dict[str, Any]:
     """CV ciblé (lignes tracées vers les faits), changements AVANT / APRÈS / RAISON / PREUVE, Score PAI (sans PDF)."""
     fields, files = await read_input(request)
-    offer = await run_in_threadpool(offer_from_inputs, fields, files)
+    offer = await run_in_threadpool(required_offer, fields, files)
     return await run_in_threadpool(cv_optimize_sync, offer, fields.get("ai", "auto") != "none")
 
 
@@ -408,7 +417,7 @@ def _generate_sync(fields: dict[str, str], offer: Offer) -> dict[str, Any]:
 async def cv_generate(request: Request, _: Principal = tracked("generate")) -> dict[str, Any]:
     """Synchrone : CV + lettre (même version), PDF relus par le scanner ATS, Score PAI complet."""
     fields, files = await read_input(request)
-    offer = await run_in_threadpool(offer_from_inputs, fields, files)
+    offer = await run_in_threadpool(required_offer, fields, files)
     r = await run_in_threadpool(_generate_sync, fields, offer)
     return {k: r[k] for k in ("application_id", "version_id", "generation_id", "status", "cv_version", "pai_score", "ats",
                               "risks", "next_action", "versions")} | {"cv_pdf": r["application_pack"]["cv_pdf"]}
@@ -417,7 +426,7 @@ async def cv_generate(request: Request, _: Principal = tracked("generate")) -> d
 @router.post("/letter/generate")
 async def letter_generate(request: Request, _: Principal = tracked("generate")) -> dict[str, Any]:
     fields, files = await read_input(request)
-    offer = await run_in_threadpool(offer_from_inputs, fields, files)
+    offer = await run_in_threadpool(required_offer, fields, files)
     r = await run_in_threadpool(_generate_sync, fields, offer)
     return {k: r[k] for k in ("application_id", "version_id", "generation_id", "status", "letter_version", "risks",
                               "next_action", "versions")} | {"letter_pdf": r["application_pack"]["letter_pdf"]}
@@ -428,7 +437,7 @@ async def application_prepare(request: Request, _: Principal = tracked("generate
     """Pack complet. Par défaut asynchrone (202 + job_id, à suivre sur /api/jobs/{job_id}) ; `wait=true` : synchrone.
     En-tête Idempotency-Key : même clé → même job, jamais de doublon."""
     fields, files = await read_input(request)
-    offer = await run_in_threadpool(offer_from_inputs, fields, files)
+    offer = await run_in_threadpool(required_offer, fields, files)
     payload = _pack_payload(fields, offer)
     if (request.query_params.get("wait") or fields.get("wait", "")).lower() in ("1", "true", "yes"):
         return await run_in_threadpool(_generate_sync, fields, offer)
