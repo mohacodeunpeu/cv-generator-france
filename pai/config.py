@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     ai_model: str = ""                         # modèle du fournisseur actif (grand modèle pour local)
     ai_model_small: str = ""                   # petit modèle local (extraction, classement)
     pai_access: str = ""                       # cloudflare | caddy | tailscale (affiché dans « État du système »)
+    compose_profiles: str = ""                 # profils Docker actifs (COMPOSE_PROFILES), ex. cloudflare,ai-local
+    cloudflared_metrics_url: str = ""          # ex. http://pai_cloudflared:2000 (profil cloudflare) : état du tunnel
     ai_base_url: str = ""                      # URL du fournisseur actif (Ollama, serveur compatible OpenAI)
     ai_api_key: str = ""                       # clé du fournisseur actif (jamais obligatoire)
     ai_profile: str = ""                       # eco | balanced | quality (routeur de tâches)
@@ -64,6 +66,18 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment == "production"
+
+    @property
+    def access(self) -> str:
+        """Accès public : PAI_ACCESS, sinon déduit des profils Docker (cloudflare ou caddy, jamais les deux ensemble)."""
+        if self.pai_access:
+            return self.pai_access.strip().lower()
+        profiles = {p.strip().lower() for p in self.compose_profiles.split(",") if p.strip()}
+        if "cloudflare" in profiles and "caddy" not in profiles:
+            return "cloudflare"
+        if "caddy" in profiles and "cloudflare" not in profiles:
+            return "caddy"
+        return ""
 
 
 @lru_cache(maxsize=1)

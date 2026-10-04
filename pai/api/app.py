@@ -21,7 +21,7 @@ from ..db.session import init_db, session_scope
 from . import jobs
 from .auth import (COOKIE, CSRF_HEADER, Principal, change_password, current_principal, login_limiter, new_session_token,
                    require, revoke_sessions, verify_password)
-from .security import SecurityHeaders, csp, unsign
+from .security import CloudflareClientIp, SecurityHeaders, csp, unsign
 from .public import router as public_router
 from .v1 import OfferIn, router as v1_router, run_pack_job
 
@@ -76,6 +76,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="PAI — Personal Application Intelligence", version=ENGINE_VERSION, docs_url=None, redoc_url=None,
                   openapi_url=None, lifespan=lifespan)
     app.add_middleware(SecurityHeaders)
+    app.add_middleware(CloudflareClientIp)
     app.include_router(v1_router)
     app.include_router(public_router)
 

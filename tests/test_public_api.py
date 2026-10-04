@@ -172,3 +172,44 @@ def test_ai_usage_counts_cache_hits(client):  # noqa: F811
 def test_corpus_endpoint(client):  # noqa: F811
     c = client.get("/api/corpus", headers=api_key("read")).json()
     assert "families" in c and c["thresholds"] == {"top20": 10, "top40": 25}
+
+
+def test_system_status_cloudflare_tunnel(client, monkeypatch):  # noqa: F811
+    from pai.api import public
+    from pai.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "compose_profiles", "cloudflare,ai-local")
+    monkeypatch.setattr(get_settings(), "base_url", "https://pai.example.org")
+    h = api_key("read")
+    monkeypatch.setattr(public, "tunnel_state", lambda url: None)
+    items = {i["id"]: i for i in client.get("/api/system/status", headers=h).json()["items"]}
+    assert items["cloudflare"]["status"] == "ERROR" and "injoignable" in items["cloudflare"]["detail"]
+    monkeypatch.setattr(public, "tunnel_state", lambda url: {"connections": 4})
+    items = {i["id"]: i for i in client.get("/api/system/status", headers=h).json()["items"]}
+    assert items["cloudflare"]["status"] == "OK" and "4\u00a0connexions actives" in items["cloudflare"]["detail"]
+    monkeypatch.setattr(get_settings(), "compose_profiles", "cloudflare,caddy")        # deux accès : aucun n'est déduit
+    assert get_settings().access == ""
+
+
+def test_client_ip_from_cloudflare_only_behind_the_tunnel(monkeypatch):
+    import asyncio
+
+    from pai.api.security import CloudflareClientIp
+    from pai.config import get_settings
+
+    seen = {}
+
+    async def app(scope, receive, send):  # noqa: ANN001, ANN202
+        seen["client"] = scope["client"]
+
+    def call(headers):  # noqa: ANN001, ANN202
+        scope = {"type": "http", "client": ("10.0.0.2", 5000), "headers": headers}
+        asyncio.run(CloudflareClientIp(app)(scope, None, None))
+        return seen["client"][0]
+
+    spoof = [(b"x-forwarded-for", b"1.2.3.4"), (b"cf-connecting-ip", b"203.0.113.9")]
+    monkeypatch.setattr(get_settings(), "pai_access", "caddy")
+    assert call(spoof) == "10.0.0.2"                                   # Caddy : l'en-tête serait falsifiable, ignoré
+    monkeypatch.setattr(get_settings(), "pai_access", "cloudflare")
+    assert call(spoof) == "203.0.113.9"                                # tunnel : l'IP posée par Cloudflare
+    assert call([(b"cf-connecting-ip", b"pas-une-ip")]) == "10.0.0.2"

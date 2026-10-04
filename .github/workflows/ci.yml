@@ -1,5 +1,7 @@
 # Intégration continue PAI : tests Python (SQLite + PostgreSQL 16), migrations Alembic, tests JS (parité),
-# e2e navigateur (PAI Studio + serveur), audit des dépendances, validation Docker Compose.
+# e2e navigateur (PAI Studio + serveur), sauvegarde vérifiée (sauvegarde → modification → restauration →
+# comparaison), audit des dépendances ; image Docker construite et démarrée avec la pile Compose (PostgreSQL,
+# migrations, santé, test de fumée), profils Compose validés.
 # Aucune donnée personnelle : profil fictif « Camille Test » et offres SYNTHETIC uniquement.
 name: CI
 
@@ -33,6 +35,7 @@ jobs:
     env:
       PAI_TEST_PG_URL: postgresql+psycopg://pai:pai_ci_password@127.0.0.1:5432/pai_test
       PAI_AI_PROVIDER: "null"
+      PAI_REQUIRE_BACKUP_TEST: "1"        # le test de restauration échoue (au lieu d'être ignoré) si un outil manque
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -45,6 +48,7 @@ jobs:
           node-version: "22"
       - name: Dépendances
         run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq age postgresql-client
           pip install -r requirements-dev.txt
           python -m playwright install --with-deps chromium
       - name: Migrations Alembic sur PostgreSQL 16 (upgrade, check, downgrade)
@@ -62,8 +66,39 @@ jobs:
           node --test tests/js/*.test.js
       - name: Audit des dépendances
         run: pip-audit -r requirements.txt
-      - name: Validation Docker Compose
+
+  docker:
+    name: Docker (image, pile Compose, migrations, test de fumée)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Profils Compose (sans profil, cloudflare + ai-local, caddy)
         run: |
+          printf 'PAI_DB_PASSWORD=ci\n' > .env
+          docker compose config --quiet          # aucune variable de profil exigée hors de son profil
+          printf 'PAI_DB_PASSWORD=ci\nCOMPOSE_PROFILES=cloudflare,ai-local\nCLOUDFLARE_TUNNEL_TOKEN=ci\n' > .env
+          test "$(docker compose config --services | sort | tr '\n' ' ')" = "pai_cloudflared pai_db pai_ollama pai_web pai_worker "
           printf 'PAI_DB_PASSWORD=ci\nPAI_DOMAIN=ci.example.org\n' > .env
-          docker compose config --quiet
           docker compose --profile caddy config --quiet
+      - name: Construction de l'image et démarrage (PostgreSQL, interface/API, worker)
+        run: |
+          printf 'PAI_DB_PASSWORD=%s\nSECRET_KEY=%s\nAI_PROVIDER=none\nBASE_URL=https://ci.example.org\n' \
+            "$(openssl rand -hex 16)" "$(openssl rand -hex 32)" > .env
+          docker compose up -d --build --wait --wait-timeout 300
+      - name: Santé, disponibilité, migrations appliquées
+        run: |
+          curl -fsS http://127.0.0.1:8080/health
+          curl -fsS http://127.0.0.1:8080/api/ready | tee /tmp/ready.json
+          grep -q '"migrations":{"status":"OK"' /tmp/ready.json
+      - name: Test de fumée (analyse, pack généré par le worker, PDF par lien signé)
+        run: |
+          docker compose exec -T pai_web python -m pai import-profile /dev/stdin < tests/fixtures/profile_test.json
+          KEY="$(docker compose exec -T pai_web python -m pai api-key create ci-smoke --scopes read,analyze,generate | grep -o 'pai_[A-Za-z0-9_-]*' | tail -1)"
+          docker compose exec -T -e PAI_URL=http://127.0.0.1:8000 -e PAI_API_KEY="$KEY" pai_web python deploy/smoke_test.py
+      - name: Journaux
+        if: always()
+        run: docker compose logs --no-color --tail 120
+      - name: Arrêt
+        if: always()
+        run: docker compose down -v

@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import case, func, select, text
@@ -534,9 +535,23 @@ def system_status() -> dict[str, Any]:
         add("cache", "Cache", "WARNING", "cache illisible : PAI continue sans cache")
     base_url = settings.base_url
     https = base_url.startswith("https://") and "localhost" not in base_url
-    via = {"cloudflare": "via Cloudflare Tunnel", "caddy": "via Caddy", "tailscale": "via Tailscale"}.get(settings.pai_access, "")
-    add("cloudflare", "Accès public (Cloudflare)", "OK" if https else "WARNING",
-        f"{base_url} {via}".strip() if https else "pas d'adresse publique HTTPS (BASE_URL) : accès local uniquement")
+    access = settings.access
+    if access == "cloudflare":
+        tunnel = tunnel_state(settings.cloudflared_metrics_url)
+        if tunnel is None:
+            add("cloudflare", "Cloudflare Tunnel", "ERROR", "tunnel déclaré mais injoignable : docker compose --profile cloudflare "
+                "up -d, puis docker compose logs pai_cloudflared")
+        elif not tunnel["connections"]:
+            add("cloudflare", "Cloudflare Tunnel", "ERROR", "le tunnel tourne mais n'est relié à aucun centre Cloudflare : "
+                "jeton (CLOUDFLARE_TUNNEL_TOKEN) ou réseau sortant à vérifier")
+        else:
+            where = base_url if https else "BASE_URL à mettre sur le nom d'hôte public (https://…)"
+            add("cloudflare", "Cloudflare Tunnel", "OK" if https else "WARNING",
+                f"{where} · tunnel nommé, {nb(tunnel['connections'], 'connexion active', 'connexions actives')}")
+    else:
+        via = {"caddy": "via Caddy", "tailscale": "via Tailscale"}.get(access, "")
+        add("cloudflare", "Accès public", "OK" if https else "WARNING",
+            f"{base_url} {via}".strip() if https else "pas d'adresse publique HTTPS (BASE_URL) : accès local uniquement")
     jobagent = _jobagent_seen()
     add("jobagent", "JobAgent", "OK" if jobagent else "WARNING",
         f"dernier appel de JobAgent : {jobagent}" if jobagent else "aucun appel de JobAgent pour l'instant (PAI reste utilisable seul)")
@@ -544,6 +559,18 @@ def system_status() -> dict[str, Any]:
     worst = "ERROR" if any(i["status"] == "ERROR" for i in items) else "WARNING" if any(i["status"] == "WARNING" for i in items) else "OK"
     return {"status": worst, "items": items, "machine": {"arch": hw.arch, "cpus": hw.cpus, "ram_gb": hw.ram_total_gb,
                                                         "gpu": bool(hw.gpus)}}
+
+
+def tunnel_state(metrics_url: str) -> dict[str, int] | None:
+    """Métriques de cloudflared (/ready) : connexions actives vers Cloudflare ; None si le tunnel ne répond pas."""
+    if not metrics_url:
+        return None
+    try:
+        r = httpx.get(metrics_url.rstrip("/") + "/ready", timeout=1.5)
+        data = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+    except (httpx.HTTPError, ValueError):
+        return None
+    return {"connections": int(data.get("readyConnections") or 0) if r.status_code == 200 else 0}
 
 
 def _jobagent_seen() -> str:
