@@ -489,3 +489,15 @@ def test_ingest_url_endpoint_auth_and_validation(client, fake_web):
     assert client.post("/v1/ingest/url", json=body).status_code == 403
     r = client.post("/v1/ingest/url", json=body, headers={"X-CSRF-Token": session_csrf(client)})
     assert r.status_code == 200 and r.json()["offer"]["company_hint"] == "Acme SaaS"
+
+
+def test_outbound_proxy_is_explicit_only(monkeypatch):
+    """Un proxy hérité de l'environnement n'est jamais suivi ; seul PAI_FETCH_PROXY l'active (réseau d'entreprise)."""
+    from pai.netfetch import outbound_options
+
+    monkeypatch.delenv("PAI_FETCH_PROXY", raising=False)
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy-herite.invalid:3128")
+    assert outbound_options() == {}
+    monkeypatch.setenv("PAI_FETCH_PROXY", "http://proxy.entreprise.invalid:3128")
+    monkeypatch.delenv("PAI_FETCH_CA_BUNDLE", raising=False)
+    assert outbound_options() == {"proxy": "http://proxy.entreprise.invalid:3128"}
