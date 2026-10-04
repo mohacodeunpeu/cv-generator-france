@@ -15,6 +15,7 @@ import functools
 import http.server
 import json
 import os
+import re
 import threading
 from pathlib import Path
 
@@ -149,6 +150,16 @@ def test_full_flow_desktop(studio_url, profile):
         # Profil court : la page est étalée (jamais au-delà d'une page) au lieu de rester à moitié vide.
         assert cv["doc"]["spread"] >= 1 and cv["doc"]["spread_key"].startswith(cv["doc"]["design_profile"] + "|"), cv["doc"].get("spread_key")
         assert cv["qa"]["fill"] >= 0.65, cv["qa"]
+        # Score PAI : PDF relu (dans le navigateur ici), score complet, exigences classées et prouvées, rien d'inventé.
+        assert cv["scan"]["source"] == "navigateur" and cv["scan"]["score"] >= 75, cv["scan"]
+        assert {c["id"] for c in cv["scan"]["checks"]} >= {"text", "contact", "sections", "lost", "added"}
+        assert all(c["status"] == "OK" for c in cv["scan"]["checks"] if c["id"] in ("text", "lost", "added")), cv["scan"]
+        ats = pack["ats"]
+        assert ats["score"]["complete"] is True and 0 <= ats["score"]["value"] <= 100, ats["score"]
+        assert [d["id"] for d in ats["dimensions"]][:6] == ["parsing", "structure", "matching", "keywords", "experience", "factuality"]
+        proven = {x["text"].lower() for x in ats["requirements"]["proven"]}
+        assert "hubspot" in proven and "crm" in proven, proven
+        assert "probabilité d'embauche" in ats["score"]["disclaimer"]
         spread = page.evaluate("""() => { const { PDF } = window.__PAI_DEBUG__;
           const d = { design_profile: 'modern_commercial', density: 'airy', spread: 1.5, spread_key: 'modern_commercial|airy|OFF' };
           return [PDF.ctx(d).spread, PDF.ctx(Object.assign({}, d, { density_locked: true })).spread, PDF.ctx(Object.assign({}, d, { design_profile: 'ats_hybrid' })).spread]; }""")
@@ -157,7 +168,18 @@ def test_full_flow_desktop(studio_url, profile):
         run_text = page.locator("#run-panel").inner_text()
         assert "(s)" not in run_text and "REQUIRED" not in run_text and "QUALITY" not in run_text, run_text
 
+        assert "Score PAI" in run_text, run_text
         page.locator("#run-side button[data-act=open-pack]").click()
+        # Aperçu du pack : le Score PAI d'abord (six pourcentages), les critères seulement à la demande.
+        page.locator(".overview2 .ps .ps-dim").first.wait_for()
+        assert page.locator(".overview2 .ps .ps-dim").count() == 6
+        assert page.locator(".overview2 .ps-detail").count() == 0, "les critères ne s'affichent pas d'emblée"
+        page.locator(".overview2 .ps-more").click()
+        page.locator(".overview2 .ps-detail .crit li").first.wait_for()
+        assert page.locator(".overview2 .ps-detail .ps-d").count() == 9
+        assert page.locator(".req-col.good li").count() >= 2 and page.locator(".req-col.bad").count() == 1
+        _shot(page, "desktop_3_pack_score_details")
+        page.locator(".overview2 .ps-more").click()
         for tab in ["Aperçu", "Offre", "Stratégie", "CV", "Lettre", "Questions", "Risques", "Versions"]:
             page.get_by_role("tab", name=tab, exact=True).click()
             page.wait_for_timeout(200)
@@ -165,12 +187,19 @@ def test_full_flow_desktop(studio_url, profile):
                 page.locator(".paper img.pv").first.wait_for(timeout=30000)
                 _shot(page, f"desktop_3_pack_{tab.lower().replace('ç', 'c')}")
 
-        # CV Studio : 6 scores avec preuve, brouillon de design puis V2.
+        # CV Studio : Score PAI de la version affichée (6 dimensions), avant / après, brouillon de design puis V2.
         page.get_by_role("tab", name="CV", exact=True).click()
-        page.locator(".studio .score").first.wait_for()
-        assert page.locator(".studio .score").count() == 6
-        for k in ["ROLE FIT", "ATS FIT", "PERSONALIZATION", "READABILITY", "DESIGN", "FACTUALITY"]:
-            assert page.locator(".studio .score .k", has_text=k).count() == 1, k
+        page.locator(".studio .ps-dim").first.wait_for()
+        assert page.locator(".studio .ps-dim").count() == 6
+        for k in ["Format & parsing", "Structure", "Matching offre", "Mots-clés", "Expérience", "Factualité"]:
+            assert page.locator(".studio .ps-dim .k", has_text=k).count() == 1, k
+        page.locator(".toolbar button[data-act=preview-mode][data-arg=changes]").click()
+        page.locator(".chg-list > li").first.wait_for()
+        changes = page.locator(".chg-list").inner_text()
+        assert "Titre" in changes and "Raison" in changes, changes
+        assert not re.search(r"\b(exp|edu|skill)\.[a-z0-9_.]+", changes), "identifiant interne affiché"
+        _shot(page, "desktop_4b_cv_studio_avant_apres")
+        page.locator(".toolbar button[data-act=preview-mode][data-arg=pdf]").click()
         assert page.get_by_text("Pourquoi ce CV ?").is_visible() and page.get_by_text("Ce qui a changé").is_visible()
         page.locator(".toolbar [data-act=toggle-gallery]").click()
         page.locator(".gallery .designs button").nth(4).wait_for()
@@ -214,7 +243,7 @@ def test_full_flow_desktop(studio_url, profile):
         assert fb and fb[0]["reasons"] == ["Couleur", "Photo"] and fb[0]["rating"] == -1
         _shot(page, "desktop_6_training_lab")
 
-        for view in ["learning", "benchmark", "versions", "packs"]:
+        for view in ["learning", "benchmark", "versions", "packs", "statut"]:
             page.locator(f"#nav button[data-arg={view}]").click()
             page.wait_for_timeout(300)
             _shot(page, f"desktop_7_{view}")
@@ -222,7 +251,7 @@ def test_full_flow_desktop(studio_url, profile):
         page.locator("#nav button[data-arg=reglages]").click()
         page.locator("button[data-act=ai-test]").click()
         page.locator(".chip.good", has_text="OK ·").wait_for(timeout=10000)
-        assert "REMOTE" in page.locator(".mode-badge").first.inner_text()
+        assert "IA EXTERNE" in page.locator(".mode-badge").first.inner_text().upper()
         _shot(page, "desktop_8_reglages")
         assert not errors, errors
         ctx.close()

@@ -18,6 +18,7 @@ from typing import Any
 
 from sqlalchemy import select
 
+from .. import obs, paths
 from ..config import get_settings
 from ..db.models import Job, utcnow
 from ..db.session import get_engine, init_db, session_scope
@@ -34,7 +35,9 @@ def enqueue(job_type: str, payload: dict[str, Any], idempotency_key: str | None 
             if existing is not None:
                 s.expunge(existing)
                 return existing
-        job = Job(id="job_" + secrets.token_hex(8), type=job_type, payload=payload, idempotency_key=idempotency_key)
+        rid = obs.request_id_var.get()
+        job = Job(id="job_" + secrets.token_hex(8), type=job_type, payload=payload | ({"_rid": rid} if rid else {}),
+                  idempotency_key=idempotency_key)
         s.add(job)
         s.flush()
         s.expunge(job)
@@ -84,6 +87,10 @@ def process(job: Job) -> dict[str, Any]:
         from .v1 import run_pack_job
 
         return run_pack_job(job.payload, progress=_progress(job.id))
+    if job.type == "ai_complete":
+        from .v1 import run_ai_complete_job
+
+        return run_ai_complete_job(job.payload)
     if job.type == "benchmark":
         from ..benchmark import run_benchmark
 
@@ -98,22 +105,47 @@ def run_once() -> bool:
             return False
         s.flush()
         s.expunge(job)
-    try:
-        result = process(job)
-        status, error = "DONE", None
-    except Exception as exc:  # noqa: BLE001 — échec propre, rien n'est perdu, relançable
-        log.exception("Job %s en échec", job.id)
-        result, status, error = None, "FAILED", f"{exc.__class__.__name__}: {exc}"[:2000]
+    started = time.monotonic()
+    with obs.bound(request_id=str((job.payload or {}).get("_rid") or ""), job_id=job.id):
+        try:
+            result = process(job)
+            status, error = "DONE", None
+        except Exception as exc:  # noqa: BLE001 — échec propre, rien n'est perdu, relançable
+            log.exception("Job %s en échec", job.id)
+            result, status, error = None, "FAILED", f"{exc.__class__.__name__}: {exc}"[:2000]
+        obs.event("job", job_type=job.type, status=status, success=status == "DONE",
+                  duration_ms=int((time.monotonic() - started) * 1000), error=error and error.split(":")[0])
     with session_scope() as s:
         row = s.get(Job, job.id)
         if row is not None:
             row.status, row.result, row.error, row.finished_at, row.locked_by = status, result, error, utcnow(), None
+            if row.type == "ai_complete":  # le prompt (extraits du profil) n'est pas conservé une fois l'appel fait
+                row.payload = {k: v for k, v in (row.payload or {}).items() if k in ("task", "tier", "json")}
     return True
+
+
+HEARTBEAT = "worker.heartbeat"
+
+
+def _beat() -> None:
+    try:
+        (paths.DATA_DIR / HEARTBEAT).write_text(str(time.time()), encoding="utf-8")
+    except OSError:  # stockage indisponible : le contrôle de santé le signalera
+        pass
+
+
+def _heartbeat(stop: threading.Event, every: float = 15.0) -> None:
+    """Battement de cœur du worker (contrôle de santé Docker) : écrit même pendant un long pack."""
+    while not stop.wait(every):
+        _beat()
 
 
 def run_worker(once: bool = False, poll: float = 1.0, stop: threading.Event | None = None) -> None:
     init_db()
     requeue_stale()
+    _beat()
+    if not once:
+        threading.Thread(target=_heartbeat, args=(stop or threading.Event(),), daemon=True, name="pai-heartbeat").start()
     while True:
         did = run_once()
         if once and not did:

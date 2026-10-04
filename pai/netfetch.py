@@ -5,14 +5,18 @@ Règles : http/https seulement, ports 80/443, aucun identifiant dans l'URL ; TOU
 refusées, y compris écrites en décimal, octal, hexadécimal ou en IPv6 « mappée ») ; redirections suivies à la main
 et revalidées à chaque saut ; corps lu en flux, borné (décompression comprise) ; adresse réellement connectée
 revérifiée après connexion (défense contre le DNS rebinding). Les proxys de l'environnement sont ignorés :
-la connexion doit partir vers l'adresse validée.
+la connexion doit partir vers l'adresse validée. Seule exception, explicite : PAI_FETCH_PROXY (réseau d'entreprise
+qui impose un proxy sortant) ; les adresses sont alors toujours validées avant chaque requête, mais l'adresse
+connectée est celle du proxy (choisi par l'administrateur), donc non revérifiable.
 """
 
 from __future__ import annotations
 
 import ipaddress
+import os
 import re
 import socket
+import ssl
 import time
 import zlib
 from dataclasses import dataclass
@@ -255,21 +259,49 @@ def _read_body(response: httpx.Response, max_bytes: int, deadline: float) -> byt
     return b"".join(chunks) + tail
 
 
-def _status_error(status: int) -> FetchError:
-    if status in (401, 403, 407):
-        why = "accès refusé par le site (connexion demandée ?)"
+_ANTI_BOT_HEADERS = ("cf-mitigated", "x-datadome", "x-dd-b", "x-px-block", "x-amzn-waf-action", "x-sucuri-block",
+                     "x-distil-cs", "x-iinfo")
+
+
+def is_anti_bot(status: int, headers: httpx.Headers | dict[str, str]) -> bool:
+    """Protection anti-robot reconnue à ses en-têtes (Cloudflare, DataDome, PerimeterX, AWS WAF, Sucuri, Imperva)."""
+    h = {k.lower(): str(v).lower() for k, v in dict(headers).items()}
+    if any(k in h for k in _ANTI_BOT_HEADERS):
+        return True
+    return status in (403, 503) and (h.get("server", "") in ("cloudflare", "akamaighost", "ddos-guard") or "cf-ray" in h)
+
+
+def _status_error(status: int, headers: httpx.Headers | dict[str, str] | None = None) -> FetchError:
+    """Cause précise, affichable : le serveur PAI dit pourquoi IL n'a pas pu lire la page (jamais « Claude »)."""
+    headers = headers or {}
+    if is_anti_bot(status, headers):
+        code, why = "anti_bot", "le site bloque les lectures automatiques (protection anti-robot)"
+    elif status in (401, 407):
+        code, why = "auth_required", "le site exige une connexion"
+    elif status == 403:
+        code, why = "forbidden", "le site refuse l'accès à cette page"
     elif status in (404, 410):
-        why = "page introuvable (offre retirée ?)"
+        code, why = "not_found", "page introuvable (offre retirée ?)"
     elif status == 429:
-        why = "le site limite les accès, réessayez plus tard"
+        code, why = "rate_limited", "le site limite les accès, réessayez plus tard"
     elif status >= 500:
-        why = "le site est en erreur, réessayez plus tard"
+        code, why = "unavailable", "le site est indisponible, réessayez plus tard"
     else:
-        why = "réponse inattendue du site"
-    return FetchError("http_error", f"Lecture impossible (HTTP {status}) : {why}. Sinon, {PASTE_HINT}.")
+        code, why = "http_error", "réponse inattendue du site"
+    return FetchError(code, f"Le serveur PAI n'a pas pu récupérer cette URL (HTTP {status}) : {why}. Sinon, {PASTE_HINT}.")
 
 
 # ── Lecture ─────────────────────────────────────────────────────────────────
+def outbound_options() -> dict[str, Any]:
+    """Proxy sortant EXPLICITE (PAI_FETCH_PROXY) et, s'il ré-chiffre le TLS, son autorité de certification
+    (PAI_FETCH_CA_BUNDLE). Jamais déduit de HTTP(S)_PROXY : un proxy hérité par erreur n'est pas suivi."""
+    proxy = os.environ.get("PAI_FETCH_PROXY", "").strip()
+    if not proxy:
+        return {}
+    ca = os.environ.get("PAI_FETCH_CA_BUNDLE", "").strip()
+    return {"proxy": proxy, **({"verify": ssl.create_default_context(cafile=ca)} if ca else {})}
+
+
 def safe_get(url: str, *, max_bytes: int = 3_000_000, timeout: float = 15.0, max_redirects: int = 5,
              resolver: Resolver = socket.getaddrinfo, transport: httpx.BaseTransport | None = None,
              guard: Callable[[httpx.URL], None] | None = None) -> FetchResult:
@@ -284,8 +316,9 @@ def safe_get(url: str, *, max_bytes: int = 3_000_000, timeout: float = 15.0, max
     headers = {"User-Agent": USER_AGENT_HEADER, "Accept-Encoding": "gzip, deflate",
                "Accept": "text/html,application/xhtml+xml,application/pdf;q=0.9,*/*;q=0.5",
                "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.7"}
+    outbound = outbound_options() if transport is None else {}
     with httpx.Client(transport=transport, headers=headers, timeout=httpx.Timeout(timeout), follow_redirects=False,
-                      trust_env=False) as client:
+                      trust_env=False, **outbound) as client:
         for hop in range(max_redirects + 1):
             remaining = deadline - time.monotonic()  # un seul délai pour tout le parcours, redirections comprises
             if remaining <= 0:
@@ -297,7 +330,7 @@ def safe_get(url: str, *, max_bytes: int = 3_000_000, timeout: float = 15.0, max
             except httpx.HTTPError as exc:
                 raise FetchError("http_error", f"Site injoignable ({exc.__class__.__name__}) : {PASTE_HINT}.") from exc
             try:
-                peer = _peer_address(response)
+                peer = None if outbound else _peer_address(response)   # via un proxy, l'adresse connectée est la sienne
                 if peer is not None and not is_public_ip(peer):
                     raise _refuse(current.host)  # la résolution a changé entre le contrôle et la connexion
                 if response.status_code in REDIRECTS and response.headers.get("location"):
@@ -311,7 +344,7 @@ def safe_get(url: str, *, max_bytes: int = 3_000_000, timeout: float = 15.0, max
                     current = check_url(target, resolver)
                     continue
                 if not 200 <= response.status_code < 300:
-                    raise _status_error(response.status_code)
+                    raise _status_error(response.status_code, response.headers)
                 try:
                     body = _read_body(response, max_bytes, deadline)
                 except httpx.TimeoutException as exc:

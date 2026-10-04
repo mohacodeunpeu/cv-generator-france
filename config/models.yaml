@@ -1,11 +1,12 @@
 # Modèles IA par tâche — versionné. Changer un modèle = modifier ce fichier, pas le code.
+# PAI est GRATUIT PAR DÉFAUT : fournisseur `local` (Ollama) ou aucun ; les fournisseurs payants sont optionnels.
 # Les "artifact_tiers" sont utilisés par PAI Studio (page claude.ai, capacité `sample`) :
 #   quick ≈ extraction rapide, default ≈ rédaction, complex ≈ stratégie / critique / jugement.
 # Fournisseurs interchangeables. Priorité : Réglages → IA (interface, clés chiffrées en base) → variables
 # d'environnement (PAI_AI_PROVIDER, *_API_KEY, *_MODEL) → default_provider ci-dessous → null (sans IA).
 version: 4
 
-default_provider: claude        # claude | gemini | mistral | openai | local | null
+default_provider: local         # local (Ollama, gratuit ; sans modèle installé = sans IA) | none | claude | gemini | mistral | openai
 
 providers:
   claude:
@@ -25,6 +26,9 @@ providers:
       judge_visual: claude-opus-5-5
       learning_rules: claude-sonnet-5
       chat: claude-haiku-4-5
+      studio_quick: claude-haiku-4-5      # passerelle PAI Studio (palier rapide)
+      studio_default: claude-sonnet-5
+      studio_complex: claude-opus-5-5
     # Prix (USD / million de tokens) pour le garde-fou de coût. À ajuster si la grille change.
     pricing_usd_per_mtok:
       claude-opus-5-5: {input: 4.0, output: 20.0}
@@ -103,3 +107,33 @@ modes:
   QUICK:    {steps: [ingest, analyze, match, strategy]}
   STANDARD: {steps: [ingest, analyze, match, strategy, cv, validate, critique, letter, questions, pack], critique_cycles: 1, variants: 1}
   DEEP:     {steps: [ingest, analyze, match, strategy, cv, validate, critique, letter, questions, pack], critique_cycles: 3, variants: 3, visual_qa: true}
+
+# ── AI ROUTER : quelle intelligence pour quelle tâche (pai/ai/router.py) ─────────────────────────────────────
+# Niveaux : none (voie déterministe, aucun appel) · small (petit modèle local) · large (grand modèle local, ou le
+# fournisseur externe s'il est actif). Les tâches déterministes (parsing, coordonnées, dates, sections, mots-clés
+# exacts, factualité, contrôle PDF, scores) n'appellent JAMAIS d'IA et ne figurent pas ici.
+# Profils : eco (le moins d'IA possible) · balanced (défaut) · quality (IA partout où elle aide).
+router:
+  profile: balanced
+  local_first: true            # fournisseur externe actif : les petites tâches restent sur le modèle local s'il existe
+  tasks:
+    default:          {eco: none,  balanced: none,  quality: large}
+    extract:          {eco: small, balanced: small, quality: small}
+    analyze_offer:    {eco: none,  balanced: small, quality: large}
+    analyze_company:  {eco: none,  balanced: small, quality: small}
+    match:            {eco: none,  balanced: none,  quality: large}   # la correspondance est calculée (+ sémantique locale)
+    strategy:         {eco: none,  balanced: large, quality: large}
+    cv_content:       {eco: none,  balanced: none,  quality: large}   # le CV déterministe est 100 % factuel
+    cv_fix:           {eco: none,  balanced: large, quality: large}
+    letter:           {eco: large, balanced: large, quality: large}
+    answers:          {eco: none,  balanced: small, quality: large}
+    critique:         {eco: none,  balanced: none,  quality: large}
+    factuality_judge: {eco: none,  balanced: none,  quality: none}    # la factualité reste déterministe, toujours
+    judge_pair:       {eco: none,  balanced: none,  quality: large}
+    judge_visual:     {eco: none,  balanced: none,  quality: none}
+    learning_rules:   {eco: none,  balanced: small, quality: large}
+    chat:             {eco: small, balanced: small, quality: large}
+    # Passerelle PAI Studio sans nom de tâche (ancien client) : niveau déduit du palier demandé.
+    studio_quick:     {eco: small, balanced: small, quality: small}
+    studio_default:   {eco: large, balanced: large, quality: large}
+    studio_complex:   {eco: large, balanced: large, quality: large}

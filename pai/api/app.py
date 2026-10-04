@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 import secrets
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -12,16 +13,28 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from .. import ENGINE_VERSION, paths
+from .. import ENGINE_VERSION, obs, paths
 from ..config import get_settings
 from ..db.models import StoredFile
 from ..db.repo import ensure_profile_doc
 from ..db.session import init_db, session_scope
 from . import jobs
-from .auth import (COOKIE, CSRF_HEADER, Principal, change_password, current_principal, login_limiter, new_session_token,
-                   require, revoke_sessions, verify_password)
-from .security import SecurityHeaders, csp, unsign
-from .v1 import OfferIn, router as v1_router, run_pack_job
+from .auth import (
+    COOKIE,
+    CSRF_HEADER,
+    Principal,
+    change_password,
+    current_principal,
+    login_limiter,
+    new_session_token,
+    require,
+    revoke_sessions,
+    verify_password,
+)
+from .public import router as public_router
+from .security import CloudflareClientIp, SecurityHeaders, csp, unsign
+from .v1 import OfferIn, run_pack_job
+from .v1 import router as v1_router
 
 templates = Jinja2Templates(directory=str(paths.TEMPLATES_DIR))
 STUDIO_SERVER = paths.WEB_DIR / "dist" / "pai_studio_server.html"
@@ -74,7 +87,29 @@ def create_app() -> FastAPI:
     app = FastAPI(title="PAI — Personal Application Intelligence", version=ENGINE_VERSION, docs_url=None, redoc_url=None,
                   openapi_url=None, lifespan=lifespan)
     app.add_middleware(SecurityHeaders)
+    app.add_middleware(CloudflareClientIp)
     app.include_router(v1_router)
+    app.include_router(public_router)
+
+    @app.middleware("http")
+    async def request_ids(request: Request, call_next):  # noqa: ANN001, ANN202
+        """request_id par requête (en-tête X-Request-ID repris s'il est sûr), propagé aux jobs et aux appels IA ;
+        une ligne JSON par requête : méthode, route (jamais l'URL brute ni la query string), statut, durée."""
+        rid = obs.new_request_id(request.headers.get("x-request-id"))
+        token = obs.request_id_var.set(rid)
+        start, status = time.monotonic(), 500
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            response.headers["X-Request-ID"] = rid
+            return response
+        finally:
+            route = request.scope.get("route")
+            path = getattr(route, "path", "") or "(hors route)"
+            if path not in ("/health", "/api/health"):
+                obs.event("request", method=request.method, path=path, status=status,
+                          duration_ms=int((time.monotonic() - start) * 1000))
+            obs.request_id_var.reset(token)
 
     @app.get("/health", include_in_schema=False)
     def health() -> dict[str, str]:
@@ -162,7 +197,7 @@ def create_app() -> FastAPI:
     def docs(_: Principal = require("read")) -> HTMLResponse:
         nonce = secrets.token_urlsafe(16)
         page = get_swagger_ui_html(openapi_url="/openapi.json", title="PAI API", swagger_favicon_url="data:,")
-        return HTMLResponse(_with_nonce(page.body.decode("utf-8"), nonce), headers={"Content-Security-Policy": csp(nonce)})
+        return HTMLResponse(_with_nonce(bytes(page.body).decode("utf-8"), nonce), headers={"Content-Security-Policy": csp(nonce)})
 
     # ── Routes historiques (compatibilité) : authentifiées, désormais 100 % factuelles ──
     def _legacy(poste: str, entreprise: str, description: str) -> dict:

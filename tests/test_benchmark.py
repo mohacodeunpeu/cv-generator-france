@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import json
 
-from pai.benchmark import (_neutralize, free_text_factuality, keyword_scores, public_rows, run_benchmark,
-                           studio_payload)
+from pai.benchmark import _neutralize, free_text_factuality, keyword_scores, public_rows, run_benchmark, studio_payload
 from pai.ingest import offer_from_text
 from pai.rules import load_rules
 from pai.textnorm import norm

@@ -111,7 +111,7 @@ def _load_legacy_module(path: Path) -> ModuleType:
 
 
 def _fact(fid: str, kind: str, text: str, status: str, source: str, provenance: str, **extra: Any) -> Fact:
-    return Fact(id=fid, kind=kind, text=text, status=status, source=source, provenance=provenance, **extra)  # type: ignore[arg-type]
+    return Fact(id=fid, kind=kind, text=text, status=status, source=source, provenance=provenance, **extra)
 
 
 def build_master_profile(
@@ -184,11 +184,11 @@ def build_master_profile(
             facts.append(_fact(f"{exp_id}.r{n}", "result", text, "IMPORTED", src, legacy_prov, parent=exp_id,
                                needs_confirmation=bool(nums), confidence=0.7 if nums else 0.85, data={"raw": raw}))
         for raw in (exp.get("chiffres") or {}).values():
-            nums = set(extract_numbers(raw))
-            if nums and nums <= numbers_seen:
+            figures = set(extract_numbers(raw))
+            if figures and figures <= numbers_seen:
                 continue
             n += 1
-            numbers_seen.update(nums)
+            numbers_seen.update(figures)
             facts.append(_fact(f"{exp_id}.r{n}", "result", fr_text(raw[0].upper() + raw[1:]).replace(" / ", " par "),
                                "IMPORTED", src, legacy_prov, parent=exp_id, needs_confirmation=True, confidence=0.7,
                                data={"raw": raw}))

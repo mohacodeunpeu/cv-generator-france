@@ -311,9 +311,9 @@ def cv_plain_text(doc: CvDocument) -> str:
             for block in doc.experiences:
                 out.append(f"{block.title} — {block.company} ({block.city}) · {block.period}")
                 for bid in block.bullet_ids:
-                    ln = doc.line(bid)
-                    if ln:
-                        out.append(f"  [{ln.id}] {ln.text}")
+                    bullet = doc.line(bid)
+                    if bullet:
+                        out.append(f"  [{bullet.id}] {bullet.text}")
             continue
         lines = doc.section_lines(section)
         if not lines:

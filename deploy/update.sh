@@ -31,6 +31,10 @@ if [ "${PAI_UPDATE_IF_CHANGED:-0}" = "1" ]; then
   # une version déjà refusée (santé ou test de fumée en échec) n'est pas retentée toutes les 10 minutes
   [ "$(cat .pai-failed 2>/dev/null)" = "$NEXT" ] && exit 0
 fi
+# Profils activés (COMPOSE_PROFILES) : leurs variables doivent être remplies avant toute bascule.
+case ",${COMPOSE_PROFILES:-}," in *,cloudflare,*) [ -n "${CLOUDFLARE_TUNNEL_TOKEN:-}" ] || { say "Profil cloudflare sans CLOUDFLARE_TUNNEL_TOKEN (.env) : mise à jour annulée."; exit 1; } ;; esac
+case ",${COMPOSE_PROFILES:-}," in *,caddy,*) [ -n "${PAI_DOMAIN:-}" ] || { say "Profil caddy sans PAI_DOMAIN (.env) : mise à jour annulée."; exit 1; } ;; esac
+case ",${COMPOSE_PROFILES:-}," in *,cloudflare,*caddy,*|*,caddy,*cloudflare,*) say "Profils cloudflare et caddy activés ensemble : n'en garder qu'un (COMPOSE_PROFILES)."; exit 1 ;; esac
 say "Mise à jour ${PREV:0:7} → ${NEXT:0:7} (branche $BRANCH)"
 
 if [ -n "${PAI_BACKUP_AGE_RECIPIENT:-}" ]; then

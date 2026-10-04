@@ -19,7 +19,7 @@ import statistics
 import sys
 import time
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 from . import ENGINE_VERSION, paths
 from .analyzer import clean_title, deterministic_analysis
@@ -132,7 +132,7 @@ def free_text_factuality(pdf_text: str, profile: MasterProfile, offer: Offer, ke
             "categories": reason_categories(rejected)}
 
 
-def keyword_scores(pdf_text: str, analysis_keywords: list[tuple[str, str, bool]], rules: RuleSet,
+def keyword_scores(pdf_text: str, analysis_keywords: Sequence[tuple[str, str, bool]], rules: RuleSet,
                    offer_title: str = "") -> tuple[float, float, list[str]]:
     """(couverture brute pondérée, couverture honnête, mots-clés présents que le profil NE prouve PAS).
     Pondération REQUIRED 3 / IMPORTANT 2. Un mot de l'intitulé du poste repris en titre n'est pas du bourrage."""
@@ -181,7 +181,7 @@ def title_match(pdf_text: str, title: str) -> bool:
     return bool(words) and sum(contains_term(head, w) for w in words) / len(words) >= 0.6
 
 
-def evaluate(cv_pdf: bytes | None, letter_pdf: bytes | None, profile: MasterProfile, offer: Offer, keywords: list[tuple[str, str, bool]],
+def evaluate(cv_pdf: bytes | None, letter_pdf: bytes | None, profile: MasterProfile, offer: Offer, keywords: Sequence[tuple[str, str, bool]],
              title: str, rules: RuleSet) -> dict[str, Any]:
     if not cv_pdf:
         return {"error": "aucun PDF produit", "total": 0.0, **{m: 0.0 for m in METRICS}}
@@ -213,8 +213,8 @@ def legacy_generator() -> Callable[[Offer, str, str], tuple[bytes | None, bytes 
     legacy_dir = str(paths.LEGACY_DIR)
     if legacy_dir not in sys.path:
         sys.path.insert(0, legacy_dir)
-    import cover_letter_france  # type: ignore[import-not-found]
-    import cv_gen_france  # type: ignore[import-not-found]
+    import cover_letter_france
+    import cv_gen_france
 
     def generate(offer: Offer, contract: str, title: str) -> tuple[bytes | None, bytes | None]:
         data = {"titre": title, "entreprise": offer.company_hint, "description": offer.text}
@@ -260,7 +260,9 @@ def summarize(rows: list[dict[str, Any]], include_legacy: bool, profile_source: 
         summary["legacy"]["forbidden_docs"] = sum(bool(r.get("forbidden_terms")) for r in legacy_rows)
         summary["legacy"]["unsupported_by_reason"] = _reason_totals(legacy_rows)
         summary["legacy"]["title_match_rate"] = round(100 * sum(bool(r.get("title_match")) for r in legacy_rows) / len(legacy_rows), 1) if legacy_rows else 0.0
-        better, worse, same = [], [], []
+        better: list[str] = []
+        worse: list[str] = []
+        same: list[str] = []
         verdicts: dict[str, dict[str, Any]] = {}
         for key in ("total", *METRICS, "honest_coverage", "letter_factuality"):
             a, b = summary["pai"][key], summary["legacy"][key]

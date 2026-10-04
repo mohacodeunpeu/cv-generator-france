@@ -1,111 +1,87 @@
 # Architecture — PAI (Personal Application Intelligence)
 
-PAI transforme une offre (texte, URL publique, PDF) en **Application Pack** : analyse, matching,
-stratégie, CV PDF, lettre, réponses aux questions, risques et prochaine action.
-Règle d'or : **aucune affirmation sans fait source** (claim → evidence binding, section A2).
+PAI transforme une offre (texte, lien, PDF, HTML, DOCX) en candidature factuelle : analyse, exigences prouvées,
+Score PAI explicable, CV ciblé, lettre, PDF relu comme par un ATS, pack versionné.
+Règle d'or : **aucune affirmation sans fait source**. Priorités : factualité > fiabilité > parsing > pertinence >
+qualité du document > automatisation.
 
-## Deux surfaces, un seul moteur de règles
-
-```
-                    ┌──────────────── règles versionnées (hors code) ────────────────┐
-                    │ rules/  sector_profiles/  design_profiles/  brand/  prompts/   │
-                    │ config/models.yaml   profiles/confirmations.yaml               │
-                    └───────────────┬───────────────────────────────┬────────────────┘
-                                    │                               │ (build : web/build_studio.py)
-            ┌───────────────────────▼──────────┐       ┌────────────▼─────────────────────────┐
-            │ Serveur PAI (Python 3.12)         │       │ PAI Studio (page claude.ai privée)   │
-            │ FastAPI /v1 · SQLAlchemy/Alembic  │       │ IA : capacité `sample` (Claude)       │
-            │ PostgreSQL 16 · worker de jobs    │       │ Données : capacité `db` (privée)      │
-            │ Claude / OpenAI / local / Null    │       │ PDF : pdfmake (texte vectoriel)       │
-            │ PDF : HTML/CSS → Chromium         │       │ Validateur claim→evidence en JS       │
-            │ docker compose « pai » + Caddy    │       │ (parité testée avec le Python)        │
-            └───────────────────────────────────┘       └───────────────────────────────────────┘
-```
-
-- **PAI Studio** est l'URL utilisable dès maintenant : page privée sur claude.ai (connexion au compte
-  Claude = login), l'IA passe par le compte Claude de l'utilisateur (aucune clé API), les données restent
-  dans la base privée de l'artefact.
-- **Le serveur PAI** est le produit auto-hébergeable (Oracle 24/7) et l'API pour le futur JobAgent.
-  Il tourne aussi sans IA (mode dégradé) : profil, versions, rendu PDF, validation, scoring, pack.
-
-## Pipeline (identique sur les deux surfaces)
+## Vue d'ensemble
 
 ```
-ingest ─► analyse ─► match ─► stratégie A/B/C ─► CV (contenu lié aux faits)
-   │         │          │           │                 │
- texte     déterm.   déterm.     IA/déterm.     validateur déterministe ──► rejet → réécriture (2×) → suppression
- figé +    + IA      + IA        + garde-fous   juge IA d'exagération
- hash                                            critique (7 juges) ─► correction (1 à 3 cycles)
-                                                 rendu PDF ─► PDF QA (pages, marges, contraste, ATS)
-                                                      │
-                               lettre (phrases typées) ─► validateur ─► contrôles lettre
-                               questions (BLOCKED si aucun fait)
-                                                      │
-                               Application Pack figé (versions offer/profile/cv/letter/answers/engine/prompt/rules)
+ Navigateur ── HTTPS ──▶ Cloudflare ── tunnel nommé ──▶ serveur (projet Docker « pai »)
+                                                         │
+          ┌──────────────────────────────────────────────┼─────────────────────────────────────────┐
+          │ pai_web : FastAPI — interface PAI Studio, /api, /v1, connexion, état du système          │
+          │ pai_worker : file de jobs (packs : CV, lettre, PDF via Chromium)                         │
+          │ pai_db : PostgreSQL 16 (réseau interne, sans Internet)                                   │
+          │ pai_ollama : IA locale (optionnelle)        pai_cloudflared : tunnel (optionnel)          │
+          └──────────────────────────────────────────────────────────────────────────────────────────┘
+ JobAgent (projet séparé) ── /api (clé d'API, idempotence) ──▶ PAI ── pack ──▶ JobAgent
 ```
 
-Modes : QUICK (analyse + match + stratégie), STANDARD (pipeline complète, 1 cycle de critique),
-DEEP (3 variantes, jusqu'à 3 cycles, QA visuelle).
+PAI Studio (l'interface) est une seule page servie par le serveur ; la même page existe en artefact claude.ai,
+facultatif : PAI ne dépend ni de claude.ai, ni d'un compte Claude, ni d'une clé d'API.
+
+## Couches
+
+```
+ entrées ─► ingestion ─► moteur ATS (déterministe) ─► moteur de contenu ─► moteur de design ─► validation ─► pack
+ texte      netfetch     analyse, exigences,           faits liés ligne      gabarits         relecture ATS   versions,
+ lien       (anti-SSRF)  preuves, Score PAI            à ligne (+ IA         (HTML/CSS ou      du PDF réel,    fichiers,
+ PDF/HTML/                                             routée)               pdfmake)          correction      trace
+ DOCX
+                         ▲                              ▲
+                         │ règles versionnées           │ routeur IA : aucune / petit modèle local / grand modèle
+                         │ rules/, sector_profiles/,    │ local / externe optionnel ; cache par empreinte ;
+                         │ design_profiles/, prompts/   │ toute sortie repasse par le validateur de faits
+```
 
 ## Modules (`pai/`)
 
 | Module | Rôle |
 |---|---|
-| `schemas.py` | Modèles Pydantic partagés (faits, offre, analyse, match, stratégie, CV, lettre, pack) |
-| `profile.py`, `bootstrap.py` | Master Profile versionné, statuts, validation, import/export JSON/CSV/MD ; bootstrap legacy + confirmations |
-| `ingest.py` | Offre texte/URL/PDF, texte figé + hash (doublons) |
-| `analyzer.py` | Extraction déterministe (contrat, lieu, salaire, langues, outils, MUST/IMPORTANT/NICE, secteur) + fusion IA |
-| `matching.py` | 12 sous-scores, MATCH / QUALITY / RISK, couverture des mots-clés par les faits |
-| `strategy.py` | Positionnements A/B/C, garde-fous (photo selon pays, design ATS) |
-| `cv_architect.py` | Plan de contenu (voie déterministe et voie IA), ajustement 1 page |
-| `claims.py` | **Validateur claim → evidence** (nombres, dates, noms propres, diplômes, outils, langues/niveaux, responsabilité, termes interdits) |
-| `critic.py` | Critique déterministe + intégration du jury IA, grille de points |
-| `letter.py`, `questions.py` | Lettre à phrases typées ; réponses HIGH/MEDIUM/LOW/BLOCKED |
-| `render.py`, `pdf_qa.py` | HTML/CSS → Chromium → PDF (polices embarquées) ; QA PNG + extraction ATS |
-| `pipeline.py`, `pack.py` | Orchestration, repli déterministe, pack ZIP (PDF + JSON + MD) |
-| `providers/` | `ClaudeProvider`, `OpenAICompatProvider` (OpenAI, Ollama), `NullProvider`, `CachedProvider` (cache + rejeu) |
-| `benchmark.py` | Benchmark ancien générateur vs PAI : même instrument, texte extrait du PDF |
-| `db/models.py`, `db/repo.py` | 30 tables SQLAlchemy 2 (migrations Alembic), générations immuables, instantanés de profil |
-| `api/app.py`, `api/v1.py` | FastAPI : connexion, interface, `/v1`, routes historiques authentifiées |
-| `api/auth.py`, `api/security.py` | argon2, sessions signées révocables, CSRF, limitation, clés d'API, CSP à nonce, en-têtes |
-| `api/jobs.py` | File de jobs en base (SKIP LOCKED sur PostgreSQL), idempotence, reprise après interruption |
+| `ingest.py`, `netfetch.py` | offre texte / lien / PDF / HTML (JSON-LD JobPosting) / DOCX ; lecture d'URL anti-SSRF, causes d'échec précises |
+| `analyzer.py`, `matching.py`, `strategy.py` | analyse déterministe de l'offre, correspondance, positionnements A/B/C |
+| `ats/` | moteur ATS : `parser` (lecture d'un CV), `requirements` (classes MUST/IMPORTANT/NICE/CONTEXT et preuves PROUVÉ/PLAUSIBLE/NON PROUVÉ), `lexicon` + `rules/skill_synonyms.yaml`, `rules/taxonomy_fr.yaml` (synonymes, taxonomie métier française), `semantic` (embeddings locaux, jamais une preuve), `scoring` + `report` (Score PAI et dimensions), `scanner` (PDF : deux lectures d'ATS, contrôles OK/WARNING/ERROR, rien de perdu / rien d'ajouté), `variants`, `corpus` (TOP 20/40 seulement avec assez d'offres), `changes` (avant / après / raison / preuve), `cvimport` |
+| `cv_architect.py`, `letter.py`, `questions.py` | moteur de contenu : CV et lettre à partir des faits, réponses (BLOCKED sans preuve) |
+| `render.py`, `pdf_qa.py` | moteur de design serveur : HTML/CSS → Chromium → PDF ; contrôle du PDF |
+| `claims.py`, `critic.py` | validateur claim → evidence (déterministe), critique |
+| `pipeline.py`, `pack.py` | orchestration, boucle CV → PDF → relecture → correction (3 passes au plus), pack ZIP |
+| `ai/` | `hardware` (détection réelle), `registry` (modèles locaux), `selfeval` (auto-évaluation, porte de vérité), `router` (niveau par tâche et profil eco / balanced / quality), `setup` |
+| `providers/` | `AIProvider`, Ollama natif, compatibles OpenAI (OpenAI, Gemini, Mistral, local), Claude, `NullProvider`, `CachedProvider` |
+| `obs.py` | journaux structurés : request_id, job_id, étape, durée, fournisseur, modèle, cache — jamais de contenu |
+| `api/` | `public.py` (`/api`), `v1.py` (`/v1` historique + passerelle du Studio), `auth.py`, `security.py` (sessions, CSRF, CSP, IP derrière Cloudflare), `jobs.py` (file idempotente), `settings_ai.py` |
+| `db/` | SQLAlchemy 2 + Alembic : générations immuables, instantanés de profil, appels IA, jobs, packs |
+| `benchmark.py`, `realbench.py` | régression (13 offres fictives) et offres réelles (hors Git) |
 
-Hors paquet : `web/studio/` (PAI Studio : `engine.js` = moteur JS, `app.js` = interface, `server_shim.js` =
-pont vers l'API du serveur), `web/build_studio.py` (construit la page claude.ai et la variante serveur),
-`deploy/` (entrypoint, Caddyfile, sauvegarde/restauration chiffrées, test de fumée), `migrations/` (Alembic).
+Hors paquet : `web/studio/` (interface : `engine.js` et `ats.js` = moteur JS en parité testée avec Python,
+`app/*.js` = écrans, `server_shim.js` = pont vers l'API du serveur), `deploy/` (entrypoint, mise à jour avec
+retour arrière, sauvegarde / restauration chiffrées, test de fumée), `migrations/`, `docker-compose.yml`.
 
-## Une seule interface, deux branchements
+## Une interface, deux branchements
 
-PAI Studio ne connaît qu'une interface : `window.claude.use('db' | 'sample' | 'downloads')`.
-- Sur claude.ai, ce sont les capacités de la plateforme (base privée, compte Claude, téléchargements).
-- Sur le serveur, `server_shim.js` les implémente : `db` → `/v1/store` (PostgreSQL), `sample` →
-  `/v1/ai/complete` (fournisseur configuré, plafond de coût journalier), `downloads` → téléchargement navigateur.
-Le serveur sert la page avec un nonce CSP par requête et le jeton CSRF de la session.
+PAI Studio ne connaît qu'une interface (`db`, `sample`, `downloads`). Sur le serveur, `server_shim.js` les
+branche sur `/v1/store` (PostgreSQL), `/v1/ai/complete` (routeur IA du serveur, cache, plafonds) et le
+téléchargement navigateur ; le moteur ATS s'exécute dans la page (`ats.js`) et la relecture du PDF passe par
+le scanner du serveur (`/api/cv/validate`). Sur claude.ai, ce sont les capacités de la plateforme.
 
-## Sécurité (serveur)
+## Parité Python ↔ JavaScript
 
-- Un seul utilisateur, mot de passe argon2 (12 caractères minimum), changement imposé au premier login.
-- Session = jeton signé (itsdangerous) dans un cookie HttpOnly/Secure/SameSite=strict, durée limitée ;
-  déconnexion et changement de mot de passe révoquent toutes les sessions (`users.sessions_valid_after`).
-- CSRF : jeton lié à la session, exigé en en-tête pour toute écriture ; formulaire de connexion à double soumission.
-- Limitation des tentatives de connexion (IP + identifiant). Clés d'API hachées (SHA-256), à droits limités.
-- En-têtes : CSP à nonce (scripts : soi-même + cdn.jsdelivr.net), `frame-ancestors 'none'`, `nosniff`,
-  `no-referrer`, `X-Robots-Tag: noindex`, HSTS en production ; `Cache-Control: no-store` sur `/v1`.
-- Fichiers : liens signés à durée courte, aucune donnée personnelle dans l'URL ; jetons masqués dans les journaux.
-- Réseau Docker : base sur un réseau interne sans Internet, interface liée à 127.0.0.1 (Caddy ou Tailscale devant).
+Le moteur existe en Python (serveur, API, JobAgent) et en JavaScript (interface). Les listes et règles sont
+exportées depuis Python à la construction de la page ; des fichiers « golden » (`tests/golden/`) imposent des
+résultats identiques (analyse, CV, exigences, mots-clés, dimensions, Score PAI, changements) sur les 13 offres.
 
 ## Données
 
-Tout contenu généré est immuable et versionné ; suppression douce uniquement.
-Les faits portent un statut (CONFIRMED, IMPORTED, INFERRED, UNVERIFIED, FORBIDDEN), une source,
-une provenance et une confiance. Tant que le profil n'est pas validé, les documents portent
-« BROUILLON — PROFIL NON VALIDÉ » et ne peuvent pas passer en FINAL.
+Contenu généré immuable et versionné (`application_id`, `version_id`, empreintes de l'offre et de l'analyse,
+version du profil, gabarit, date) ; suppression douce uniquement. Faits typés avec statut (CONFIRMED, IMPORTED,
+INFERRED, UNVERIFIED, FORBIDDEN), source, provenance, confiance. Profil non validé → documents « BROUILLON ».
 
-Les expériences, compétences, diplômes, langues et certifications sont des **faits typés** (`kind`)
-plutôt que des tables séparées : un seul mécanisme de preuve, moins de concepts.
+## Sécurité
+
+Voir `SECURITY.md` (secrets, sessions, anti-SSRF, en-têtes, IA, infrastructure, garde-fous de CI).
 
 ## Séparation JobAgent
 
-Aucune dépendance au code, aux ports, à la base, aux secrets ou au réseau du JobAgent.
-Projet Docker distinct (`pai`, préfixe `pai_`), base distincte, limites CPU/RAM.
-Futur contrat d'API décrit dans `docs/api.md`.
+Aucun code, port, base, réseau ou secret partagé. JobAgent appelle `/api` avec une clé à droits limités ;
+détails : `docs/jobagent-integration.md`.

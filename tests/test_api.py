@@ -286,13 +286,13 @@ def test_ai_complete_daily_cost_cap_and_call_journal(client, monkeypatch):
     reset_settings_cache()
     headers = api_key("generate")
     first = client.post("/v1/ai/complete", json={"prompt": "x", "json": True, "tier": "quick"}, headers=headers)
-    assert first.status_code == 200 and first.json()["json"] == {"ok": True, "task": "extract"}
+    assert first.status_code == 200 and first.json()["json"] == {"ok": True, "task": "studio_quick"}
     assert client.post("/v1/ai/complete", json={"prompt": "x", "tier": "complex"}, headers=headers).status_code == 200
     third = client.post("/v1/ai/complete", json={"prompt": "x"}, headers=headers)
     assert third.status_code == 429 and third.json()["detail"]["code"] == "rate_limited"
     with session_scope() as s:
         calls = s.query(LlmCall).all()
-        assert [c.task for c in calls] == ["extract", "strategy"] and round(sum(c.cost_eur for c in calls), 3) == 0.02
+        assert [c.task for c in calls] == ["studio_quick", "studio_complex"] and round(sum(c.cost_eur for c in calls), 3) == 0.02
 
 
 # ── Routes historiques ───────────────────────────────────────────────────────
@@ -392,3 +392,18 @@ def test_cli_api_key_create_list_revoke(client, capsys):
     assert "jobagent" in listing and raw not in listing  # la clé n'est jamais réaffichée
     assert main(["api-key", "revoke", "jobagent"]) == 0
     assert client.get("/v1/profile", headers=headers).status_code == 401
+
+
+def test_worker_heartbeat_for_the_docker_health_check(tmp_path, monkeypatch):
+    """Le worker écrit un battement de cœur : le contrôle de santé Docker sait qu'il tourne."""
+    from pai import paths
+
+    monkeypatch.setattr(paths, "DATA_DIR", tmp_path)
+    monkeypatch.setenv("DB_URL", f"sqlite:///{tmp_path}/pai.db")
+    reset_settings_cache()
+    reset_engines()
+    jobs.run_worker(once=True)
+    beat = tmp_path / jobs.HEARTBEAT
+    assert beat.exists() and time.time() - float(beat.read_text()) < 30
+    reset_engines()
+    reset_settings_cache()

@@ -1,0 +1,66 @@
+# Taxonomie métier française : familles d'outils et de compétences.
+#
+# Usage (pai/ats/semantic.py) — JAMAIS une preuve à elle seule :
+#   1. l'offre demande la FAMILLE (« un CRM ») et un MEMBRE est prouvé (« HubSpot ») → PLAUSIBLE (« correspondance
+#      possible ») ;
+#   2. l'offre demande un MEMBRE (« Salesforce ») et un AUTRE membre est prouvé (« HubSpot ») → reste NON PROUVÉ ;
+#      PAI signale seulement la compétence voisine, à valoriser en entretien, jamais à écrire à la place ;
+#   3. le corpus métier regroupe les outils par famille.
+# Comparaison normalisée (casse, accents, pluriels simples). Modifier ce fichier ne demande aucun code.
+version: 1
+families:
+  crm:
+    label: CRM
+    category: [crm, logiciel crm, outil crm, outils crm, gestion de la relation client, customer relationship management]
+    members: [hubspot, salesforce, pipedrive, zoho, zoho crm, microsoft dynamics, dynamics 365, sellsy, axonaut, odoo crm,
+              monday sales crm, freshsales, zendesk sell, salesforce sales cloud]
+  prospection_tools:
+    label: Outils de prospection
+    category: [outils de prospection, outil de prospection, sales tools, sales engagement, automatisation de la prospection]
+    members: [linkedin sales navigator, sales navigator, lemlist, kaspr, lusha, dropcontact, apollo, la growth machine,
+              waalaxy, phantombuster]
+  office:
+    label: Bureautique
+    category: [bureautique, pack office, suite office, microsoft office, outils bureautiques, ms office]
+    members: [excel, word, powerpoint, outlook, google suite, google workspace, google sheets, google docs]
+  erp:
+    label: ERP
+    category: [erp, progiciel de gestion, progiciel de gestion integre]
+    members: [sap, oracle, sage, odoo, cegid, microsoft dynamics, divalto, ebp]
+  ats:
+    label: Logiciels de recrutement (ATS)
+    category: [logiciel de recrutement, outil de recrutement, logiciel ats, applicant tracking system]
+    members: [workday, taleo, smartrecruiters, greenhouse, lever, teamtailor, flatchr, taleez, beetween,
+              digitalrecruiters, jobaffinity, softy, recruitee]
+  jobboards:
+    label: Jobboards
+    category: [jobboards, job boards, jobboard, sites d'emploi, multidiffusion]
+    members: [indeed, welcome to the jungle, hellowork, apec, linkedin recruiter, monster, jobteaser, cadremploi]
+  cms:
+    label: CMS / création de sites
+    category: [cms, creation de sites, outil de creation de site, site web]
+    members: [wordpress, wix, webflow, shopify, prestashop, drupal, squarespace, magento]
+  design:
+    label: Création graphique
+    category: [design graphique, pao, creation graphique, outils de design]
+    members: [canva, photoshop, illustrator, indesign, figma, suite adobe, adobe creative suite]
+  social:
+    label: Réseaux sociaux
+    category: [reseaux sociaux, social media, medias sociaux]
+    members: [linkedin, instagram, facebook, tiktok, twitter, youtube, pinterest, snapchat]
+  emailing:
+    label: Emailing / automation
+    category: [emailing, e-mailing, marketing automation, newsletter, campagnes email]
+    members: [mailchimp, brevo, sendinblue, klaviyo, hubspot marketing, mailjet, activecampaign]
+  analytics:
+    label: Analyse et reporting
+    category: [web analytics, analyse d'audience, data visualisation, dataviz, outil de reporting, business intelligence]
+    members: [google analytics, looker, looker studio, power bi, tableau software, matomo, qlik]
+  ads:
+    label: Publicité en ligne
+    category: [publicite en ligne, sea, acquisition payante, paid media, campagnes publicitaires]
+    members: [google ads, meta ads, linkedin ads, tiktok ads, microsoft ads]
+  project:
+    label: Gestion de projet (outils)
+    category: [outils de gestion de projet, outil de gestion de projet, outils collaboratifs]
+    members: [notion, trello, asana, jira, monday, clickup, microsoft teams, slack]

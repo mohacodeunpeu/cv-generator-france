@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import secrets
 from functools import lru_cache
@@ -11,6 +12,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from ..config import get_settings
 
@@ -55,7 +57,7 @@ def csp(nonce: str | None = None) -> str:
 
 
 class SecurityHeaders(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next):
         response: Response = await call_next(request)
         headers = response.headers
         headers.setdefault("Content-Security-Policy", csp())
@@ -70,3 +72,24 @@ class SecurityHeaders(BaseHTTPMiddleware):
         if request.url.path.startswith(("/v1/", "/login", "/auth/")):
             headers["Cache-Control"] = "no-store"
         return response
+
+
+class CloudflareClientIp:
+    """Accès « cloudflare » : l'IP du client est CF-Connecting-IP, que Cloudflare pose (et écrase) à chaque requête.
+    X-Forwarded-For garde en tête ce que le client a envoyé : s'y fier laisserait contourner la limite de connexions.
+    Inactif pour tout autre accès (Caddy remplace lui-même X-Forwarded-For), car l'en-tête y serait falsifiable."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] in ("http", "websocket") and get_settings().access == "cloudflare":
+            for name, value in scope.get("headers") or []:
+                if name == b"cf-connecting-ip":
+                    try:
+                        ip = str(ipaddress.ip_address(value.decode("latin-1").strip()))
+                    except ValueError:
+                        break
+                    scope = {**scope, "client": (ip, 0)}
+                    break
+        await self.app(scope, receive, send)

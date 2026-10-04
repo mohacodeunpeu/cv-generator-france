@@ -88,8 +88,8 @@ class PdfRenderer:
         from concurrent.futures import ThreadPoolExecutor
 
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="pai-chromium")
-        self._pw = None
-        self._browser = None
+        self._pw: Any = None
+        self._browser: Any = None
         self._executor.submit(self._start).result()
 
     def _start(self) -> None:

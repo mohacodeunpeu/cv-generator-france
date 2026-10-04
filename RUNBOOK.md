@@ -1,8 +1,10 @@
 # RUNBOOK — exploiter PAI
 
 Toutes les commandes se lancent depuis le dossier du dépôt. Le serveur tourne dans le projet Docker **`pai`**
-(conteneurs `pai-pai_db-1`, `pai-pai_web-1`, `pai-pai_worker-1`, `pai-pai_caddy-1`), sans rien partager
-avec JobAgent : ne jamais lancer de commande Docker visant ses conteneurs ou ses volumes.
+(conteneurs `pai-pai_db-1`, `pai-pai_web-1`, `pai-pai_worker-1`, et selon les profils `pai-pai_cloudflared-1`,
+`pai-pai_ollama-1` ou `pai-pai_caddy-1`), sans rien partager avec JobAgent : ne jamais lancer de commande Docker
+visant ses conteneurs ou ses volumes. Guide complet du déploiement (architecture, Cloudflare Tunnel, IA locale,
+restauration vérifiée) : `docs/deployment.md`.
 
 ## 0. PAI Studio (sans serveur)
 
@@ -27,8 +29,10 @@ avec JobAgent : ne jamais lancer de commande Docker visant ses conteneurs ou ses
 3. Remplir `.env` :
    - `PAI_DB_PASSWORD` : `python3 -c "import secrets; print(secrets.token_urlsafe(24))"`
    - `SECRET_KEY` : `python3 -c "import secrets; print(secrets.token_urlsafe(48))"`
-   - `PAI_AI_PROVIDER=claude` et `ANTHROPIC_API_KEY=…` (ou `null` pour démarrer sans IA)
+   - `AI_PROVIDER=local` (défaut gratuit : Ollama s'il est là, sinon sans IA) ou `none` ; un fournisseur externe
+     reste possible (`docs/ai-providers.md`)
    - `BASE_URL` : l'adresse finale (`https://pai.votre-domaine.fr` ou l'adresse Tailscale)
+   - `COMPOSE_PROFILES` : `cloudflare` (accès public, recommandé), `ai-local` (IA locale), séparés par des virgules
 4. Démarrer :
    ```bash
    docker compose up -d --build        # base + interface/API + worker ; migrations appliquées au démarrage
@@ -51,7 +55,13 @@ avec JobAgent : ne jamais lancer de commande Docker visant ses conteneurs ou ses
    docker compose exec pai_web python -m pai api-key revoke smoke
    ```
 
-### Accès — option A : Tailscale (recommandé, rien d'exposé sur Internet)
+### Accès public — Cloudflare Tunnel nommé (recommandé)
+Aucun port ouvert, nom d'hôte stable sur votre domaine (jamais trycloudflare) : créer le tunnel dans Cloudflare
+Zero Trust, mettre son jeton dans `CLOUDFLARE_TUNNEL_TOKEN`, publier `pai.votre-domaine.fr` → `http://pai_web:8000`,
+puis `COMPOSE_PROFILES=cloudflare`, `PAI_ACCESS=cloudflare` et `docker compose up -d`. Pas à pas :
+`docs/deployment.md` § 3. Contrôle : page **État du système** → « Cloudflare Tunnel : OK · 4 connexions actives ».
+
+### Accès — option A : Tailscale (privé, rien d'exposé sur Internet)
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up
 sudo tailscale serve --bg --https=443 http://127.0.0.1:8080
@@ -110,8 +120,10 @@ modifié la base, restaurer la sauvegarde faite juste avant (§ 4).
       backups/pai_db_<date>.dump.age backups/pai_data_<date>.tar.age
   shred -u /tmp/cle-pai.txt
   ```
-- Tester une restauration une fois par trimestre (la procédure a été vérifiée : sauvegarde → modification →
-  restauration → état identique).
+- Vérifiée en continu : à chaque modification, la CI lance les vrais scripts sur PostgreSQL 16 (sauvegarde →
+  modification → restauration → comparaison table par table et fichier par fichier, `tests/test_backup_restore.py`).
+- Exercice trimestriel conseillé sur votre ordinateur (restauration dans un PostgreSQL jetable) :
+  `docs/deployment.md` § 6.
 
 ## 5. Profil
 
@@ -122,7 +134,10 @@ modifié la base, restaurer la sauvegarde faite juste avant (§ 4).
 
 ## 6. Changer de fournisseur IA
 
-Six choix interchangeables : `claude`, `gemini`, `mistral`, `openai`, `local` (Ollama), `null` (sans IA).
+PAI est autonome : sans IA, tout fonctionne (voies déterministes). Par défaut `local` (Ollama, gratuit ; profil
+Docker `ai-local`, puis `docker compose exec pai_web python -m pai ai setup --pull`). Choix mesuré du modèle,
+routeur par tâche et fournisseurs externes : `docs/ai-providers.md`. Noms courts : `AI_PROVIDER`, `AI_MODEL`,
+`AI_MODEL_SMALL`, `AI_BASE_URL`, `AI_API_KEY`, `AI_PROFILE` (les anciens noms ci-dessous restent lus).
 Aucun module métier n'importe de SDK : changer de fournisseur ne touche pas au code.
 
 **Depuis l'interface (recommandé, sans redémarrage)** : Réglages → IA → choisir le fournisseur, saisir la clé,
@@ -138,7 +153,7 @@ indice `••••a1b2` apparaît). API équivalente : `GET/PUT /v1/settings/a
 | Gemini | `PAI_AI_PROVIDER=gemini`, `GEMINI_API_KEY=…`, `GEMINI_MODEL=…` (défaut `gemini-2.5-flash`) |
 | Mistral | `PAI_AI_PROVIDER=mistral`, `MISTRAL_API_KEY=…`, `MISTRAL_MODEL=…` (défaut `mistral-large-latest`) |
 | OpenAI | `PAI_AI_PROVIDER=openai`, `OPENAI_API_KEY=…`, `OPENAI_MODEL=…` |
-| Local (Ollama) | `PAI_AI_PROVIDER=local`, `LOCAL_BASE_URL=http://hôte:11434/v1`, `LOCAL_MODEL=…` |
+| Local (Ollama) | `AI_PROVIDER=local` ; Docker : profil `ai-local` (URL `http://pai_ollama:11434` automatique) |
 | Sans IA | `PAI_AI_PROVIDER=null` : voies déterministes, 100 % factuelles, coût nul |
 
 - **Priorité** : Réglages → IA (base) → environnement → `default_provider` de `config/models.yaml` → sans IA.
@@ -185,7 +200,9 @@ benchmark, admin`. Donner le minimum. Référence : `docs/api.md`.
 | Packs bloqués en PENDING | worker arrêté | `docker compose up -d pai_worker` ; les jobs interrompus sont repris |
 | Génération sans IA inattendue | clé absente, plafond atteint, fournisseur indisponible | voir le journal du pack (étapes « voie déterministe ») |
 | Disque plein | sauvegardes, journaux Docker | `docker system df`, baisser `PAI_BACKUP_KEEP`, copier les sauvegardes ailleurs |
-| Connexion impossible en HTTP simple | cookie `Secure` | passer par HTTPS (Caddy/Tailscale) ou `http://localhost` (tunnel SSH `ssh -L 8080:127.0.0.1:8080`) |
+| Connexion impossible en HTTP simple | cookie `Secure` | passer par HTTPS (tunnel Cloudflare, Caddy, Tailscale) ou `http://localhost` (tunnel SSH `ssh -L 8080:127.0.0.1:8080`) |
+| État du système : « Cloudflare Tunnel » en erreur | jeton absent ou révoqué, sortie réseau bloquée | `docker compose logs pai_cloudflared` ; jeton dans `CLOUDFLARE_TUNNEL_TOKEN` ; `docker compose up -d` |
+| « Modèle local » en avertissement | Ollama arrêté ou sans modèle | `docker compose --profile ai-local up -d` puis `python -m pai ai setup --pull` (PAI marche sans) |
 
 ## 10. Développement
 

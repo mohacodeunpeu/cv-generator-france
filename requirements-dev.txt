@@ -1,3 +1,5 @@
 -r requirements.txt
 pytest==9.1.1
 pip-audit
+ruff==0.16.10          # lint (ruff.toml)
+mypy==2.4.0            # typage (mypy.ini)

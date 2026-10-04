@@ -28,6 +28,8 @@ const slug = (t) => String(t || 'pack').normalize('NFKD').replace(/[̀-ͯ]/g, ''
 const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || '';
 const STATUS_TONE = { CONFIRMED: 'good', IMPORTED: 'accent', INFERRED: 'warn', UNVERIFIED: 'warn', FORBIDDEN: 'bad' };
 const STATUS_LABEL = { CONFIRMED: 'Validé', IMPORTED: 'Importé', INFERRED: 'Déduit', UNVERIFIED: 'À vérifier', FORBIDDEN: 'Interdit' };
+const PACK_STATUS = { FINAL: 'Final', DRAFT: 'Brouillon', FAILED: 'Échec' };
+const packChip = (st) => `<span class="chip ${st === 'FINAL' ? 'good' : st === 'FAILED' ? 'bad' : 'warn'}">${esc(PACK_STATUS[st] || st)}</span>`;
 const KIND_LABEL = { identity: 'Identité', contact: 'Contact', target: 'Cibles', summary: 'Synthèse', availability: 'Disponibilité', mobility: 'Mobilité',
   education: 'Formation', certification: 'Certifications', language: 'Langues', experience: 'Expériences', responsibility: 'Responsabilités',
   result: 'Résultats', skill: 'Compétences', tool: 'Outils', soft_skill: 'Savoir-être', preference: 'Préférences', media: 'Médias', other: 'Autres' };
@@ -48,9 +50,9 @@ const S = {
 };
 
 const NAV_MAIN = [['accueil', 'Accueil', 'i-home'], ['analyser', 'Analyser', 'i-spark'], ['studio', 'CV Studio', 'i-layout'], ['packs', 'Application Packs', 'i-stack'], ['lab', 'Training Lab', 'i-flask'], ['learning', 'Learning', 'i-bulb']];
-const NAV_SECOND = [['benchmark', 'Benchmark', 'i-scale'], ['profil', 'Profil', 'i-user'], ['versions', 'Versions', 'i-history'], ['reglages', 'Réglages', 'i-sliders']];
+const NAV_SECOND = [['benchmark', 'Benchmark', 'i-scale'], ['profil', 'Profil', 'i-user'], ['versions', 'Versions', 'i-history'], ['statut', 'État du système', 'i-pulse'], ['reglages', 'Réglages', 'i-sliders']];
 const TABS = [['accueil', 'Accueil', 'i-home'], ['analyser', 'Analyser', 'i-spark'], ['studio', 'Studio', 'i-layout'], ['packs', 'Packs', 'i-stack'], ['more', 'Plus', 'i-more']];
-const ALIASES = { nouvelle: 'analyser', apprentissage: 'learning', arene: 'benchmark', jobagent: 'learning', plus: 'accueil' };
+const ALIASES = { nouvelle: 'analyser', apprentissage: 'learning', arene: 'benchmark', jobagent: 'learning', plus: 'accueil', status: 'statut', usage: 'statut' };
 const VIEW_TITLE = Object.fromEntries(NAV_MAIN.concat(NAV_SECOND).map(([k, l]) => [k, l]).concat([['pack', 'Application Pack']]));
 
 let renderQueued = false;
@@ -143,6 +145,10 @@ function fitPack(body) {
     const sel = body.letters[body.letter_index]; const drop = body.letters.findIndex((l, i) => i !== 0 && i !== body.letter_index); if (drop < 0) break;
     body.letters.splice(drop, 1); body.letter_index = Math.max(0, body.letters.indexOf(sel));
   }
+  if (docBytes(body) > DOC_LIMIT && body.ats && body.ats.dimensions) {
+    body.ats = Object.assign({}, body.ats, { keywords: (body.ats.keywords || []).map((k) => Object.assign({}, k, { why: '' })),
+      dimensions: body.ats.dimensions.map((d) => Object.assign({}, d, { details: d.details.slice(0, 6) })) });
+  }
   if (docBytes(body) > DOC_LIMIT && body.offer) body.offer.text = body.offer.text.slice(0, 12000);
   if (docBytes(body) > DOC_LIMIT) { slimEntry(body.cvs[body.cv_index]); if (body.letters[body.letter_index]) slimEntry(body.letters[body.letter_index]); }
   return body;
@@ -150,7 +156,7 @@ function fitPack(body) {
 
 // ─── IA : capacité sample (claude.ai) ou fournisseur du serveur ───────────────
 const AI_DENIED = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'];
-const PROVIDER_LABEL = { claude: 'Claude (Anthropic)', gemini: 'Gemini (Google)', mistral: 'Mistral AI', openai: 'OpenAI ou compatible', local: 'IA locale (Ollama…)', null: 'Désactivé (sans IA)' };
+const PROVIDER_LABEL = { local: 'IA locale (Ollama) · gratuite', null: 'Sans IA', claude: 'Claude (Anthropic) · optionnel', gemini: 'Gemini (Google) · optionnel', mistral: 'Mistral AI · optionnel', openai: 'OpenAI ou compatible · optionnel' };
 const PROVIDER_SHORT = { claude: 'Claude', gemini: 'Gemini', mistral: 'Mistral', openai: 'OpenAI', local: "L'IA locale", null: "L'IA" };
 const AI = {
   ok: () => !!S.caps.sample && S.ai !== 'denied' && !(SERVER && S.server.status && S.server.status.ai_mode === 'DEGRADED'),
@@ -165,8 +171,10 @@ const AI = {
     const t0 = performance.now();
     const rec = { task, tier, at: nowIso(), ms: 0, ok: false, code: '' };
     try {
-      const res = await S.caps.sample.json(prompt, { modelTier: tier, signal: opts.signal, images: opts.images,
-        onText: opts.onText ? ({ text }) => opts.onText(text) : undefined, cache: opts.cache === undefined ? { gcTime: 600000 } : opts.cache });
+      const o = { modelTier: tier, signal: opts.signal, images: opts.images,
+        onText: opts.onText ? ({ text }) => opts.onText(text) : undefined, cache: opts.cache === undefined ? { gcTime: 600000 } : opts.cache };
+      if (SERVER) o.task = task; // le routeur du serveur décide : aucune IA, IA locale ou IA externe
+      const res = await S.caps.sample.json(prompt, o);
       rec.ok = true; S.ai = 'ready';
       return res;
     } catch (e) {

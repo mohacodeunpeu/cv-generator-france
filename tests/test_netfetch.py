@@ -200,11 +200,24 @@ def test_timeouts_and_http_errors():
 
     assert fetch_code("https://jobs.example.fr/lent", handler) == "timeout"
     assert fetch_code("https://jobs.example.fr/injoignable", handler) == "http_error"
-    for status in (403, 404, 410, 429, 500, 503):
-        assert fetch_code(f"https://jobs.example.fr/{status}", handler) == "http_error"
+    expected = {401: "auth_required", 403: "forbidden", 404: "not_found", 410: "not_found", 429: "rate_limited",
+                500: "unavailable", 503: "unavailable", 418: "http_error"}
+    for status, code in expected.items():
+        assert fetch_code(f"https://jobs.example.fr/{status}", handler) == code
     with pytest.raises(FetchError) as info:
         safe_get("https://jobs.example.fr/404", resolver=resolver(), transport=httpx.MockTransport(handler))
     assert "HTTP 404" in info.value.message and "collez le texte" in info.value.message
+    assert info.value.message.startswith("Le serveur PAI n'a pas pu récupérer cette URL") and "Claude" not in info.value.message
+
+
+def test_anti_bot_protection_is_named():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/cloudflare":
+            return httpx.Response(403, headers={"cf-mitigated": "challenge", "server": "cloudflare"})
+        return httpx.Response(403, headers={"x-datadome": "protected"})
+
+    assert fetch_code("https://jobs.example.fr/cloudflare", handler) == "anti_bot"
+    assert fetch_code("https://jobs.example.fr/datadome", handler) == "anti_bot"
 
 
 def test_single_deadline_covers_redirects_and_slow_bodies():
@@ -343,10 +356,10 @@ def test_plain_text_and_bogus_charsets_are_tolerated():
 
 def test_unreadable_page_is_explicit_and_never_invented():
     spa = '<html><body><div id="app"></div><script>window.render()</script></body></html>'
-    for body in (spa, page(dict(POSTING, description=""), main="Chargement…")):
+    for body, code in ((spa, "js_required"), (page(dict(POSTING, description=""), main="Chargement…"), "unreadable")):
         with pytest.raises(UrlIngestError) as info:
             read("/spa", {"/spa": httpx.Response(200, html=body)})
-        assert info.value.code == "unreadable" and "collez le texte" in info.value.message and "PDF" in info.value.message
+        assert info.value.code == code and "collez le texte" in info.value.message and "PDF" in info.value.message
     with pytest.raises(UrlIngestError) as info:
         read("/img", {"/img": httpx.Response(200, content=b"\x89PNG\r\n", headers={"Content-Type": "image/png"})})
     assert info.value.code == "unreadable"
@@ -456,7 +469,7 @@ def test_ingest_url_endpoint_returns_offer(client, fake_web):
     ("https://www.linkedin.com/jobs/view/1", "login_walled"), ("ftp://jobs.example.fr/offre", "bad_url"),
     ("http://jobs.example.fr:8443/offre", "bad_url"), ("http://127.0.0.1/admin", "blocked_address"),
     ("http://2130706433/", "blocked_address"), ("https://interne.example.fr/offre", "blocked_address"),
-    ("https://jobs.example.fr/absente", "http_error"), ("https://jobs.example.fr/lente", "timeout"),
+    ("https://jobs.example.fr/absente", "not_found"), ("https://jobs.example.fr/lente", "timeout"),
     ("https://jobs.example.fr/enorme", "too_large"), ("https://jobs.example.fr/vide", "unreadable")])
 def test_ingest_url_endpoint_error_codes(client, fake_web, url, code):
     r = client.post("/v1/ingest/url", json={"url": url}, headers=api_key("analyze"))
@@ -476,3 +489,15 @@ def test_ingest_url_endpoint_auth_and_validation(client, fake_web):
     assert client.post("/v1/ingest/url", json=body).status_code == 403
     r = client.post("/v1/ingest/url", json=body, headers={"X-CSRF-Token": session_csrf(client)})
     assert r.status_code == 200 and r.json()["offer"]["company_hint"] == "Acme SaaS"
+
+
+def test_outbound_proxy_is_explicit_only(monkeypatch):
+    """Un proxy hérité de l'environnement n'est jamais suivi ; seul PAI_FETCH_PROXY l'active (réseau d'entreprise)."""
+    from pai.netfetch import outbound_options
+
+    monkeypatch.delenv("PAI_FETCH_PROXY", raising=False)
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy-herite.invalid:3128")
+    assert outbound_options() == {}
+    monkeypatch.setenv("PAI_FETCH_PROXY", "http://proxy.entreprise.invalid:3128")
+    monkeypatch.delenv("PAI_FETCH_CA_BUNDLE", raising=False)
+    assert outbound_options() == {"proxy": "http://proxy.entreprise.invalid:3128"}

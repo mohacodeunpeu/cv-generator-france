@@ -10,8 +10,12 @@ set -euo pipefail
 umask 077
 
 cd "$(dirname "$0")/.."
-if [ -f .env ]; then
-  set -a; . ./.env; set +a
+# .env complète l'environnement sans l'écraser : une variable passée à l'appel (PAI_BACKUP_MODE=local DB_URL=… ) prime.
+ENV_FILE="${PAI_ENV_FILE:-.env}"
+if [ -f "$ENV_FILE" ]; then
+  _caller_env="$(export -p | grep -v '^declare -[a-zA-Z]*r')"
+  set -a; . "$ENV_FILE"; set +a
+  eval "$_caller_env"
 fi
 
 MODE="${PAI_BACKUP_MODE:-docker}"

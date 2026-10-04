@@ -149,9 +149,18 @@ def cmd_benchmark(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_benchmark_real(args: argparse.Namespace) -> int:
+    from .realbench import ai_factory, run
+
+    result = run(Path(args.dir) if args.dir else None, provider_factory=ai_factory(args.ai), repeat=args.repeat)
+    print(json.dumps(result["summary"], ensure_ascii=False, indent=2))
+    print(f"Rapport : {result['output_dir']}/report.md")
+    return 0
+
+
 def cmd_build_studio(args: argparse.Namespace) -> int:
     sys.path.insert(0, str(paths.WEB_DIR))
-    from build_studio import build  # type: ignore[import-not-found]
+    from build_studio import build
 
     print(build(Path(args.output) if args.output else None, server=args.server))
     return 0
@@ -165,6 +174,11 @@ def cmd_worker(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["ai"]:  # IA locale : python -m pai ai status | detect | bench | setup | pull | import-gguf
+        from .ai.setup import main as ai_main
+
+        return ai_main(argv[1:])
     parser = argparse.ArgumentParser(prog="pai", description="PAI — Personal Application Intelligence")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("bootstrap-profile", help="Construire le Master Profile v1 (confirmations + legacy)").set_defaults(fn=cmd_bootstrap_profile)
@@ -203,6 +217,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--output")
     p.add_argument("--persist", action="store_true", help="enregistrer en base (historique + page Benchmark de l'interface serveur)")
     p.set_defaults(fn=cmd_benchmark)
+    p = sub.add_parser("benchmark-real", help="Benchmark sur offres réelles (hors Git : data/benchmark_real/, docs/benchmark.md)")
+    p.add_argument("--dir", help="dossier des offres (défaut : DATA_DIR/benchmark_real)")
+    p.add_argument("--ai", choices=["none", "configured"], default="none",
+                   help="none : voies déterministes ; configured : l'IA configurée (locale par défaut)")
+    p.add_argument("--repeat", type=int, default=2, help="générations par offre (constance), défaut 2")
+    p.set_defaults(fn=cmd_benchmark_real)
     p = sub.add_parser("build-studio", help="Construire la page PAI Studio (web/)")
     p.add_argument("--output")
     p.add_argument("--server", action="store_true", help="variante servie par le serveur PAI (API /v1 au lieu de claude.ai)")

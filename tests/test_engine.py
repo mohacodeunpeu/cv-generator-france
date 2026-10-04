@@ -11,7 +11,7 @@ import pytest
 import yaml
 
 from pai import paths
-from pai.analyzer import clean_title, deterministic_analysis, detect_contract, detect_degree
+from pai.analyzer import clean_title, detect_contract, detect_degree, deterministic_analysis
 from pai.ingest import IngestError, benchmark_fixtures, offer_from_text
 from pai.matching import compute_match
 from pai.pack import export_zip
@@ -155,15 +155,19 @@ def test_extract_json_tolerant():
 def test_provider_switch_and_degraded_default(monkeypatch):
     from pai.config import reset_settings_cache
 
-    monkeypatch.setenv("PAI_AI_PROVIDER", "claude")
+    monkeypatch.setenv("AI_PROVIDER", "anthropic")      # alias de claude
     monkeypatch.setenv("ANTHROPIC_API_KEY", "")
     reset_settings_cache()
-    assert isinstance(get_provider(), NullProvider)  # pas de clé → mode dégradé
+    prov = get_provider()
+    assert not prov.available and prov.mode() == "DEGRADED"  # pas de clé, pas de modèle local → sans IA, sans erreur
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
     reset_settings_cache()
     prov = get_provider()
     assert prov.available and prov.name == "claude" and prov.model_for("strategy") == "claude-opus-5-5"
-    assert get_provider("local").name == "null"  # LOCAL_MODEL absent
+    assert prov.model_for("factuality_judge") == "none"      # la factualité n'appelle jamais d'IA
+    local = get_provider("local")
+    assert local.name == "local" and not local.available    # Ollama injoignable (sonde simulée)
+    assert isinstance(get_provider("none"), type(local)) and get_provider("none").mode() == "DEGRADED"
 
 
 def test_openai_compat_provider(monkeypatch):
@@ -226,7 +230,42 @@ def test_every_yaml_parses_and_prompts_render():
 def test_pdf_quality_checks(profile):
     offer = offer_from_text(TEST_OFFER, title="Business Developer Junior", company="Acme SaaS")
     pipe = Pipeline(profile, NullProvider())
-    pack = pipe.run(offer)
+    pipe.run(offer)
     qa = check_pdf(pipe.files["cv.pdf"], expect_pages=1, reading_order=["Camille Test", "Expérience professionnelle", "Formation"])
     assert qa["ok"], qa["issues"]
     assert all("Fira" in f or "PAI" in f for f in qa["fonts"]), qa["fonts"]
+
+
+def test_deliberate_no_ai_steps_are_not_reported_as_failures(profile):
+    """Profil eco : une étape faite sans IA par choix n'est pas une panne (« IA indisponible » est réservé aux pannes)."""
+    from pai.providers.base import DegradedMode
+
+    pipe = Pipeline(profile, FakeProvider())
+
+    def by_choice():
+        raise DegradedMode("strategy : tâche traitée sans IA (profil « eco »)")
+
+    def broken():
+        raise ProviderError("local : délai de réponse dépassé (600 s)")
+
+    assert pipe._try_ai("stratégie", by_choice) is None and pipe._try_ai("lettre", broken) is None
+    details = [e["detail"] for e in pipe.log]
+    assert details[0] == "voie déterministe (tâche traitée sans IA (profil « eco »))"
+    assert details[1].startswith("IA indisponible → voie déterministe (local : délai")
+
+
+def test_letter_prompt_gets_a_minimal_fact_context(profile):
+    """Contexte minimal : la lettre reçoit les faits utiles à l'offre, pas tout le profil (moins de jetons)."""
+    prompts: dict[str, str] = {}
+
+    class Spy(FakeProvider):
+        def respond(self, task, prompt):  # noqa: ANN001, ANN202
+            prompts.setdefault(task, prompt)
+            return super().respond(task, prompt)
+
+    offer = offer_from_text(TEST_OFFER, title="Business Developer Junior", company="Acme SaaS")
+    Pipeline(profile, Spy()).run(offer)
+    letter_prompt = prompts["letter"]
+    assert "exp.alpha.t3 |" in letter_prompt and "lang.en |" in letter_prompt     # HubSpot prouve l'offre ; langues toujours là
+    assert "exp.gamma.t1 |" not in letter_prompt                                   # sans lien avec l'offre : non envoyé
+    assert "contact.email" not in letter_prompt                                    # jamais de coordonnées dans un prompt

@@ -8,24 +8,39 @@ from __future__ import annotations
 
 import json
 import secrets
+import time
 from typing import Any, Callable
 
 from . import ENGINE_VERSION
 from .analyzer import analysis_json_for_prompt, deterministic_analysis, merge_ai_analysis
 from .claims import ClaimValidator, build_evidence, drop_rejected
 from .critic import ai_issue_instructions, deterministic_critique, score_events
-from .cv_architect import build_cv_deterministic, cv_from_ai, cv_plain_text, replace_lines
+from .cv_architect import build_cv_deterministic, cv_from_ai, cv_plain_text
 from .letter import build_letter_deterministic, letter_checks, letter_from_ai
 from .matching import compute_match
+from .obs import event
 from .pdf_qa import check_pdf
 from .profile import experiences_table, facts_table, missing_data, profile_version_tag
-from .providers.base import AIProvider, ProviderError
+from .providers.base import AIProvider, DegradedMode, ProviderError
 from .questions import answer_deterministic, split_questions
 from .rules import load_rules, prompts_version, truth_rules
-from .schemas import (Analysis, Answer, ApplicationPack, CvDocument, LetterDocument, Line, MasterProfile, Match, Offer,
-                      Strategy, StrategyChoice, ValidationReport, Versions)
+from .schemas import (
+    Analysis,
+    Answer,
+    ApplicationPack,
+    CvDocument,
+    LetterDocument,
+    Line,
+    MasterProfile,
+    Match,
+    Offer,
+    Strategy,
+    StrategyChoice,
+    ValidationReport,
+    Versions,
+)
 from .strategy import deterministic_strategy, sanitize_strategy
-from .textnorm import stable_hash
+from .textnorm import nb, stable_hash
 
 Progress = Callable[[str, str], None]
 
@@ -44,6 +59,7 @@ class Pipeline:
         self.learned_rules = learned_rules or "aucune"
         self.render_pdf = render_pdf
         self.files: dict[str, bytes] = {}
+        self._stage, self._stage_t = "", time.monotonic()
 
     # -- utilitaires -----------------------------------------------------------
     @property
@@ -51,6 +67,11 @@ class Pipeline:
         return self.provider.available
 
     def _step(self, stage: str, detail: str = "") -> None:
+        """Étape suivante : journal lisible (pack) + événement structuré de l'étape précédente (durée, sans contenu)."""
+        now = time.monotonic()
+        if self._stage:
+            event("stage", stage=self._stage, duration_ms=int((now - self._stage_t) * 1000), success=True)
+        self._stage, self._stage_t = stage, now
         self.log.append({"stage": stage, "detail": detail})
         self.progress(stage, detail)
 
@@ -60,7 +81,11 @@ class Pipeline:
         try:
             return fn()
         except ProviderError as exc:
-            self._step(stage, f"IA indisponible → voie déterministe ({exc})")
+            if isinstance(exc, DegradedMode) and "sans IA (profil" in str(exc):
+                # choix du routeur (profil eco / balanced) : rien n'est en panne
+                self._step(stage, f"voie déterministe ({str(exc).split(' : ', 1)[-1]})")
+            else:
+                self._step(stage, f"IA indisponible → voie déterministe ({exc})")
             return None
 
     def _common_vars(self, analysis: Analysis) -> dict[str, str]:
@@ -144,9 +169,14 @@ class Pipeline:
                     payload.append({"id": ln.id, "text": ln.text, "reasons": reasons + ([instructions[ln.id]] if instructions and ln.id in instructions else []),
                                     "fact_ids": ln.fact_ids, "kind": ln.kind})
             v = self._common_vars(analysis)
+            # _try_ai appelle la lambda tout de suite, dans ce même tour de boucle : pas de liaison tardive.
+            # contexte minimal : les faits des lignes à corriger et ceux de leurs expériences
+            parents = {f.parent or f.id for p in payload for fid in p["fact_ids"] if (f := self.profile.fact(fid))}
+            related = {f.id for f in self.profile.usable_facts() if f.parent in parents or f.id in parents}
             fixed = self._try_ai("correction", lambda: self.provider.fix_lines(
-                rejected_lines_json=json.dumps(payload, ensure_ascii=False), facts_table=v["facts_table"],
-                critic_instructions="; ".join(general or []) or "aucune", truth_rules=v["truth_rules"],
+                rejected_lines_json=json.dumps(payload, ensure_ascii=False),  # noqa: B023
+                facts_table=facts_table(self.profile, only=related),  # noqa: B023
+                critic_instructions="; ".join(general or []) or "aucune", truth_rules=v["truth_rules"],  # noqa: B023
                 language="anglais" if analysis.language_of_offer == "en" else "français"))
             if not isinstance(fixed, dict):
                 break
@@ -223,7 +253,7 @@ class Pipeline:
             ai_crit = self._try_ai("critique", lambda: self.provider.critique_document(
                 analysis_json=v["analysis_json"], sector_json=v["sector_json"], country_json=v["country_json"],
                 design_json=json.dumps(self.rules.design(cv.design_profile), ensure_ascii=False),
-                validation_json=report.model_dump_json(include={"factuality", "total", "traced", "warnings"}),
+                validation_json=report.model_dump_json(include={"factuality", "total", "traced", "warnings"}),  # noqa: B023
                 cv_text=cv_plain_text(cv), sector_name=v["sector_name"]))
             critique = {"deterministic": det, "ai": ai_crit if isinstance(ai_crit, dict) else None}
             per_line, general = ai_issue_instructions(ai_crit) if isinstance(ai_crit, dict) else ({}, [])
@@ -246,14 +276,58 @@ class Pipeline:
             self._step("rendu", "HTML/CSS → Chromium → PDF")
             max_pages = int(self.rules.country(analysis.country).get("max_pages", 1))
             cv, pdf, info = render_cv_fitted(cv, max_pages=max_pages)
+            cv, pdf, scan, passes = self._reread_loop(cv, pdf, max_pages, info)
             titles = cv.section_titles
             qa = check_pdf(pdf, expect_pages=max_pages,
                            required_terms=[c.term for c in match.coverage if c.covered and c.priority == "REQUIRED"],
                            reading_order=[cv.name, titles.get("experience", ""), titles.get("education", "")])
             qa["fit"] = info
+            qa["ats_scan"] = {k: scan[k] for k in ("checks", "score", "status", "pages", "text_chars", "layout")} | {
+                "roundtrip": {k: v for k, v in scan.get("roundtrip", {}).items() if k != "lost"}}
+            qa["ats_passes"] = passes
             self.files["cv.pdf"] = pdf
             report = validator.validate_lines(cv.lines)
         return cv, report, {"critique": critique, "pdf_qa": qa, "flagged_by_judge": flagged}
+
+    @staticmethod
+    def ats_labels(cv: CvDocument) -> list[str]:
+        """Textes du gabarit légitimes dans le PDF (nom, coordonnées, titres, en-têtes d'expérience, badge brouillon)."""
+        from .render import DRAFT_LABEL
+
+        labels = [cv.name, *cv.contact, *cv.section_titles.values(), *{ln.group for ln in cv.lines if ln.group},
+                  *DRAFT_LABEL.values()]
+        for b in cv.experiences:
+            labels += [b.title, b.company, b.city, b.period]
+        return [x for x in labels if x]
+
+    def _reread_loop(self, cv: CvDocument, pdf: bytes, max_pages: int, info: dict[str, Any]
+                     ) -> tuple[CvDocument, bytes, dict[str, Any], list[dict[str, Any]]]:
+        """CV → PDF → relecture ATS → correction → nouvelle relecture. Trois relectures au plus (jamais de boucle infinie).
+        Corrections possibles sans rien inventer : retirer une ligne porteuse d'un reste de gabarit, réduire le contenu
+        secondaire en cas de débordement. Une erreur non corrigeable reste signalée (Format & parsing)."""
+        from .ats.scanner import scan_pdf
+        from .cv_architect import trim_for_space
+        from .render import render_cv_pdf
+        from .textnorm import norm
+
+        passes: list[dict[str, Any]] = []
+        scan: dict[str, Any] = {}
+        for attempt in range(3):
+            scan = scan_pdf(pdf, max_pages=max_pages, source_lines=[ln.text for ln in cv.lines], allowed=self.ats_labels(cv))
+            errors = sorted(c["id"] for c in scan["checks"] if c["status"] == "ERROR")
+            passes.append({"pass": attempt + 1, "status": scan["status"], "score": scan["score"], "errors": errors})
+            fixable = set(errors) & {"added", "overflow", "pages"}
+            if not fixable or attempt == 2:
+                break
+            self._step("relecture", f"passe {attempt + 1} : {', '.join(sorted(fixable))} → correction puis nouvelle relecture")
+            if "added" in fixable:
+                bad = set(scan.get("roundtrip", {}).get("placeholders", []))
+                cv.lines = [ln for ln in cv.lines if not any(b in norm(ln.text) for b in bad)]
+            if fixable & {"overflow", "pages"}:
+                cv = trim_for_space(cv, min(3, int(info.get("trim_steps", 0)) + attempt + 1))
+            pdf = render_cv_pdf(cv)
+        self._step("relecture", f"PDF relu : {scan.get('status')} · Format & parsing {scan.get('score')} %")
+        return cv, pdf, scan, passes
 
     def build_letter(self, offer: Offer, analysis: Analysis, match: Match, strategy: Strategy) -> tuple[LetterDocument, ValidationReport, list[dict[str, str]]]:
         self._step("lettre", "rédaction")
@@ -261,10 +335,13 @@ class Pipeline:
         v = self._common_vars(analysis)
         sector = self.rules.sector(analysis.sector_id)
         low, high = sector.get("letter_style", {}).get("length_words", [220, 320])
+        # contexte minimal : les faits de la lettre déterministe et ceux qui prouvent les mots-clés de l'offre
+        useful = {fid for ln in base.lines for fid in ln.fact_ids} | {fid for c in match.coverage if c.covered for fid in c.fact_ids}
         ai = self._try_ai("lettre", lambda: self.provider.generate_letter(
             analysis_json=v["analysis_json"], strategy_json=strategy.best.model_dump_json(),
             company_facts=json.dumps({"source": "offre", "texte": offer.text[:1500]}, ensure_ascii=False),
-            facts_table=v["facts_table"], sector_json=v["sector_json"], banned_phrases=", ".join(self.rules.banned_hard[:30]),
+            facts_table=facts_table(self.profile, only=useful), sector_json=v["sector_json"],
+            banned_phrases=", ".join(self.rules.banned_hard[:30]),
             feedback_context=self.feedback_context, truth_rules=v["truth_rules"], candidate_name=self.profile.value("id.name"),
             language="anglais" if analysis.language_of_offer == "en" else "français", length_words=f"{low} à {high}",
             company=analysis.company, job_title=strategy.best.title))
@@ -285,7 +362,7 @@ class Pipeline:
         questions = split_questions(questions_raw)
         if not questions:
             return []
-        self._step("questions", f"{len(questions)} question(s)")
+        self._step("questions", nb(len(questions), "question", "questions"))
         v = self._common_vars(analysis)
         ai = self._try_ai("questions", lambda: self.provider.answer_question(
             questions="\n".join(f"- {q}" for q in questions), analysis_json=v["analysis_json"], facts_table=v["facts_table"],
@@ -306,19 +383,37 @@ class Pipeline:
             return answers
         return [answer_deterministic(q, self.profile) for q in questions]
 
+    def ats_report(self, offer: Offer, analysis: Analysis, match: Match, *, cv: CvDocument | None = None,
+                   validation: ValidationReport | None = None, scan: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Score PAI + exigences prouvées + changements expliqués. Déterministe ; embeddings locaux seulement si activés."""
+        from .ats import match_report
+        from .ats.changes import explain
+        from .ats.semantic import local_embedder
+
+        self._step("ats", "exigences, preuves, Score PAI")
+        report = match_report(self.profile, analysis, match, offer.text, cv=cv, validation=validation, scan=scan,
+                              rules=self.rules, embedder=local_embedder())
+        if cv is not None:
+            report["changes"] = explain(cv, self.profile)
+        return report
+
     # -- exécution complète -------------------------------------------------------
     def run(self, offer: Offer, questions: str = "") -> ApplicationPack:
         self._step("ingest", f"offre {offer.id} ({len(offer.text)} caractères)")
         analysis = self.analyze(offer)
         match = self.match(analysis)
         strategy = self.strategy(analysis, match)
-        versions = Versions(offer_v=offer.text_hash[:12], profile_v=profile_version_tag(self.profile), engine_v=ENGINE_VERSION,
+        versions = Versions(application_id=f"app_{offer.text_hash[:12]}", offer_v=offer.text_hash[:12],
+                            profile_v=profile_version_tag(self.profile),
+                            analysis_v=stable_hash(analysis.model_dump(exclude={"sector_scores"}), 10), engine_v=ENGINE_VERSION,
                             prompt_v=prompts_version(), rules_v=self.rules.version)
         # Identifiant unique : une génération est immuable, deux runs de la même offre donnent deux packs.
         pack = ApplicationPack(id=f"pack_{stable_hash([offer.id, versions.profile_v, self.mode], 6)}{secrets.token_hex(3)}",
-                               mode=self.mode, provider=self.provider.name, versions=versions, offer=offer,  # type: ignore[arg-type]
+                               mode=self.mode, provider=self.provider.name, versions=versions, offer=offer,
                                analysis=analysis, match=match, strategy=strategy)
         if self.mode == "QUICK":
+            pack.ats = self.ats_report(offer, analysis, match)
+            pack.scores = {"pai_score": pack.ats["score"]["value"], "pai_score_complete": False}
             pack.risks = [r["text"] for r in match.risks]
             pack.next_action = "Lancer le mode STANDARD pour générer le CV et la lettre."
             pack.log, pack.cost_eur = self.log, self.provider.spent_eur
@@ -331,6 +426,7 @@ class Pipeline:
         pack.critique = {**extra["critique"], "letter_checks": letter_issues, "flagged_by_judge": extra["flagged_by_judge"]}
         pack.pdf_qa = extra["pdf_qa"]
         pack.versions.cv_v = stable_hash([ln.model_dump() for ln in cv.lines], 10)
+        pack.versions.template = cv.design_profile
         pack.versions.letter_v = stable_hash([ln.model_dump() for ln in letter.lines], 10)
         pack.versions.answers_v = stable_hash([a.model_dump() for a in answers], 10) if answers else ""
         pack.scores = {
@@ -338,6 +434,10 @@ class Pipeline:
             "match": match.match, "quality": match.quality, "risk": match.risk,
             "points": score_events(cv, letter, analysis, match, strategy, pack.validation, extra["critique"].get("deterministic", {}), self.rules),
         }
+        pack.ats = self.ats_report(offer, analysis, match, cv=cv, validation=cv_report, scan=pack.pdf_qa.get("ats_scan"))
+        pack.ats["passes"] = pack.pdf_qa.get("ats_passes", [])
+        pack.scores["pai_score"] = pack.ats["score"]["value"]
+        pack.scores["pai_score_complete"] = pack.ats["score"]["complete"]
         if isinstance(extra["critique"].get("ai"), dict):
             pack.scores["judges"] = {k: v.get("score") for k, v in (extra["critique"]["ai"].get("scores") or {}).items() if isinstance(v, dict)}
         perfect = cv_report.perfect and letter_report.perfect
@@ -349,4 +449,6 @@ class Pipeline:
         pack.missing_profile_data = missing_data(self.profile)
         pack.log, pack.cost_eur = self.log, self.provider.spent_eur
         self._step("pack", f"statut {pack.status}")
+        event("stage", stage="pack", duration_ms=int((time.monotonic() - self._stage_t) * 1000), success=True,
+              generation_id=pack.id, score=pack.scores.get("pai_score"))
         return pack

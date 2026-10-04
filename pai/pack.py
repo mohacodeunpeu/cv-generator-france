@@ -26,7 +26,24 @@ def pack_markdown(pack: ApplicationPack) -> str:
            "## Offre", "", f"- Lieu : {a.location} ({a.country}) · Contrat : {a.contract} · Séniorité : {a.seniority}",
            f"- Secteur détecté : {a.sector_id}", f"- Source : {pack.offer.source_type} {pack.offer.source_url}"
            + (" · **SYNTHETIC**" if pack.offer.synthetic else ""), "",
-           "## Matching", "", f"MATCH **{m.match}** · QUALITY **{m.quality}** · RISK **{m.risk}**", ""]
+           ]
+    if pack.ats:
+        sc = pack.ats["score"]
+        out += ["## Score PAI", "", f"**{sc['value']} %**" + ("" if sc.get("complete") else " (provisoire)") + f" — {sc['disclaimer']}", "",
+                "| Dimension | % | Résumé |", "|---|---|---|"]
+        out += [f"| {d['label']} | {d['value'] if d['available'] else '—'} | {d['summary']} |" for d in pack.ats["dimensions"]] + [""]
+        req = pack.ats.get("requirements", {})
+        for key, title in (("proven", "Prouvé"), ("plausible", "Correspondance possible"), ("unproven", "Non prouvé")):
+            if req.get(key):
+                out += [f"### {title}", ""] + [f"- {r['text']} ({r['class_label']}){' — ' + r['proof']['note'] if r['proof'].get('note') else ''}"
+                                             for r in req[key]] + [""]
+        if pack.ats.get("changes", {}).get("changes"):
+            out += ["### Changements (avant → après, raison, preuve)", ""]
+            for c in pack.ats["changes"]["changes"][:20]:
+                proof = ", ".join(p["id"] for p in c["proof"]) or "—"
+                out += [f"- **{c['section']}** : « {c['before'] or '—'} » → « {c['after']} » — {c['reason']} (preuve : {proof})"]
+            out += [""]
+    out += ["## Matching (détail interne)", "", f"Correspondance {m.match} · exigences obligatoires prouvées {m.quality} % · risque {m.risk}", ""]
     out += ["| Sous-score | Valeur |", "|---|---|"] + [f"| {k} | {v} |" for k, v in m.scores.items()] + [""]
     out += ["### Mots-clés", ""] + [f"- {'✅' if c.covered else '❌'} {c.term} ({c.priority}){' ← ' + ', '.join(c.fact_ids[:3]) if c.covered else ''}"
                                     for c in m.coverage] + [""]
@@ -58,4 +75,6 @@ def export_zip(pack: ApplicationPack, files: dict[str, bytes]) -> bytes:
         zf.writestr("pack.json", pack.model_dump_json(indent=2))
         zf.writestr("pack.md", pack_markdown(pack))
         zf.writestr("versions.json", json.dumps(pack.versions.model_dump(), indent=2))
+        if pack.ats:
+            zf.writestr("analyse_ats.json", json.dumps(pack.ats, ensure_ascii=False, indent=2, default=str))
     return buf.getvalue()

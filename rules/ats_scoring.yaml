@@ -1,0 +1,33 @@
+# Score PAI : pondérations des dimensions (en %). Versionné, modifiable sans code, affiché à l'utilisateur.
+#
+# Le Score PAI est un indicateur INTERNE et explicable : il n'est ni le score d'un ATS réel (Workday, Taleo…)
+# ni une probabilité d'embauche. Chaque dimension est un pourcentage calculé par des règles lisibles
+# (pai/ats/scoring.py) ; une dimension non mesurable (ex. pas encore de PDF) est exclue et les poids restants
+# sont renormalisés — le score est alors marqué « provisoire ».
+version: 1
+disclaimer: "Score interne PAI, calculé par des règles explicables : ce n'est ni le score d'un ATS réel ni une probabilité d'embauche."
+
+# Mode B : CV + offre
+match:
+  matching:    {weight: 28, label: "Matching offre",   help: "Exigences de l'offre couvertes par des faits (obligatoires ×3, importantes ×2, un plus ×1 ; prouvé = 1, correspondance possible = 0,5)."}
+  keywords:    {weight: 14, label: "Mots-clés",        help: "Mots-clés de l'offre présents dans le CV (jamais ajoutés sans preuve)."}
+  experience:  {weight: 14, label: "Expérience",       help: "Intitulés proches du poste, durée d'expérience, niveau de séniorité."}
+  parsing:     {weight: 12, label: "Format & parsing", help: "Ce qu'un ATS lit réellement dans le PDF : texte, encodage, colonnes, sections, coordonnées, dates."}
+  factuality:  {weight: 10, label: "Factualité",       help: "Lignes du CV prouvées par un fait du profil (aucune invention tolérée)."}
+  structure:   {weight: 7,  label: "Structure",        help: "Sections attendues, expériences datées, puces en nombre utile, coordonnées."}
+  education:   {weight: 5,  label: "Formation",        help: "Niveau de diplôme demandé comparé au niveau prouvé."}
+  languages:   {weight: 5,  label: "Langues",          help: "Langues et niveaux demandés comparés aux niveaux prouvés."}
+  conditions:  {weight: 5,  label: "Conditions",       help: "Lieu (mobilité déclarée), type de contrat, disponibilité."}
+
+# Mode A : CV seul
+cv:
+  parsing:     {weight: 30, label: "Format & parsing", help: "Ce qu'un ATS lit réellement dans le fichier."}
+  structure:   {weight: 25, label: "Structure",        help: "Sections attendues, expériences datées, coordonnées."}
+  content:     {weight: 20, label: "Contenu",          help: "Verbes d'action, résultats chiffrés, compétences précises, pas de phrases creuses."}
+  readability: {weight: 15, label: "Lisibilité",       help: "Longueur des puces et du document, dates homogènes, pagination."}
+  factuality:  {weight: 10, label: "Factualité",       help: "Cohérence interne : dates possibles, pas de superlatifs invérifiables."}
+
+# Corpus métier : volume minimal d'offres analysées d'une famille avant d'afficher un TOP de mots-clés
+corpus:
+  top20_min_offers: 10
+  top40_min_offers: 25

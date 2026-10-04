@@ -1,0 +1,79 @@
+# Auto-évaluation PAI des modèles d'IA (pai/ai/selfeval.py). Données 100 % FICTIVES (SYNTHETIC) :
+# offre « Nordlys » inventée, candidate fictive « Camille Test ». Sert à choisir le modèle local sur la machine réelle.
+version: 1
+
+offer: |
+  Business Developer Junior (H/F) — CDI — Lyon (69)
+  Nordlys, éditeur SaaS de logiciels de gestion pour les PME industrielles (120 salariés), recrute.
+  Salaire : 38 000 € – 42 000 € brut annuel + variable.
+
+  Vos missions
+  - Prospecter de nouveaux clients PME par téléphone et LinkedIn.
+  - Qualifier les leads entrants et organiser des démonstrations.
+  - Suivre votre pipeline dans HubSpot.
+
+  Votre profil
+  - Première expérience en prospection B2B indispensable.
+  - Anglais courant requis.
+  - La maîtrise de Salesforce est un plus.
+  - Connaissance du secteur industriel appréciée.
+  Poste basé à Lyon, télétravail 2 jours par semaine.
+
+extraction_gold:
+  title: business developer junior
+  company: nordlys
+  contract: cdi
+  location: lyon
+  salary: "38"
+  languages: [anglais]
+  tools: [hubspot, linkedin, salesforce]
+
+# Classement attendu : MUST (obligatoire), IMPORTANT, NICE_TO_HAVE (un plus), CONTEXT (information sur le poste)
+classification:
+  - {text: "Première expérience en prospection B2B indispensable", gold: MUST}
+  - {text: "Anglais courant requis", gold: MUST}
+  - {text: "La maîtrise de Salesforce est un plus", gold: NICE_TO_HAVE}
+  - {text: "Connaissance du secteur industriel appréciée", gold: NICE_TO_HAVE}
+  - {text: "Suivre votre pipeline dans HubSpot", gold: IMPORTANT}
+  - {text: "Qualifier les leads entrants et organiser des démonstrations", gold: IMPORTANT}
+  - {text: "Télétravail 2 jours par semaine", gold: CONTEXT}
+  - {text: "Éditeur SaaS de 120 salariés", gold: CONTEXT}
+
+# Faits du profil fictif (seule source de vérité)
+facts:
+  - "F1 : Business Developer chez Alpha Services (2025 – aujourd'hui) : prospection B2B par téléphone et LinkedIn."
+  - "F2 : 25 leads qualifiés par mois grâce à LinkedIn Sales Navigator."
+  - "F3 : suivi du pipeline commercial dans HubSpot."
+  - "F4 : Sales Advisor chez Maison Lumen (2024) : +12 % vs objectif mensuel."
+  - "F5 : anglais courant (TOEIC 905/990)."
+  - "F6 : Bachelor Commerce."
+
+# PROUVÉ = un fait le dit ; PLAUSIBLE = proche mais pas explicitement prouvé ; NON_PROUVÉ = aucun fait
+matching:
+  - {requirement: "Prospection B2B", gold: PROUVÉ}
+  - {requirement: "HubSpot", gold: PROUVÉ}
+  - {requirement: "Anglais courant", gold: PROUVÉ}
+  - {requirement: "Utilisation d'un CRM", gold: PLAUSIBLE}
+  - {requirement: "Salesforce", gold: NON_PROUVÉ}
+  - {requirement: "Connaissance du secteur industriel", gold: NON_PROUVÉ}
+
+reformulation:
+  bullet: "Prospection de nouveaux clients par téléphone et LinkedIn."
+  keyword: prospection b2b
+  allowed_numbers: []
+  forbidden: [salesforce, mba, industriel, industrie, 30, 40, 50, "%"]
+
+# Phrases à juger : true = prouvée par les faits ci-dessus, false = inventée ou gonflée
+factuality:
+  - {sentence: "J'ai prospecté des clients B2B par téléphone et LinkedIn chez Alpha Services.", gold: true}
+  - {sentence: "Je génère 25 leads qualifiés par mois.", gold: true}
+  - {sentence: "Je maîtrise Salesforce au quotidien.", gold: false}
+  - {sentence: "Je suis titulaire d'un MBA.", gold: false}
+  - {sentence: "J'ai dépassé mes objectifs de 40 %.", gold: false}
+  - {sentence: "Je parle anglais couramment.", gold: true}
+
+letter:
+  company: Nordlys
+  min_words: 80
+  max_words: 220
+  forbidden: [salesforce, mba, master, "40 %", "50 %", doctorat, "10 ans"]

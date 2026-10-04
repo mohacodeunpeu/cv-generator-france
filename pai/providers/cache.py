@@ -25,7 +25,10 @@ class CachedProvider(AIProvider):
 
     def __post_init__(self) -> None:
         self.name = self.inner.name
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:  # cache indisponible (disque plein, droits) : PAI continue sans cache
+            self.mode = "off" if self.mode == "on" else self.mode
 
     @property
     def available(self) -> bool:
@@ -35,24 +38,50 @@ class CachedProvider(AIProvider):
         return self.inner.model_for(task)
 
     def key(self, task: str, prompt_text: str) -> str:
-        return stable_hash([self.inner.name, self.model_for(task), task, prompt_text], 24)
+        """Hash de l'entrée complète : fournisseur, modèle, tâche, prompt rendu (versionné, contient l'offre et le
+        profil utiles) et paramètres de génération. Changer l'un d'eux = nouvelle clé = nouvel appel."""
+        fp = getattr(self.inner, "config_fingerprint", None)
+        return stable_hash([self.inner.name, self.model_for(task), task, prompt_text, fp(task) if callable(fp) else ""], 24)
 
     def complete(self, task: str, prompt_text: str, prompt_tag: str = "", images: list[bytes] | None = None) -> ProviderResult:
         self._current_tag = prompt_tag
         return super().complete(task, prompt_text, prompt_tag, images)
 
-    def _complete(self, task: str, prompt_text: str, images: list[bytes] | None = None) -> ProviderResult:
+    def _path(self, task: str, prompt_text: str, images: list[bytes] | None) -> Path:
         img_key = stable_hash(b"".join(images), 12) if images else ""
-        path = self.cache_dir / f"{task}-{self.key(task, prompt_text + img_key)}.json"
-        if self.mode in ("on", "replay_only") and path.exists():
-            data = json.loads(path.read_text(encoding="utf-8"))
-            return ProviderResult(text=data["text"], model=data["model"], tokens_in=data.get("tokens_in", 0),
-                                  tokens_out=data.get("tokens_out", 0), cost_eur=0.0, cached=True)
+        return self.cache_dir / f"{task}-{self.key(task, prompt_text + img_key)}.json"
+
+    def discard(self, task: str, prompt_text: str, images: list[bytes] | None = None) -> None:
+        try:
+            self._path(task, prompt_text, images).unlink(missing_ok=True)
+        except OSError:  # cache indisponible : rien à oublier
+            pass
+
+    def remember(self, task: str, prompt_text: str, result: ProviderResult, images: list[bytes] | None = None) -> None:
+        if self.mode == "on":
+            self._write(self._path(task, prompt_text, images), task, result)
+
+    def _write(self, path: Path, task: str, result: ProviderResult) -> None:
+        try:
+            path.write_text(json.dumps({"task": task, "prompt_tag": self._current_tag, "model": result.model,
+                                        "text": result.text, "tokens_in": result.tokens_in,
+                                        "tokens_out": result.tokens_out}, ensure_ascii=False, indent=1), encoding="utf-8")
+        except OSError:  # écriture impossible : le résultat est rendu quand même
+            pass
+
+    def _complete(self, task: str, prompt_text: str, images: list[bytes] | None = None) -> ProviderResult:
+        path = self._path(task, prompt_text, images)
+        if self.mode in ("on", "replay_only"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+            except (OSError, ValueError):  # entrée illisible : ignorée, l'appel est refait
+                data = None
+            if data is not None:
+                return ProviderResult(text=data["text"], model=data["model"], tokens_in=data.get("tokens_in", 0),
+                                      tokens_out=data.get("tokens_out", 0), cost_eur=0.0, cached=True)
         if self.mode == "replay_only":
             raise DegradedMode(f"Rejeu hors ligne : aucune réponse enregistrée pour {task} ({path.name})")
         result = self.inner._complete(task, prompt_text, images)
         if self.mode == "on":
-            path.write_text(json.dumps({"task": task, "prompt_tag": self._current_tag, "model": result.model,
-                                        "text": result.text, "tokens_in": result.tokens_in,
-                                        "tokens_out": result.tokens_out}, ensure_ascii=False, indent=1), encoding="utf-8")
+            self._write(path, task, result)
         return result

@@ -121,13 +121,25 @@ def missing_data(profile: MasterProfile) -> list[str]:
 
 # ── Tables pour les prompts ──────────────────────────────────────────────────
 
-def facts_table(profile: MasterProfile, kinds: Iterable[str] | None = None, include_contact: bool = False) -> str:
+ALWAYS_IN_CONTEXT = ("identity", "target", "education", "language")
+
+
+def facts_table(profile: MasterProfile, kinds: Iterable[str] | None = None, include_contact: bool = False,
+                only: Iterable[str] | None = None) -> str:
+    """Table des faits pour un prompt. `only` : contexte minimal — ces faits, leurs expériences parentes et les faits
+    d'identité, de cible, de formation et de langue (moins de jetons, et l'IA ne voit que ce qui sert à l'offre)."""
     rows = []
     kind_filter = set(kinds) if kinds else None
+    keep: set[str] | None = None
+    if only is not None:
+        keep = set(only)
+        keep |= {f.parent for f in profile.usable_facts() if f.id in keep and f.parent}
     for f in profile.usable_facts():
         if f.kind == "contact" and not include_contact:
             continue
         if kind_filter and f.kind not in kind_filter:
+            continue
+        if keep is not None and f.id not in keep and f.kind not in ALWAYS_IN_CONTEXT:
             continue
         parent = f" (↳ {f.parent})" if f.parent else ""
         rows.append(f"{f.id} | {f.kind}{parent} | {f.status} | {f.text}")
@@ -197,4 +209,4 @@ def import_json(raw: str | bytes | dict[str, Any]) -> MasterProfile:
 
 
 def add_review(profile: MasterProfile, fact_id: str, reason: str, severity: str = "warning") -> None:
-    profile.review_queue.append(ReviewItem(fact_id=fact_id, reason=reason, severity=severity))  # type: ignore[arg-type]
+    profile.review_queue.append(ReviewItem(fact_id=fact_id, reason=reason, severity=severity))

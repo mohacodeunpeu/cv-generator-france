@@ -7,8 +7,12 @@ set -euo pipefail
 umask 077
 
 cd "$(dirname "$0")/.."
-if [ -f .env ]; then
-  set -a; . ./.env; set +a
+# .env complète l'environnement sans l'écraser : une variable passée à l'appel (PAI_BACKUP_MODE=local DB_URL=… ) prime.
+ENV_FILE="${PAI_ENV_FILE:-.env}"
+if [ -f "$ENV_FILE" ]; then
+  _caller_env="$(export -p | grep -v '^declare -[a-zA-Z]*r')"
+  set -a; . "$ENV_FILE"; set +a
+  eval "$_caller_env"
 fi
 
 YES=0
@@ -41,8 +45,12 @@ if [ "$MODE" = "docker" ]; then
 else
   age -d -i "$IDENTITY" "$DB_FILE" | pg_restore --dbname="${DB_URL/+psycopg/}" --clean --if-exists --no-owner
   if [ -n "$DATA_FILE" ]; then
-    mkdir -p "${PAI_DATA_DIR:-./data}"
-    age -d -i "$IDENTITY" "$DATA_FILE" | tar -C "${PAI_DATA_DIR:-./data}" -xf -
+    DATA_DIR="${PAI_DATA_DIR:-./data}"
+    mkdir -p "$DATA_DIR"
+    [ "$(cd "$DATA_DIR" && pwd -P)" != "/" ] || { echo "PAI_DATA_DIR ne peut pas être la racine" >&2; exit 1; }
+    # comme en mode docker : le dossier retrouve exactement l'état sauvegardé (sauf le dossier des sauvegardes)
+    find "$DATA_DIR" -mindepth 1 -maxdepth 1 ! -name backups -exec rm -rf -- {} +
+    age -d -i "$IDENTITY" "$DATA_FILE" | tar -C "$DATA_DIR" -xf -
   fi
 fi
 echo "Restauration terminée : $(basename "$DB_FILE")${DATA_FILE:+ + $(basename "$DATA_FILE")}"

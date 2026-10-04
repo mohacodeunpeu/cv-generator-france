@@ -133,3 +133,9 @@ def unique(items: Iterable[str]) -> list[str]:
 
 def word_count(text: str) -> int:
     return len(re.findall(r"[\w'’-]+", text or ""))
+
+
+def nb(n: int | float, one: str, many: str) -> str:
+    """Accord en nombre pour l'affichage (0 et 1 au singulier), espace insécable : « 1 ligne », « 3 lignes »."""
+    shown = f"{n:g}".replace(".", ",") if isinstance(n, float) else str(n)
+    return f"{shown}\u00a0{many if n > 1 else one}"

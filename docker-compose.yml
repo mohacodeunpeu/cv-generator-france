@@ -4,10 +4,16 @@
 #
 #   cp .env.example .env && nano .env            # secrets (jamais dans Git)
 #   docker compose up -d --build                 # base + interface/API + worker
-#   docker compose --profile caddy up -d         # + HTTPS public avec Caddy (domaine requis)
+#   docker compose --profile cloudflare up -d    # + accès public HTTPS par Cloudflare Tunnel nommé (recommandé :
+#                                                #   aucun port ouvert, nom d'hôte stable ; CLOUDFLARE_TUNNEL_TOKEN)
+#   docker compose --profile caddy up -d         # ou HTTPS public avec Caddy (domaine + ports 80/443 ouverts)
+#   docker compose --profile ai-local up -d      # + IA locale gratuite (Ollama) ; modèles : docs/deployment.md
 #
-# Sans domaine public : l'interface n'écoute que sur 127.0.0.1:${PAI_HTTP_PORT:-8080} (accès par Tailscale
-# ou tunnel SSH, voir RUNBOOK.md).
+# Profils permanents : COMPOSE_PROFILES=cloudflare,ai-local dans .env (repris par deploy/update.sh).
+# Sans profil d'accès : l'interface n'écoute que sur 127.0.0.1:${PAI_HTTP_PORT:-8080} (accès par Tailscale
+# ou tunnel SSH, voir RUNBOOK.md). cloudflare et caddy sont deux accès alternatifs : n'en activer qu'un.
+# Les variables propres à un profil ne sont pas « obligatoires » ici (compose les lirait même profil éteint) :
+# deploy/update.sh vérifie qu'elles sont remplies pour les profils activés.
 name: pai
 
 x-app: &app
@@ -19,6 +25,10 @@ x-app: &app
     DB_URL: postgresql+psycopg://pai:${PAI_DB_PASSWORD:?PAI_DB_PASSWORD manquant dans .env}@pai_db:5432/pai
     PAI_DATA_DIR: /app/data
     ENVIRONMENT: production
+    OLLAMA_BASE_URL: ${PAI_OLLAMA_URL:-http://pai_ollama:11434}   # profil ai-local ; absent → PAI tourne sans IA
+    PAI_AI_HOST_CPUS: ${PAI_AI_HOST_CPUS:-3}                      # ressources de pai_ollama (limites ci-dessous) :
+    PAI_AI_HOST_RAM_GB: ${PAI_AI_HOST_RAM_GB:-8}                  # le choix du modèle se fait sur elles
+    CLOUDFLARED_METRICS_URL: http://pai_cloudflared:2000           # profil cloudflare : état du tunnel
   volumes:
     - pai_data:/app/data
   restart: unless-stopped
@@ -68,7 +78,11 @@ services:
       PAI_DATA_DIR: /app/data
       ENVIRONMENT: production
       PAI_INLINE_WORKER: "0"              # le worker est un service séparé
-      FORWARDED_ALLOW_IPS: "*"            # seul Caddy (réseau pai_edge) ou 127.0.0.1 atteint ce port
+      FORWARDED_ALLOW_IPS: "*"            # seuls Caddy / cloudflared (réseau pai_edge) ou 127.0.0.1 atteignent ce port
+      OLLAMA_BASE_URL: ${PAI_OLLAMA_URL:-http://pai_ollama:11434}
+      PAI_AI_HOST_CPUS: ${PAI_AI_HOST_CPUS:-3}
+      PAI_AI_HOST_RAM_GB: ${PAI_AI_HOST_RAM_GB:-8}
+      CLOUDFLARED_METRICS_URL: http://pai_cloudflared:2000
     ports:
       - "127.0.0.1:${PAI_HTTP_PORT:-8080}:8000"
     networks: [pai_internal, pai_edge]
@@ -80,8 +94,12 @@ services:
     <<: *app
     command: ["worker"]
     networks: [pai_internal, pai_edge]   # pai_edge : sortie vers l'API IA
-    healthcheck:
-      disable: true
+    healthcheck:                          # battement de cœur du worker (toutes les 15 s, même pendant un pack)
+      test: ["CMD", "python", "-c", "import os, sys, time; p = '/app/data/worker.heartbeat'; sys.exit(0 if os.path.exists(p) and time.time() - os.path.getmtime(p) < 60 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     depends_on:
       pai_web:
         condition: service_healthy        # migrations appliquées par pai_web
@@ -94,7 +112,7 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     environment:
-      PAI_DOMAIN: ${PAI_DOMAIN:?PAI_DOMAIN manquant dans .env (profil caddy)}
+      PAI_DOMAIN: ${PAI_DOMAIN:-}
     ports:
       - "80:80"
       - "443:443"
@@ -112,6 +130,58 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  # Accès public par Cloudflare Tunnel NOMMÉ (jamais trycloudflare) : connexion sortante uniquement, aucun port
+  # ouvert sur le serveur, nom d'hôte stable choisi dans Cloudflare (ex. pai.votre-domaine.fr → http://pai_web:8000).
+  pai_cloudflared:
+    profiles: ["cloudflare"]
+    image: cloudflare/cloudflared:2026.9.3
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "--metrics", "0.0.0.0:2000", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    networks: [pai_edge]
+    depends_on:
+      pai_web:
+        condition: service_healthy
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256m }
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  # IA locale gratuite (Ollama), version mesurée par l'auto-évaluation. Modèles dans le volume pai_ollama :
+  #   docker compose exec pai_web python -m pai ai setup --pull
+  pai_ollama:
+    profiles: ["ai-local"]
+    image: ollama/ollama:0.34.4
+    restart: unless-stopped
+    environment:
+      OLLAMA_KEEP_ALIVE: 10m
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "2"       # petit + grand modèle (ou embeddings) sans rechargement
+    volumes:
+      - pai_ollama:/root/.ollama
+    networks: [pai_internal, pai_edge]    # pai_edge : téléchargement des modèles
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits: { cpus: "3.0", memory: 8g }   # à garder égal à PAI_AI_HOST_CPUS / PAI_AI_HOST_RAM_GB
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
 networks:
   pai_internal:
     name: pai_internal
@@ -128,3 +198,5 @@ volumes:
     name: pai_caddy_data
   pai_caddy_config:
     name: pai_caddy_config
+  pai_ollama:
+    name: pai_ollama

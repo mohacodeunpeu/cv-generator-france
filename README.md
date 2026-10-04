@@ -1,88 +1,95 @@
 # PAI — Personal Application Intelligence
 
-PAI transforme une offre d'emploi en **Application Pack** prêt à relire : analyse de l'offre, matching,
-stratégie de positionnement, CV PDF d'une page, lettre, réponses aux questions, risques et prochaine action.
+PAI transforme une offre d'emploi en **candidature factuelle** : il lit l'offre (texte, lien, PDF, HTML, DOCX),
+classe ses exigences, vérifie ce que votre profil **prouve**, calcule un **Score PAI** explicable, puis produit
+un CV ciblé et une lettre dont chaque ligne cite un fait de votre profil, relit le PDF comme un ATS et range le
+tout dans un pack versionné.
 
-**Règle d'or : aucune affirmation sans preuve.** Chaque ligne du CV et de la lettre est liée aux faits du
-Master Profile qui la prouvent. Un validateur déterministe rejette tout le reste : chiffres, diplômes, outils,
-langues, noms propres ou responsabilités non prouvés, termes interdits. S'y ajoute un juge IA de factualité.
-**PAI ne postule jamais et n'envoie rien** : il prépare, vous relisez et vous postulez vous-même.
+- **Autonome** : votre navigateur → votre domaine (Cloudflare Tunnel) → votre serveur → PAI → PostgreSQL.
+  Aucun compte Claude, aucune clé d'API, aucun abonnement nécessaires.
+- **Gratuit par défaut** : IA locale (Ollama) ou aucune IA ; tout fonctionne sans IA. Un fournisseur externe
+  (Claude, OpenAI, Gemini, Mistral…) reste une option.
+- **Factuel** : aucune affirmation sans preuve. Le validateur déterministe retire tout chiffre, diplôme, outil,
+  niveau de langue ou responsabilité non prouvé ; une correspondance sémantique n'est jamais une preuve.
+- **PAI ne postule jamais et n'envoie rien.** JobAgent (projet séparé) peut l'appeler par API.
 
-## Deux façons de l'utiliser
+## Ce que voit l'utilisateur (exemple)
 
-| | PAI Studio (URL claude.ai) | Serveur PAI (auto-hébergé) |
-|---|---|---|
-| Accès | page privée sur claude.ai, connexion = votre compte Claude | votre serveur (Oracle Cloud, etc.), identifiant + mot de passe |
-| IA | votre compte Claude (aucune clé API) | Claude, OpenAI, modèle local (Ollama) ou aucun (mode dégradé) |
-| Données | base privée de la page (vous seul) | PostgreSQL 16 sur votre serveur |
-| Interface | PAI Studio | **la même** PAI Studio, servie par le serveur |
-| API | — | `/v1` pour le futur JobAgent (clés d'API à droits limités) |
+```
+                 SCORE PAI
+                    85 %
+   FORMAT & PARSING · STRUCTURE · MATCHING OFFRE · MOTS-CLÉS · EXPÉRIENCE · FACTUALITÉ
+        92 %            100 %        84 %            86 %         90 %         100 %
+                         Voir les détails →   (critères internes, à la demande)
+```
 
-Les deux surfaces partagent les mêmes règles, prompts, profils de secteur et de design. Le moteur est écrit
-en Python (serveur) et en JavaScript (PAI Studio) ; la parité est vérifiée par des tests communs
-(`tests/golden/`).
+Puis : points forts et à améliorer ; exigences **Prouvé / Correspondance possible / Non prouvé** ; mots-clés
+avec la raison de leur présence ou de leur absence ; stratégie ; CV, lettre, pack. Dans le CV Studio : CV
+original et CV ciblé, changements ligne par ligne (avant, après, raison, preuve), version. Le Score PAI est un
+indicateur interne : **ni le score d'un ATS réel, ni une probabilité d'embauche**.
 
-## Ce que fait le pipeline
+## Le moteur
 
-1. **Offre** : texte collé, URL publique ou PDF ; texte figé et haché (doublons). Aucune collecte derrière un login.
-2. **Analyse** : contrat, lieu, pays, langue, salaire, séniorité, exigences REQUIRED/IMPORTANT/NICE, secteur (11 profils).
-3. **Matching** : 12 sous-scores, MATCH / QUALITY / RISK, couverture des mots-clés par des faits prouvés.
-4. **Stratégie** : positionnements A/B/C, garde-fous (photo selon le pays, mode ATS, design).
-5. **CV** : contenu lié aux faits → validateur → réécriture ciblée (2 essais) ou suppression → critique → rendu PDF → contrôle qualité du PDF (pages, marges, contraste, extraction ATS).
-6. **Lettre** et **réponses** : phrases typées, citations exactes de l'offre, questions sans preuve marquées BLOCKED (le salaire n'est jamais inventé).
-7. **Pack** figé et versionné (offre, profil, CV, lettre, réponses, moteur, prompts, règles) : PDF + ZIP + JSON.
-
-Tant que le Master Profile n'est pas validé, chaque document porte « BROUILLON — PROFIL NON VALIDÉ » et
-ne peut pas passer en FINAL.
+1. **Offre** : texte, lien lu par le serveur (protection SSRF, cause précise en cas d'échec : anti-bot, connexion
+   requise, page en JavaScript…), PDF, HTML, DOCX ; texte figé et haché (doublons, cache).
+2. **Analyse** (déterministe) : poste, entreprise, lieu, contrat, salaire, langues, outils, exigences
+   Obligatoire / Important / Un plus / Contexte, secteur, variante de CV (MASTER, COMMERCIAL,
+   BUSINESS_DEVELOPER, RECRUTEMENT, DIGITAL, CHARGE_AFFAIRES).
+3. **Preuves** : exact, synonyme (taxonomie métier française), sémantique (embeddings locaux, en option) →
+   PROUVÉ / PLAUSIBLE / NON PROUVÉ.
+4. **CV et lettre** : contenu choisi par le moteur (faits liés), rendu par le design ; IA seulement pour la
+   rédaction et la stratégie, via le routeur (aucune IA pour le parsing, les dates, les mots-clés exacts, la
+   factualité, le PDF, les scores) et un cache par empreinte.
+5. **Boucle de validation** : CV → PDF → relecture ATS (deux lectures : flux du fichier, ligne à ligne) → rien
+   de perdu, rien d'ajouté → correction → nouvelle relecture (trois passes au plus).
+6. **Pack** : CV, lettre, analyse, questions, risques, versions (`application_id`, `version_id`, empreintes de
+   l'offre et de l'analyse, version du profil, gabarit, date) : « quel CV ai-je envoyé ? » a toujours une réponse.
 
 ## Résultats mesurés
 
-Benchmark déterministe sur 13 offres **SYNTHETIC** (fictives, marquées comme telles), même instrument pour
-l'ancien générateur et PAI (texte extrait du PDF, comme un ATS) :
+Benchmark de régression, 13 offres **fictives**, même instrument pour l'ancien générateur et PAI (texte extrait
+du PDF, comme un ATS), PAI sans IA :
 
 | Critère | Ancien générateur | PAI |
 |---|---:|---:|
 | Score global | 54,6 | **92,9** |
-| Factualité du CV | 0 (MBA dans 13/13 CV, 9 lignes non prouvées par CV) | **100** (0 ligne non prouvée) |
+| Factualité du CV | 0 (terme interdit dans 13/13, 9 lignes non prouvées par CV) | **100** (0 ligne non prouvée) |
 | Factualité de la lettre | 13,6 | **100** |
-| Couverture honnête des mots-clés (ceux que le profil prouve) | 91,0 | **97,4** |
-| Qualité PDF | 70 | **100** |
+| Couverture honnête des mots-clés (prouvés) | 91,0 | **97,4** |
+| Qualité du PDF | 70 | **100** |
 | Couverture brute des mots-clés | **76,4** | 71,7 |
 
-L'ancien générateur n'a l'avantage que sur la couverture brute, qu'il obtient en partie avec des mots-clés
-non prouvés (bourrage), ce que PAI refuse. Détails et limites : `python -m pai benchmark`, `DECISIONS.md`.
-PAI a été mesuré sans IA, c'est-à-dire à son niveau minimum.
+IA locale en conditions réelles (Docker, 3 cœurs CPU, sans GPU) : pack complet en 320 s avec la lettre rédigée
+par `qwen3:4b-instruct`, factualité 100 %. Méthodes et limites : `docs/benchmark.md`, `docs/ai-providers.md`.
 
-## Démarrage rapide
+## Démarrage
 
 ```bash
+# Serveur (Docker) — détails : docs/deployment.md
+cp .env.example .env && chmod 600 .env      # secrets, COMPOSE_PROFILES=cloudflare,ai-local, BASE_URL
+docker compose up -d --build                 # PostgreSQL + interface/API + worker (+ tunnel, + Ollama)
+docker compose run --rm pai_web python -m pai create-user <identifiant> --stdout
+
 # Local (Python 3.12)
 python -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt && python -m playwright install chromium
-python -m pai bootstrap-profile           # Master Profile v1 (hors Git, dans data/)
-python -m pai generate benchmark/offers/01_bd_saas_paris.yaml --provider null
-python -m pai build-studio --server && python -m pai create-user moi
-uvicorn app:app                            # http://localhost:8000
-
-# Serveur (Docker) : voir RUNBOOK.md
-cp .env.example .env && docker compose up -d --build
+python -m pai build-studio --server && python -m pai create-user moi && uvicorn app:app
 ```
+
+Une variante de l'interface existe aussi en page privée claude.ai (PAI Studio) : facultative, PAI n'en dépend pas.
 
 ## Documentation
 
-- `RUNBOOK.md` : installation Oracle Cloud, démarrage, mise à jour, sauvegarde et restauration chiffrées, changement de fournisseur IA ou de mot de passe, clés d'API.
-- `docs/api.md` : API `/v1` et contrat JobAgent ↔ PAI.
-- `ARCHITECTURE.md` : surfaces, pipeline, modules, données, sécurité.
-- `DECISIONS.md` : choix faits, alternatives écartées et pourquoi.
-- `PROGRESS.md` : état d'avancement, preuves, ce qu'il reste à fournir.
+| Document | Contenu |
+|---|---|
+| `docs/deployment.md` | architecture Docker, Cloudflare Tunnel nommé, IA locale, mises à jour, sauvegarde et restauration vérifiée |
+| `RUNBOOK.md` | opérations courantes, incidents |
+| `docs/api.md` | API `/api` (et `/v1` historique), entrées directes, réponses |
+| `docs/ats.md` | moteur ATS : classes d'exigences, preuves, Score PAI, scanner PDF |
+| `docs/ai-providers.md` | fournisseurs, routeur, choix mesuré du modèle local |
+| `docs/benchmark.md` | régression, offres réelles, auto-évaluation |
+| `docs/jobagent-integration.md` | pont JobAgent ↔ PAI (off / assisted / auto) |
+| `ARCHITECTURE.md`, `DECISIONS.md`, `PROGRESS.md`, `SECURITY.md` | architecture, choix, avancement, sécurité |
 
-## Sécurité et données personnelles
-
-- Secrets uniquement dans `.env` (ignoré par Git) ; aucun mot de passe, jeton ou cookie dans les journaux.
-- Le Master Profile et tout fichier généré vivent dans `data/` (ignoré par Git) ou en base privée.
-- Mots de passe argon2, cookies HttpOnly/Secure/SameSite=strict, CSRF, limitation des tentatives,
-  révocation des sessions, CSP à nonce, liens de fichiers signés de courte durée, `noindex` partout.
-- JobAgent n'est jamais modifié : projet Docker, réseau, base, ports et secrets séparés.
-
-⚠️ Ce dépôt est **public** et l'historique Git contient déjà des coordonnées personnelles
-(`legacy/amine_profile.py`). Recommandation : passer le dépôt en privé (voir `PROGRESS.md`).
+⚠️ Ce dépôt est **public** et l'historique Git contient d'anciennes coordonnées personnelles (`legacy/`).
+Recommandation : passer le dépôt en privé (voir `SECURITY.md`).
