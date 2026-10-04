@@ -147,6 +147,8 @@ def test_application_prepare_async_versions_and_status(client):  # noqa: F811
     assert res["application_id"].startswith("app_") and res["version_id"].startswith("pack_")
     assert res["pai_score"] == res["ats"]["score"]["value"] and res["ats"]["score"]["complete"] is True
     assert res["application_pack"]["cv_pdf"] and res["versions"]["template"]
+    letter = res["letter_text"]                                                   # texte du PDF, pour un formulaire
+    assert letter.startswith(("Madame", "Monsieur", "Bonjour")) and "\n\n" in letter and "MBA" not in letter
     v = client.get(f"/api/application/{res['version_id']}", headers=h).json()
     assert v["latest"]["pai_score"] == res["pai_score"] and any(n.endswith(".pdf") for n in v["latest"]["files"])
     app = client.get(f"/api/application/{res['application_id']}", headers=h).json()

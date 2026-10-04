@@ -112,7 +112,19 @@ def run_pack_job(payload: dict[str, Any], progress: Callable[[str, str], None] |
         "pai_score": pack.scores.get("pai_score"), "ats": ats_summary(pack.ats) if pack.ats else {},
         "quality_scores": json.loads(json.dumps(pack.scores, default=str)), "risks": pack.risks, "next_action": pack.next_action,
         "missing_profile_data": pack.missing_profile_data, "versions": pack.versions.model_dump(), "cost_eur": pack.cost_eur,
+        "letter_text": letter_text(pack.letter),
     }
+
+
+def letter_text(letter: Any) -> str:
+    """La lettre validée en texte simple (formulaire de candidature, message au recruteur) : formule d'appel,
+    paragraphes, signature — exactement les phrases du PDF, aucune autre."""
+    if letter is None:
+        return ""
+    from ..render import letter_paragraphs
+
+    parts = [letter.salutation, *letter_paragraphs(letter), letter.signature]
+    return "\n\n".join(p.strip() for p in parts if p and p.strip())
 
 
 # ── Offre depuis une URL (l'interface l'appelle quand l'utilisateur colle un lien) ──

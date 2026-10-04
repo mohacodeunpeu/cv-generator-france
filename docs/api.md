@@ -81,11 +81,15 @@ curl -s -H "$H" -H 'Idempotency-Key: jobagent-offre-42' -H 'Content-Type: applic
     "passes": [{"pass": 1, "status": "OK", "score": 100, "errors": []}]
   },
   "application_pack": {"cv_pdf": "https://<serveur>/v1/files/<jeton signé>", "letter_pdf": "…", "zip": "…", "expires_in_seconds": 300},
+  "letter_text": "Madame, Monsieur,\n\n…\n\nCamille Test",
   "versions": {"application_id": "app_…", "offer_v": "…", "profile_v": "…", "analysis_v": "…", "template": "hybrid_modern",
                "cv_v": "…", "letter_v": "…", "engine_v": "…", "prompt_v": "…", "rules_v": "…", "timestamp": "…"},
   "risks": ["…"], "next_action": "…", "…": "champs /v1 inchangés (strategy, match, questions, quality_scores…)"
 }
 ```
+
+`letter_text` : la lettre validée en texte simple (formule d'appel, paragraphes, signature : les mêmes phrases que le
+PDF, aucune autre), pour un formulaire de candidature ou un message au recruteur.
 
 Le ZIP du pack contient : CV et lettre (PDF), `pack.json`, `pack.md` (Score PAI, exigences prouvées / possibles / non
 prouvées, changements), `versions.json`, `analyse_ats.json`. « Quel CV ai-je envoyé ? » :
