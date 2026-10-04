@@ -94,8 +94,12 @@ services:
     <<: *app
     command: ["worker"]
     networks: [pai_internal, pai_edge]   # pai_edge : sortie vers l'API IA
-    healthcheck:
-      disable: true
+    healthcheck:                          # battement de cœur du worker (toutes les 15 s, même pendant un pack)
+      test: ["CMD", "python", "-c", "import os, sys, time; p = '/app/data/worker.heartbeat'; sys.exit(0 if os.path.exists(p) and time.time() - os.path.getmtime(p) < 60 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     depends_on:
       pai_web:
         condition: service_healthy        # migrations appliquées par pai_web

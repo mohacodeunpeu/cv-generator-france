@@ -75,7 +75,13 @@ prouve. L'écrire gonflerait le score au prix de la vérité. », etc. PAI n'ajo
 
 `pai/ats/scanner.py` : texte extractible, encodage (`(cid:)`, `�`), caractères à risque (pictogrammes de police,
 ligatures, emoji), pagination, débordement, colonnes, tableaux, images, texte pivoté, polices (Type3, taille),
-coordonnées, sections reconnues, expériences datées, formation → **OK / WARNING / ERROR** avec explication.
+en-tête et pied de page (coordonnées placées seulement dans ces bandes : certains ATS les ignorent), densité
+(mots par page), coordonnées, sections reconnues, expériences datées, formation → **OK / WARNING / ERROR** avec
+explication.
+
+Deux lectures du PDF, comme deux familles d'ATS : dans l'ordre du flux du fichier (PDFBox/Tika, pdf.js) et ligne à
+ligne par position (pdftotext -layout). Les sections sont jugées sur la meilleure des deux ; l'écart (colonnes mêlées
+par une lecture ligne à ligne, flux désordonné) est expliqué dans le contrôle « Colonnes ».
 
 Relecture (`roundtrip`) : CV → PDF → texte extrait → comparaison avec les lignes du CV source :
 **rien de perdu** (chaque ligne retrouvée) et **rien d'ajouté** (aucun reste de gabarit : `undefined`, `null`,

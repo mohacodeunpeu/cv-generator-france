@@ -15,7 +15,7 @@ from . import ENGINE_VERSION
 from .analyzer import analysis_json_for_prompt, deterministic_analysis, merge_ai_analysis
 from .claims import ClaimValidator, build_evidence, drop_rejected
 from .critic import ai_issue_instructions, deterministic_critique, score_events
-from .cv_architect import build_cv_deterministic, cv_from_ai, cv_plain_text, replace_lines
+from .cv_architect import build_cv_deterministic, cv_from_ai, cv_plain_text
 from .letter import build_letter_deterministic, letter_checks, letter_from_ai
 from .matching import compute_match
 from .obs import event
@@ -24,8 +24,21 @@ from .profile import experiences_table, facts_table, missing_data, profile_versi
 from .providers.base import AIProvider, DegradedMode, ProviderError
 from .questions import answer_deterministic, split_questions
 from .rules import load_rules, prompts_version, truth_rules
-from .schemas import (Analysis, Answer, ApplicationPack, CvDocument, LetterDocument, Line, MasterProfile, Match, Offer,
-                      Strategy, StrategyChoice, ValidationReport, Versions)
+from .schemas import (
+    Analysis,
+    Answer,
+    ApplicationPack,
+    CvDocument,
+    LetterDocument,
+    Line,
+    MasterProfile,
+    Match,
+    Offer,
+    Strategy,
+    StrategyChoice,
+    ValidationReport,
+    Versions,
+)
 from .strategy import deterministic_strategy, sanitize_strategy
 from .textnorm import nb, stable_hash
 
@@ -156,9 +169,14 @@ class Pipeline:
                     payload.append({"id": ln.id, "text": ln.text, "reasons": reasons + ([instructions[ln.id]] if instructions and ln.id in instructions else []),
                                     "fact_ids": ln.fact_ids, "kind": ln.kind})
             v = self._common_vars(analysis)
+            # _try_ai appelle la lambda tout de suite, dans ce même tour de boucle : pas de liaison tardive.
+            # contexte minimal : les faits des lignes à corriger et ceux de leurs expériences
+            parents = {f.parent or f.id for p in payload for fid in p["fact_ids"] if (f := self.profile.fact(fid))}
+            related = {f.id for f in self.profile.usable_facts() if f.parent in parents or f.id in parents}
             fixed = self._try_ai("correction", lambda: self.provider.fix_lines(
-                rejected_lines_json=json.dumps(payload, ensure_ascii=False), facts_table=v["facts_table"],
-                critic_instructions="; ".join(general or []) or "aucune", truth_rules=v["truth_rules"],
+                rejected_lines_json=json.dumps(payload, ensure_ascii=False),  # noqa: B023
+                facts_table=facts_table(self.profile, only=related),  # noqa: B023
+                critic_instructions="; ".join(general or []) or "aucune", truth_rules=v["truth_rules"],  # noqa: B023
                 language="anglais" if analysis.language_of_offer == "en" else "français"))
             if not isinstance(fixed, dict):
                 break
@@ -235,7 +253,7 @@ class Pipeline:
             ai_crit = self._try_ai("critique", lambda: self.provider.critique_document(
                 analysis_json=v["analysis_json"], sector_json=v["sector_json"], country_json=v["country_json"],
                 design_json=json.dumps(self.rules.design(cv.design_profile), ensure_ascii=False),
-                validation_json=report.model_dump_json(include={"factuality", "total", "traced", "warnings"}),
+                validation_json=report.model_dump_json(include={"factuality", "total", "traced", "warnings"}),  # noqa: B023
                 cv_text=cv_plain_text(cv), sector_name=v["sector_name"]))
             critique = {"deterministic": det, "ai": ai_crit if isinstance(ai_crit, dict) else None}
             per_line, general = ai_issue_instructions(ai_crit) if isinstance(ai_crit, dict) else ({}, [])
@@ -317,10 +335,13 @@ class Pipeline:
         v = self._common_vars(analysis)
         sector = self.rules.sector(analysis.sector_id)
         low, high = sector.get("letter_style", {}).get("length_words", [220, 320])
+        # contexte minimal : les faits de la lettre déterministe et ceux qui prouvent les mots-clés de l'offre
+        useful = {fid for ln in base.lines for fid in ln.fact_ids} | {fid for c in match.coverage if c.covered for fid in c.fact_ids}
         ai = self._try_ai("lettre", lambda: self.provider.generate_letter(
             analysis_json=v["analysis_json"], strategy_json=strategy.best.model_dump_json(),
             company_facts=json.dumps({"source": "offre", "texte": offer.text[:1500]}, ensure_ascii=False),
-            facts_table=v["facts_table"], sector_json=v["sector_json"], banned_phrases=", ".join(self.rules.banned_hard[:30]),
+            facts_table=facts_table(self.profile, only=useful), sector_json=v["sector_json"],
+            banned_phrases=", ".join(self.rules.banned_hard[:30]),
             feedback_context=self.feedback_context, truth_rules=v["truth_rules"], candidate_name=self.profile.value("id.name"),
             language="anglais" if analysis.language_of_offer == "en" else "français", length_words=f"{low} à {high}",
             company=analysis.company, job_title=strategy.best.title))
@@ -388,7 +409,7 @@ class Pipeline:
                             prompt_v=prompts_version(), rules_v=self.rules.version)
         # Identifiant unique : une génération est immuable, deux runs de la même offre donnent deux packs.
         pack = ApplicationPack(id=f"pack_{stable_hash([offer.id, versions.profile_v, self.mode], 6)}{secrets.token_hex(3)}",
-                               mode=self.mode, provider=self.provider.name, versions=versions, offer=offer,  # type: ignore[arg-type]
+                               mode=self.mode, provider=self.provider.name, versions=versions, offer=offer,
                                analysis=analysis, match=match, strategy=strategy)
         if self.mode == "QUICK":
             pack.ats = self.ats_report(offer, analysis, match)

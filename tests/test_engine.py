@@ -11,7 +11,7 @@ import pytest
 import yaml
 
 from pai import paths
-from pai.analyzer import clean_title, deterministic_analysis, detect_contract, detect_degree
+from pai.analyzer import clean_title, detect_contract, detect_degree, deterministic_analysis
 from pai.ingest import IngestError, benchmark_fixtures, offer_from_text
 from pai.matching import compute_match
 from pai.pack import export_zip
@@ -230,7 +230,7 @@ def test_every_yaml_parses_and_prompts_render():
 def test_pdf_quality_checks(profile):
     offer = offer_from_text(TEST_OFFER, title="Business Developer Junior", company="Acme SaaS")
     pipe = Pipeline(profile, NullProvider())
-    pack = pipe.run(offer)
+    pipe.run(offer)
     qa = check_pdf(pipe.files["cv.pdf"], expect_pages=1, reading_order=["Camille Test", "Expérience professionnelle", "Formation"])
     assert qa["ok"], qa["issues"]
     assert all("Fira" in f or "PAI" in f for f in qa["fonts"]), qa["fonts"]
@@ -252,3 +252,20 @@ def test_deliberate_no_ai_steps_are_not_reported_as_failures(profile):
     details = [e["detail"] for e in pipe.log]
     assert details[0] == "voie déterministe (tâche traitée sans IA (profil « eco »))"
     assert details[1].startswith("IA indisponible → voie déterministe (local : délai")
+
+
+def test_letter_prompt_gets_a_minimal_fact_context(profile):
+    """Contexte minimal : la lettre reçoit les faits utiles à l'offre, pas tout le profil (moins de jetons)."""
+    prompts: dict[str, str] = {}
+
+    class Spy(FakeProvider):
+        def respond(self, task, prompt):  # noqa: ANN001, ANN202
+            prompts.setdefault(task, prompt)
+            return super().respond(task, prompt)
+
+    offer = offer_from_text(TEST_OFFER, title="Business Developer Junior", company="Acme SaaS")
+    Pipeline(profile, Spy()).run(offer)
+    letter_prompt = prompts["letter"]
+    assert "exp.alpha.t3 |" in letter_prompt and "lang.en |" in letter_prompt     # HubSpot prouve l'offre ; langues toujours là
+    assert "exp.gamma.t1 |" not in letter_prompt                                   # sans lien avec l'offre : non envoyé
+    assert "contact.email" not in letter_prompt                                    # jamais de coordonnées dans un prompt

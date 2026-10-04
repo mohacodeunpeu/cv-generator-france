@@ -38,10 +38,16 @@ def _layout(pdf: bytes) -> dict[str, Any]:
     import pdfplumber
     import pymupdf
 
-    out = {"columns": 1, "rotated_spans": 0, "icons": 0, "images": 0, "type3_fonts": 0, "tables": 0}
+    out: dict[str, Any] = {"columns": 1, "rotated_spans": 0, "icons": 0, "images": 0, "type3_fonts": 0, "tables": 0,
+                           "margin_texts": [], "words": 0}
     with pymupdf.open(stream=pdf, filetype="pdf") as doc:
         for page in doc:
-            w = page.rect.width
+            w, h = page.rect.width, page.rect.height
+            out["words"] += len(page.get_text("text").split())
+            for _x0, y0, _x1, y1, text, *_ in page.get_text("blocks"):
+                # bandes d'en-tête et de pied de page (6 % de la hauteur) : certains ATS ne les lisent pas
+                if text.strip() and (y1 <= 0.06 * h or y0 >= 0.94 * h):
+                    out["margin_texts"].append(" ".join(text.split())[:120])
             blocks = [b for b in page.get_text("dict").get("blocks", []) if b.get("type") == 0]
             lefts: list[float] = []
             for b in blocks:
@@ -65,6 +71,14 @@ def _layout(pdf: bytes) -> dict[str, Any]:
     with pdfplumber.open(io.BytesIO(pdf)) as doc:
         for page in doc.pages:
             out["tables"] += sum(1 for t in page.find_tables() if len(t.rows) >= 2 and len(t.rows[0].cells) >= 2)
+    return out
+
+
+def _body_text(text: str, margin_texts: list[str]) -> str:
+    """Le texte lu hors des bandes d'en-tête et de pied de page."""
+    out = text
+    for m in margin_texts:
+        out = out.replace(m, " ")
     return out
 
 
@@ -147,6 +161,19 @@ def scan_pdf(pdf: bytes, *, max_pages: int = 2, source_lines: list[str] | None =
                          f"{nb(lay['images'], 'image', 'images')} dont {nb(lay['icons'], 'pictogramme', 'pictogrammes')}" if lay["images"] else "Aucune image"))
     checks.append(_check("textboxes", "Zones de texte pivotées", WARNING if lay["rotated_spans"] else OK,
                          nb(lay['rotated_spans'], 'ligne pivotée', 'lignes pivotées') if lay["rotated_spans"] else "Aucun texte pivoté"))
+    margin = norm(" ".join(lay["margin_texts"]))
+    in_margin = [label for label, value in (("e-mail", parsed.email), ("téléphone", parsed.phone))
+                 if value and norm(value) in margin and norm(value) not in norm(_body_text(text, lay["margin_texts"]))]
+    checks.append(_check("header_footer", "En-tête et pied de page", WARNING if in_margin else OK,
+                         f"{' et '.join(in_margin).capitalize()} seulement dans l'en-tête ou le pied de page : certains ATS "
+                         "ignorent ces zones" if in_margin else
+                         (f"{nb(len(lay['margin_texts']), 'ligne', 'lignes')} en marge haute ou basse, sans coordonnées"
+                          if lay["margin_texts"] else "Rien en marge haute ou basse")))
+    per_page = lay["words"] / max(pages, 1)
+    checks.append(_check("density", "Densité", OK if 120 <= per_page <= 800 else WARNING,
+                         f"{per_page:.0f} mots par page" + ("" if 120 <= per_page <= 800 else
+                                                            " : page très chargée, lecture difficile" if per_page > 800 else
+                                                            " : peu de contenu à lire pour un ATS")))
     fonts_ok = not lay["type3_fonts"]
     small = qa.get("min_font_pt")
     checks.append(_check("fonts", "Polices", OK if fonts_ok and (small is None or small >= 7.5) else WARNING,

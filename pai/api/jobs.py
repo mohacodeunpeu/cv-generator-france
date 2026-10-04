@@ -18,9 +18,9 @@ from typing import Any
 
 from sqlalchemy import select
 
+from .. import obs, paths
 from ..config import get_settings
 from ..db.models import Job, utcnow
-from .. import obs
 from ..db.session import get_engine, init_db, session_scope
 
 log = logging.getLogger("pai.jobs")
@@ -124,9 +124,28 @@ def run_once() -> bool:
     return True
 
 
+HEARTBEAT = "worker.heartbeat"
+
+
+def _beat() -> None:
+    try:
+        (paths.DATA_DIR / HEARTBEAT).write_text(str(time.time()), encoding="utf-8")
+    except OSError:  # stockage indisponible : le contrôle de santé le signalera
+        pass
+
+
+def _heartbeat(stop: threading.Event, every: float = 15.0) -> None:
+    """Battement de cœur du worker (contrôle de santé Docker) : écrit même pendant un long pack."""
+    while not stop.wait(every):
+        _beat()
+
+
 def run_worker(once: bool = False, poll: float = 1.0, stop: threading.Event | None = None) -> None:
     init_db()
     requeue_stale()
+    _beat()
+    if not once:
+        threading.Thread(target=_heartbeat, args=(stop or threading.Event(),), daemon=True, name="pai-heartbeat").start()
     while True:
         did = run_once()
         if once and not did:

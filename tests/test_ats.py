@@ -6,8 +6,8 @@ from __future__ import annotations
 import pytest
 
 from pai.analyzer import deterministic_analysis
-from pai.ats import classify_requirement, cv_report, match_report, proof_status_for_texts, prove
-from pai.ats import corpus, requirements as rq
+from pai.ats import classify_requirement, corpus, cv_report, match_report, proof_status_for_texts, prove
+from pai.ats import requirements as rq
 from pai.ats.changes import explain
 from pai.ats.lexicon import core, stem
 from pai.ats.parser import parse_cv_text
@@ -270,3 +270,22 @@ def test_changes_explain_before_after_reason_proof(profile):
     for c in out["changes"]:
         assert c["after"] and c["reason"]
         assert c["proof"] or c["section"] == "Titre"
+
+
+def test_scanner_flags_contacts_hidden_in_header_or_footer_and_density():
+    """Coordonnées seulement en pied de page : avertissement (certains ATS ignorent ces zones) ; densité mesurée."""
+    import pymupdf
+
+    from pai.ats.scanner import scan_pdf
+
+    doc = pymupdf.open()
+    page = doc.new_page(width=595, height=842)
+    body = ["Camille Test", "EXPÉRIENCE PROFESSIONNELLE", "Business Developer", "Alpha Services · Paris 2023 – 2025",
+            "Prospection B2B et suivi du pipeline HubSpot", "FORMATION", "Bachelor Commerce 2021", "COMPÉTENCES", "Prospection B2B"]
+    for i, line in enumerate(body):
+        page.insert_text((50, 90 + 16 * i), line, fontsize=10)
+    page.insert_text((50, 820), "camille.test@example.org · +33 6 00 00 00 00", fontsize=8)     # pied de page
+    report = scan_pdf(doc.tobytes(), max_pages=1)
+    by_id = {c["id"]: c for c in report["checks"]}
+    assert by_id["header_footer"]["status"] == "WARNING" and "pied de page" in by_id["header_footer"]["detail"]
+    assert by_id["density"]["status"] == "WARNING" and "peu de contenu" in by_id["density"]["detail"]
